@@ -490,3 +490,6 @@ $RECYCLE.BIN/
 # User-specific
 *.user
 *.suo
+
+# Claude Code local config
+.claude/
