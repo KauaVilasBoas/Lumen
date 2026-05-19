@@ -493,3 +493,7 @@ $RECYCLE.BIN/
 
 # Claude Code local config
 .claude/
+
+# Secrets and local overrides
+appsettings.*.local.json
+secrets.json
