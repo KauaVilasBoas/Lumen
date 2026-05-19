@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Central Package Management: all MVP NuGet dependencies pinned in `Directory.Packages.props`.
+  - **Persistence:** `MongoDB.Driver` 2.30.0
+  - **Auth / Security:** `Microsoft.AspNetCore.Authentication.JwtBearer` 8.0.15,
+    `System.IdentityModel.Tokens.Jwt` 8.9.0, `BCrypt.Net-Next` 4.0.3
+  - **Validation:** `FluentValidation` 11.11.0, `FluentValidation.AspNetCore` 11.3.0
+  - **Email:** `MailKit` 4.16.0 (MimeKit is a transitive dependency)
+  - **API / Docs:** `Swashbuckle.AspNetCore` 8.1.1
+  - **Observability:** `Serilog.AspNetCore` 9.0.0, `Serilog.Sinks.Console` 6.0.0,
+    `Serilog.Sinks.File` 6.0.0
+  - **HTTP / Integrations:** `Microsoft.Extensions.Http` 8.0.1
+  - **Testing:** `xunit` 2.9.3, `xunit.runner.visualstudio` 2.8.2,
+    `coverlet.collector` 6.0.4, `Microsoft.NET.Test.Sdk` 17.13.0,
+    `FluentAssertions` 7.2.0, `NSubstitute` 5.3.0,
+    `Microsoft.AspNetCore.Mvc.Testing` 8.0.15, `Testcontainers.MongoDb` 4.4.0
+- `PackageReference` entries wired per project following Clean Architecture boundaries:
+  - `Domain`: zero external packages (pure domain model)
+  - `Application`: `FluentValidation` only (no ASP.NET Core dependency)
+  - `Infrastructure`: MongoDB, BCrypt, MailKit, Serilog, HttpClient, JWT token library
+  - `Api`: JwtBearer, FluentValidation.AspNetCore, Swashbuckle, Serilog.AspNetCore
+  - `UnitTests`: xunit, FluentAssertions, NSubstitute
+  - `IntegrationTests`: everything in UnitTests + Mvc.Testing + Testcontainers.MongoDb
+
+### Decisions
+- **Rate Limiting:** Native `Microsoft.AspNetCore.RateLimiting` middleware (ASP.NET Core 7+)
+  is included in the `Microsoft.AspNetCore.App` shared framework — no additional NuGet
+  package needed for `Sdk="Microsoft.NET.Sdk.Web"` projects. The third-party
+  `AspNetCoreRateLimit` package was intentionally omitted. Revisit in SEC-01 if
+  native middleware proves insufficient.
+
 ### Changed
 - Renamed `AegisIdentity.Backoffice` to `AegisIdentity.Api` to align project name
   with Clean Architecture entry-point convention (hosts both Minimal API endpoints
