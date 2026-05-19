@@ -1,0 +1,32 @@
+services:
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: aegis-mailpit
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    # Messages are NOT persisted — intentional design decision for development:
+    # each restart gives a clean inbox, preventing confusion between test runs.
+    # To enable persistence, uncomment the volume below and add a top-level
+    # volumes entry: mailpit-data: {}
+    # volumes:
+    #   - ./.mailpit-data:/data
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7
+    container_name: aegis-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.runCommand({ ping: 1 })", "--quiet"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  mongo-data:
