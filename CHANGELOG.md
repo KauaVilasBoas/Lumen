@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (DATA-01)
+- **`MongoDbContext`** (`src/AegisIdentity.Infrastructure/Persistence/MongoDbContext.cs`):
+  - Singleton wrapper over `IMongoDatabase` exposing `GetCollection<T>(name)` and a
+    `Database` property for raw-command access.
+  - Owns one-time `ConventionPack` registration via a double-checked lock:
+    `CamelCaseElementNameConvention`, `IgnoreExtraElementsConvention(true)`,
+    `EnumRepresentationConvention(BsonType.String)`.
+- **`MongoDbServiceExtensions`** (`src/AegisIdentity.Infrastructure/Persistence/MongoDbServiceExtensions.cs`):
+  - `AddMongoDb(IServiceCollection, IConfiguration)` extension method.
+  - Registers `IMongoClient` as **singleton** (driver manages its own connection pool),
+    `IMongoDatabase` as **scoped** (cheap factory from the singleton client, aligned with
+    unit-of-work boundaries), and `MongoDbContext` as **singleton**.
+- **`MongoDbHealthCheck`** (`src/AegisIdentity.Infrastructure/HealthChecks/MongoDbHealthCheck.cs`):
+  - Implements `IHealthCheck`; issues `{ ping: 1 }` against the configured database.
+  - Returns `HealthCheckResult.Healthy` on success, `Unhealthy` with the caught exception
+    on failure.
+- **Health check endpoint** `GET /health/db` registered in `Program.cs`:
+  - Returns `200 OK` with a JSON body when MongoDB is reachable, `503 Service Unavailable`
+    when the ping fails.
+  - Requests to `/health` are already downgraded to `Verbose` in `UseSerilogRequestLogging`,
+    so health probes do not pollute dashboards.
+- **Integration tests** (`tests/AegisIdentity.IntegrationTests/Persistence/MongoDbContextIntegrationTests.cs`):
+  - Four scenarios using `Testcontainers.MongoDb` (ephemeral `mongo:7` container):
+    `GetCollection` handle validation, insert-and-read roundtrip, health check Healthy
+    path, health check Unhealthy path.
+  - Requires Docker Desktop with the daemon accessible to the test process
+    (TCP on `localhost:2375` or membership in the `docker-users` group).
+
 ### Added (SETUP-05)
 - **`docker-compose.yml`** at project root defining two services for the local development stack:
   - `mailpit` (`axllent/mailpit:latest`): catches all outbound emails from the app and exposes
