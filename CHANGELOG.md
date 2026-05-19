@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (SETUP-05)
+- **`docker-compose.yml`** at project root defining two services for the local development stack:
+  - `mailpit` (`axllent/mailpit:latest`): catches all outbound emails from the app and exposes
+    them in a web UI. SMTP on `localhost:1025`; UI on http://localhost:8025.
+    Messages are **not persisted** — intentional design decision to keep dev inboxes clean
+    between restarts. Persistence can be re-enabled by uncommenting the volume in the compose file.
+  - `mongo` (`mongo:7`): local MongoDB instance on `localhost:27017` with a named volume
+    `mongo-data` for data persistence across restarts. Includes a `healthcheck` using
+    `mongosh --eval 'db.runCommand({ ping: 1 })'` so dependent services know when Mongo is ready.
+- **`.mailpit-data/` added to `.gitignore`** to prevent accidental commit of Mailpit data
+  if the optional persistence volume is ever re-enabled.
+- **Production hardening** in `Program.cs`: the app throws `InvalidOperationException` at startup
+  if `Smtp:Host` resolves to a loopback address (`localhost`, `127.0.0.1`, `::1`) when
+  `ASPNETCORE_ENVIRONMENT=Production`. Prevents silent email loss from a misconfigured deploy.
+- **Dev-only email smoke test endpoint** (`GET /dev/email-test?to=<address>`):
+  - Registered at `src/AegisIdentity.Api/Endpoints/Dev/EmailTestEndpoint.cs`.
+  - Available **only** when `ASPNETCORE_ENVIRONMENT=Development` — never in Staging or Production.
+  - Sends a plain-text message through the configured SMTP relay (Mailpit in dev) and returns
+    `200 { "ok": true, "to": "...", "viewer": "http://localhost:8025" }` on success,
+    `500` with error detail on failure.
+  - Uses `SmtpOptions` injected from DI — no hard-coded SMTP settings.
+  - Inline Minimal API style; no domain coupling.
+
 ### Added (SETUP-04)
 - **Serilog two-stage initialization** in `Program.cs`: bootstrap logger captures startup
   errors before DI is ready; full logger (from `appsettings`) takes over after
