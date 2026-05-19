@@ -1,28 +1,75 @@
+using AegisIdentity.Api.Middleware;
 using AegisIdentity.Infrastructure.Configuration;
 using Serilog;
+using Serilog.Events;
 
-var builder = WebApplication.CreateBuilder(args);
+// ─── Two-stage Serilog initialization ────────────────────────────────────────
+// Bootstrap logger captures startup errors before the DI container is ready.
+// The real logger (from appsettings) is configured after WebApplication.CreateBuilder.
+//
+// SENSITIVE DATA POLICY — fields that MUST NEVER appear as structured log arguments:
+//   Password, PasswordHash, Token, AccessToken, RefreshToken, ResetCode, Secret.
+// These are not scrubbed automatically; enforcement is by convention and code review.
+// A destructuring policy or log sink filter can be added in a future security hardening card.
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .CreateBootstrapLogger();
 
-builder.Host.UseSerilog((context, services, configuration) =>
-    configuration.ReadFrom.Configuration(context.Configuration));
-
-// Infrastructure configuration — bound and validated at startup.
-// Any missing required value throws OptionsValidationException before the app accepts requests.
-builder.Services.AddInfrastructureOptions(builder.Configuration);
-
-builder.Services.AddRazorPages();
-
-var app = builder.Build();
-
-if (!app.Environment.IsDevelopment())
+try
 {
-    app.UseExceptionHandler("/Error");
-    app.UseHsts();
+    Log.Information("Starting AegisIdentity API");
+
+    var builder = WebApplication.CreateBuilder(args);
+
+    // Replace bootstrap logger with the full logger defined in appsettings.
+    builder.Host.UseSerilog((ctx, services, cfg) =>
+        cfg.ReadFrom.Configuration(ctx.Configuration)
+           .ReadFrom.Services(services)
+           .Enrich.FromLogContext());
+
+    // Infrastructure configuration — bound and validated at startup.
+    // Any missing required value throws OptionsValidationException before the app accepts requests.
+    builder.Services.AddInfrastructureOptions(builder.Configuration);
+
+    builder.Services.AddRazorPages();
+
+    var app = builder.Build();
+
+    if (!app.Environment.IsDevelopment())
+    {
+        app.UseExceptionHandler("/Error");
+        app.UseHsts();
+    }
+
+    app.UseHttpsRedirection();
+    app.UseStaticFiles();
+    app.UseRouting();
+
+    // CorrelationId must run before request logging so the log entry includes the field.
+    app.UseMiddleware<CorrelationIdMiddleware>();
+
+    // Log every HTTP request. Health check paths are downgraded to Verbose
+    // so they do not pollute dashboards. When /health endpoints are implemented
+    // (a future card), this filter is already in place.
+    app.UseSerilogRequestLogging(opts =>
+    {
+        opts.GetLevel = (httpContext, _, _) =>
+            httpContext.Request.Path.StartsWithSegments("/health")
+                ? LogEventLevel.Verbose
+                : LogEventLevel.Information;
+    });
+
+    app.MapRazorPages();
+
+    app.Run();
 }
-
-app.UseHttpsRedirection();
-app.UseStaticFiles();
-app.UseRouting();
-app.MapRazorPages();
-
-app.Run();
+catch (Exception ex)
+{
+    Log.Fatal(ex, "AegisIdentity API terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}
