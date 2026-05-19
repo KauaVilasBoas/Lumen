@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\AegisIdentity.Backoffice\AegisIdentity.Backoffice.csproj" />
+    <ProjectReference Include="..\..\src\AegisIdentity.Api\AegisIdentity.Api.csproj" />
     <ProjectReference Include="..\..\src\AegisIdentity.Infrastructure\AegisIdentity.Infrastructure.csproj" />
   </ItemGroup>
 
