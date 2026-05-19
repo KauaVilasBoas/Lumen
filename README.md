@@ -1,4 +1,4 @@
-# AegisIdentity
+﻿# AegisIdentity
 
 Plataforma de gestao de identidade e acesso (IAM) construida em .NET 8 — projeto de portfolio.
 
@@ -138,6 +138,42 @@ environment:
 > **Nunca** defina segredos reais em `appsettings.json` ou `appsettings.Development.json`.
 > Consulte `src/AegisIdentity.Api/appsettings.example.json` para o formato completo de configuracao.
 
+## Logging
+
+### Formato por ambiente
+
+| Ambiente | Sink | Formato |
+|---|---|---|
+| Producao | Console + File rotativo (daily) | `CompactJsonFormatter` (JSON estruturado) |
+| Desenvolvimento | Console apenas | Template legivel: `[HH:mm:ss LVL] Message {Properties}` |
+
+Arquivos de log ficam em `logs/aegis-YYYYMMDD.log`, retidos por 7 dias.
+
+### Correlation ID
+
+Cada request recebe um `X-Correlation-Id`. Se o header vier no request, o valor e preservado.
+Se ausente, o middleware gera um Guid no formato `N` (32 hex chars).
+O ID aparece em todos os logs do request e no response header `X-Correlation-Id`.
+
+Para rastrear um request especifico:
+
+```powershell
+curl -H "X-Correlation-Id: meu-id-de-rastreio" https://localhost:7068/
+```
+
+### Dados sensiveis — politica de nao-vazamento
+
+Os seguintes campos NUNCA devem aparecer como argumento estruturado de log:
+
+- `Password`, `PasswordHash`
+- `Token`, `AccessToken`, `RefreshToken`
+- `ResetCode`, `Secret`
+
+Logue apenas campos seguros (ex: `Email`, `UserId`). Consulte
+`src/AegisIdentity.Api/Logging/SensitiveDataConvention.cs` para a lista completa e exemplos.
+A enforcement e por convencao e code review. Um filtro automatico sera adicionado na
+security hardening card quando os casos de uso correspondentes estiverem implementados.
+
 ## Como rodar os testes
 
 ```powershell
@@ -151,6 +187,7 @@ dotnet test
 | SETUP-01 | Estruturar solucao em camadas | Concluido |
 | SETUP-02 | Gerenciamento central de pacotes NuGet | Concluido |
 | SETUP-03 | Configurar variaveis de ambiente e appsettings | Concluido |
+| SETUP-04 | Configurar Serilog para logs estruturados | Concluido |
 | DATA-01 | Definir banco de dados | Pendente |
 | AUTH-01 | Implementar registro e login | Pendente |
 
