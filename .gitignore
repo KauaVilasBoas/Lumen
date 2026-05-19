@@ -497,3 +497,6 @@ $RECYCLE.BIN/
 # Secrets and local overrides
 appsettings.*.local.json
 secrets.json
+
+# Mailpit optional data volume (if persistence is re-enabled in docker-compose.yml)
+.mailpit-data/
