@@ -25,7 +25,7 @@
   <!-- ─── Messaging / Email ────────────────────────────────────────── -->
   <ItemGroup>
     <!-- MailKit ships MimeKit as a transitive dependency — no separate entry needed. -->
-    <PackageVersion Include="MailKit" Version="4.11.0" />
+    <PackageVersion Include="MailKit" Version="4.16.0" />
   </ItemGroup>
 
   <!-- ─── API / Documentation ──────────────────────────────────────── -->
