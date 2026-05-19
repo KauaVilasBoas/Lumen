@@ -8,6 +8,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `JwtOptions`, `MongoOptions`, `SmtpOptions`, `HibpOptions` in `Infrastructure/Configuration/`
+  with `[Required]`, `[MinLength]`, `[Range]` and `[Url]` data-annotation constraints.
+- Startup validation via `AddOptions<T>().Bind(...).ValidateDataAnnotations().ValidateOnStart()`
+  registered in `InfrastructureOptionsExtensions`. Any missing required value causes an
+  `OptionsValidationException` before the app begins accepting requests.
+- Full `appsettings.json` schema with safe `REPLACE_ME` placeholders covering:
+  `Mongo`, `Jwt`, `Smtp`, `Hibp`, `Cors` and `Serilog` sections.
+- `appsettings.Development.json` with local dev defaults: Mongo on `mongodb://localhost:27017`
+  and SMTP on Mailpit (`localhost:1025`).
+- `appsettings.example.json` versionable template documenting all keys and their expected
+  format with `<set via env or user-secrets>` placeholders.
+- `UserSecretsId` already present in `AegisIdentity.Api.csproj` from SETUP-01 bootstrap;
+  confirmed operational via `dotnet user-secrets list`.
+- README: table of required environment variables, local setup via `dotnet user-secrets`,
+  and production configuration via env vars (Fly.io / Docker formats).
+
+### Added
 - Central Package Management: all MVP NuGet dependencies pinned in `Directory.Packages.props`.
   - **Persistence:** `MongoDB.Driver` 2.30.0
   - **Auth / Security:** `Microsoft.AspNetCore.Authentication.JwtBearer` 8.0.15,
