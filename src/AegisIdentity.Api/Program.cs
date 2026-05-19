@@ -1,6 +1,9 @@
 using AegisIdentity.Api.Endpoints.Dev;
 using AegisIdentity.Api.Middleware;
 using AegisIdentity.Infrastructure.Configuration;
+using AegisIdentity.Infrastructure.HealthChecks;
+using AegisIdentity.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Serilog;
 using Serilog.Events;
@@ -34,6 +37,14 @@ try
     // Infrastructure configuration — bound and validated at startup.
     // Any missing required value throws OptionsValidationException before the app accepts requests.
     builder.Services.AddInfrastructureOptions(builder.Configuration);
+
+    // MongoDB DI — IMongoClient (singleton), IMongoDatabase (scoped), MongoDbContext (singleton).
+    builder.Services.AddMongoDb(builder.Configuration);
+
+    // Health checks — registered before app.Build() so the middleware can resolve them.
+    builder.Services
+        .AddHealthChecks()
+        .AddCheck<MongoDbHealthCheck>("mongodb");
 
     builder.Services.AddRazorPages();
 
@@ -81,6 +92,15 @@ try
     });
 
     app.MapRazorPages();
+
+    // ─── Health check endpoints ───────────────────────────────────────────────
+    // /health/db: MongoDB connectivity ping. Returns 200 Healthy / 503 Unhealthy.
+    // Requests to /health are already downgraded to Verbose in UseSerilogRequestLogging
+    // so these probes do not pollute dashboards.
+    app.MapHealthChecks("/health/db", new HealthCheckOptions
+    {
+        Predicate = registration => registration.Name == "mongodb",
+    });
 
     // ─── Development-only endpoints ───────────────────────────────────────────
     // These routes are never registered in Staging or Production.
