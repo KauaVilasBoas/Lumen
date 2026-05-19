@@ -1,5 +1,6 @@
 using AegisIdentity.Api.Middleware;
 using AegisIdentity.Infrastructure.Configuration;
+using Microsoft.Extensions.Options;
 using Serilog;
 using Serilog.Events;
 
@@ -36,6 +37,23 @@ try
     builder.Services.AddRazorPages();
 
     var app = builder.Build();
+
+    // ─── Production hardening: reject localhost SMTP ──────────────────────────
+    // Prevents accidental use of the dev Mailpit relay (localhost:1025) in production,
+    // which would silently drop all outbound emails. Cost: ~5 lines. Risk avoided: high.
+    if (app.Environment.IsProduction())
+    {
+        var smtpOptions = app.Services.GetRequiredService<IOptions<SmtpOptions>>().Value;
+        var localhostAliases = new[] { "localhost", "127.0.0.1", "::1" };
+
+        if (localhostAliases.Contains(smtpOptions.Host, StringComparer.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                $"Smtp:Host is set to '{smtpOptions.Host}' which resolves to localhost. " +
+                "Configuring a loopback SMTP relay in Production will silently discard all outbound emails. " +
+                "Set Smtp:Host to a real SMTP server (e.g. smtp.sendgrid.net) before deploying.");
+        }
+    }
 
     if (!app.Environment.IsDevelopment())
     {
