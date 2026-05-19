@@ -4,17 +4,73 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
 
-  <!-- Web / Presentation -->
+  <!-- ─── Persistence ───────────────────────────────────────────────── -->
   <ItemGroup>
-    <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageVersion Include="MongoDB.Driver" Version="2.30.0" />
   </ItemGroup>
 
-  <!-- Testing -->
+  <!-- ─── Security / Auth ──────────────────────────────────────────── -->
   <ItemGroup>
-    <PackageVersion Include="coverlet.collector" Version="6.0.0" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
-    <PackageVersion Include="xunit" Version="2.5.3" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="2.5.3" />
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.15" />
+    <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.9.0" />
+    <PackageVersion Include="BCrypt.Net-Next" Version="4.0.3" />
+  </ItemGroup>
+
+  <!-- ─── Validation ───────────────────────────────────────────────── -->
+  <ItemGroup>
+    <PackageVersion Include="FluentValidation" Version="11.11.0" />
+    <PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.0" />
+  </ItemGroup>
+
+  <!-- ─── Messaging / Email ────────────────────────────────────────── -->
+  <ItemGroup>
+    <!-- MailKit ships MimeKit as a transitive dependency — no separate entry needed. -->
+    <PackageVersion Include="MailKit" Version="4.16.0" />
+  </ItemGroup>
+
+  <!-- ─── API / Documentation ──────────────────────────────────────── -->
+  <ItemGroup>
+    <PackageVersion Include="Swashbuckle.AspNetCore" Version="8.1.1" />
+  </ItemGroup>
+
+  <!-- ─── Observability / Logging ──────────────────────────────────── -->
+  <ItemGroup>
+    <PackageVersion Include="Serilog.AspNetCore" Version="9.0.0" />
+    <PackageVersion Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageVersion Include="Serilog.Sinks.File" Version="6.0.0" />
+  </ItemGroup>
+
+  <!-- ─── HTTP / Integrations ──────────────────────────────────────── -->
+  <ItemGroup>
+    <!--
+      Microsoft.Extensions.Http ships IHttpClientFactory.
+      Version 8.x aligns with .NET 8 runtime; the package is part of the
+      Microsoft.Extensions.* family and does not require a framework reference.
+    -->
+    <PackageVersion Include="Microsoft.Extensions.Http" Version="8.0.1" />
+  </ItemGroup>
+
+  <!--
+    Rate Limiting — DECISION:
+    The native Microsoft.AspNetCore.RateLimiting middleware (introduced in .NET 7 /
+    ASP.NET Core 7) is included in the Microsoft.AspNetCore.App framework reference
+    that every Sdk="Microsoft.NET.Sdk.Web" project already imports.  No additional
+    NuGet package is required and no PackageVersion entry is registered here.
+    The third-party AspNetCoreRateLimit package is intentionally omitted to minimise
+    external dependencies.  Revisit in SEC-01 if the native middleware proves
+    insufficient.
+  -->
+
+  <!-- ─── Testing ──────────────────────────────────────────────────── -->
+  <ItemGroup>
+    <PackageVersion Include="coverlet.collector" Version="6.0.4" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageVersion Include="FluentAssertions" Version="7.2.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.15" />
+    <PackageVersion Include="Testcontainers.MongoDb" Version="4.4.0" />
+    <PackageVersion Include="NSubstitute" Version="5.3.0" />
   </ItemGroup>
 
 </Project>

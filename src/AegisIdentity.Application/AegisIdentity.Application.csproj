@@ -4,4 +4,9 @@
     <ProjectReference Include="..\AegisIdentity.Domain\AegisIdentity.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Core validation only — no ASP.NET Core dependency in the Application layer -->
+    <PackageReference Include="FluentValidation" />
+  </ItemGroup>
+
 </Project>
