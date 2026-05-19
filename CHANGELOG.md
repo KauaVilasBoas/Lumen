@@ -1,4 +1,4 @@
-# Changelog
+﻿# Changelog
 
 All notable changes to this project will be documented in this file.
 
@@ -6,6 +6,44 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Added (SETUP-04)
+- **Serilog two-stage initialization** in `Program.cs`: bootstrap logger captures startup
+  errors before DI is ready; full logger (from `appsettings`) takes over after
+  `WebApplication.CreateBuilder`. Fatal exceptions are caught and flushed before exit.
+- **Structured logging configuration** in `appsettings.json`:
+  - Minimum levels: `Information` default, `Warning` for `Microsoft.AspNetCore` and `System`,
+    `Information` for `Microsoft.AspNetCore.Hosting.Diagnostics`.
+  - Console sink with `CompactJsonFormatter` (production-ready JSON).
+  - File sink: `logs/aegis-.log`, daily rolling, 7-day retention, `CompactJsonFormatter`.
+  - Enrichers: `FromLogContext`, `WithMachineName`, `WithThreadId`.
+- **Development log override** in `appsettings.Development.json`:
+  - Console only (no file sink), `Debug` minimum level, human-readable `outputTemplate`.
+- **`CorrelationIdMiddleware`** (`src/AegisIdentity.Api/Middleware/`):
+  - Reads `X-Correlation-Id` request header; generates a 32-char hex Guid when absent.
+  - Writes value to response header and pushes it to Serilog `LogContext` so every log
+    entry in the request scope carries `CorrelationId`.
+  - Registered before `UseSerilogRequestLogging` so the request-completion log includes the field.
+- **Health check log filter** in `UseSerilogRequestLogging`: requests to `/health` are
+  logged at `Verbose` level (will not appear under default `Information` minimum) to
+  avoid dashboard pollution when health-check endpoints are implemented.
+- **`SensitiveDataConvention`** (`src/AegisIdentity.Api/Logging/`):
+  - Static class documenting which fields (`Password`, `PasswordHash`, `Token`,
+    `AccessToken`, `RefreshToken`, `ResetCode`, `Secret`) must never be passed as
+    structured log arguments.
+  - Enforcement is by convention and code review at this stage. A destructuring policy
+    or log-sink filter will be added in the security hardening card when the corresponding
+    use cases exist. Premature defensive code was intentionally omitted (YAGNI).
+- **New NuGet packages** pinned in `Directory.Packages.props`:
+  - `Serilog.Formatting.Compact` 3.0.0
+  - `Serilog.Enrichers.Environment` 3.0.1
+  - `Serilog.Enrichers.Thread` 4.0.0
+- **Unit tests** for `CorrelationIdMiddleware` (4 scenarios):
+  - Generates new ID when header is absent.
+  - Preserves incoming ID when header is present.
+  - Always sets response header.
+  - Generated ID matches 32-char hex format (Guid "N").
+
 
 ### Added
 - `JwtOptions`, `MongoOptions`, `SmtpOptions`, `HibpOptions` in `Infrastructure/Configuration/`
