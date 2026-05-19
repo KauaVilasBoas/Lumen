@@ -1,3 +1,4 @@
+using AegisIdentity.Api.Endpoints.Dev;
 using AegisIdentity.Api.Middleware;
 using AegisIdentity.Infrastructure.Configuration;
 using Microsoft.Extensions.Options;
@@ -80,6 +81,13 @@ try
     });
 
     app.MapRazorPages();
+
+    // ─── Development-only endpoints ───────────────────────────────────────────
+    // These routes are never registered in Staging or Production.
+    if (app.Environment.IsDevelopment())
+    {
+        EmailTestEndpoint.Map(app);
+    }
 
     app.Run();
 }
