@@ -36,6 +36,9 @@ Clean Architecture + DDD + CQRS. Regra de dependencia: `Api` e `Infrastructure` 
 AegisIdentity/
 ├── src/
 │   ├── AegisIdentity.Api/               Entry point — Razor Pages + Minimal API endpoints
+│   │   ├── Endpoints/Dev/               Endpoints dev-only (nunca registrados em prod)
+│   │   ├── Middleware/                  CorrelationIdMiddleware e outros middlewares HTTP
+│   │   └── Logging/                     Convencoes de logging e dados sensiveis
 │   ├── AegisIdentity.Application/       Use cases, interfaces de servico, handlers CQRS
 │   ├── AegisIdentity.Domain/            Entidades, Value Objects, contratos de repositorio
 │   └── AegisIdentity.Infrastructure/    Persistencia, e-mail, providers externos
@@ -43,6 +46,7 @@ AegisIdentity/
 ├── tests/
 │   ├── AegisIdentity.UnitTests/         Domain + Application
 │   └── AegisIdentity.IntegrationTests/  Api + Infrastructure
+├── docker-compose.yml                   Stack de desenvolvimento (Mailpit + MongoDB)
 ├── Directory.Build.props                Configuracoes MSBuild centralizadas
 ├── Directory.Packages.props             Central Package Management
 ├── .gitignore
@@ -55,11 +59,51 @@ AegisIdentity/
 
 ## Configuracao local
 
+### Desenvolvimento local com Docker
+
+O `docker-compose.yml` na raiz do projeto sobe dois servicos em um unico comando:
+
+| Servico | Proposito | Endereco |
+|---|---|---|
+| Mailpit | SMTP local + Web UI para inspecionar emails | SMTP: `localhost:1025` / UI: http://localhost:8025 |
+| MongoDB | Banco de dados local | `mongodb://localhost:27017` |
+
+```powershell
+# Subir ambos os servicos em background
+docker compose up -d
+
+# Parar sem remover dados do Mongo
+docker compose down
+
+# Parar E limpar o volume do Mongo (reset completo)
+docker compose down -v
+```
+
+> **Mailpit nao persiste mensagens.** Cada `docker compose down` limpa a caixa de entrada.
+> Isso e uma decisao deliberada para evitar confusao entre diferentes sessoes de desenvolvimento.
+> Se preferir persistencia, edite o `docker-compose.yml` e descomente o volume `.mailpit-data`.
+
+### Smoke test de email
+
+Com os containers rodando, acesse o endpoint de teste:
+
+```powershell
+# HTTP — substitua o destinatario
+curl "http://localhost:5237/dev/email-test?to=voce@test.com"
+
+# Resposta esperada
+# { "ok": true, "to": "voce@test.com", "viewer": "http://localhost:8025" }
+```
+
+Em seguida, abra http://localhost:8025 no browser para verificar o recebimento.
+
+> O endpoint `/dev/email-test` existe **somente** quando `ASPNETCORE_ENVIRONMENT=Development`.
+> Ele nunca e registrado em Staging ou Production.
+
 ### Pre-requisitos
 
 - .NET 8 SDK
-- MongoDB rodando em `localhost:27017` (ou Docker: `docker run -p 27017:27017 mongo`)
-- Mailpit para SMTP local (opcional): `docker run -p 1025:1025 -p 8025:8025 axllent/mailpit`
+- Docker Desktop (para `docker compose up`)
 
 ### Subindo a aplicacao
 
@@ -188,6 +232,7 @@ dotnet test
 | SETUP-02 | Gerenciamento central de pacotes NuGet | Concluido |
 | SETUP-03 | Configurar variaveis de ambiente e appsettings | Concluido |
 | SETUP-04 | Configurar Serilog para logs estruturados | Concluido |
+| SETUP-05 | Setup Mailpit local via Docker Compose | Concluido |
 | DATA-01 | Definir banco de dados | Pendente |
 | AUTH-01 | Implementar registro e login | Pendente |
 
@@ -199,6 +244,7 @@ Ver [TASKS_TRELLO.md](./TASKS_TRELLO.md) para o backlog completo.
 - Sem CI/CD configurado.
 - Sem deploy publicado.
 - Sem HTTPS em dev (usa HTTP local por padrao via launchSettings).
+- O endpoint `/dev/email-test` depende do container Mailpit estar rodando (`docker compose up -d`). Sem ele, o request retorna HTTP 500 com detalhe do erro de conexao SMTP.
 
 ## Licenca
 
