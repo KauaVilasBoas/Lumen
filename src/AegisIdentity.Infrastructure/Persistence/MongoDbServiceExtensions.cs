@@ -1,4 +1,7 @@
+using AegisIdentity.Domain.Users;
 using AegisIdentity.Infrastructure.Configuration;
+using AegisIdentity.Infrastructure.Persistence.Indexes;
+using AegisIdentity.Infrastructure.Persistence.Repositories;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -12,8 +15,7 @@ namespace AegisIdentity.Infrastructure.Persistence;
 public static class MongoDbServiceExtensions
 {
     /// <summary>
-    /// Registers <see cref="IMongoClient"/> as a singleton, <see cref="IMongoDatabase"/>
-    /// as a scoped factory, and <see cref="MongoDbContext"/> as a singleton.
+    /// Registers MongoDB core services, repositories, and the index initializer.
     ///
     /// Lifetime rationale:
     /// - <see cref="IMongoClient"/>: singleton — the driver manages its own connection pool;
@@ -21,7 +23,11 @@ public static class MongoDbServiceExtensions
     /// - <see cref="IMongoDatabase"/>: scoped — created cheaply per request from the singleton
     ///   client; aligns with unit-of-work boundaries and avoids thread-safety ambiguity.
     /// - <see cref="MongoDbContext"/>: singleton — wraps thread-safe driver handles and
-    ///   owns the one-time convention registration; safe to reuse across requests.
+    ///   owns the one-time convention and class-map registration; safe to reuse across requests.
+    /// - <see cref="IUserRepository"/>: scoped — follows <see cref="IMongoDatabase"/> lifetime;
+    ///   each request scope gets a fresh repository backed by the scoped database handle.
+    /// - <see cref="MongoIndexInitializer"/>: hosted service — runs once on startup before
+    ///   the app accepts requests.
     /// </summary>
     public static IServiceCollection AddMongoDb(
         this IServiceCollection services,
@@ -41,6 +47,12 @@ public static class MongoDbServiceExtensions
         });
 
         services.AddSingleton<MongoDbContext>();
+
+        // Repositories
+        services.AddScoped<IUserRepository, UserRepository>();
+
+        // Index initializer — runs on startup, idempotent on restarts.
+        services.AddHostedService<MongoIndexInitializer>();
 
         return services;
     }

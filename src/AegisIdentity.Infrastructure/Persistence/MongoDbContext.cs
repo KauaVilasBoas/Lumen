@@ -1,4 +1,5 @@
 using AegisIdentity.Infrastructure.Configuration;
+using AegisIdentity.Infrastructure.Persistence.Mappings;
 using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
@@ -7,9 +8,10 @@ using MongoDB.Driver;
 namespace AegisIdentity.Infrastructure.Persistence;
 
 /// <summary>
-/// Encapsulates the MongoDB database handle and owns the one-time convention registration.
-/// Thread-safe: <see cref="IMongoDatabase"/> and <see cref="IMongoClient"/> are inherently
-/// concurrent; the convention pack is registered exactly once via a static guard.
+/// Encapsulates the MongoDB database handle and owns the one-time convention and class-map
+/// registration. Thread-safe: <see cref="IMongoDatabase"/> and <see cref="IMongoClient"/>
+/// are inherently concurrent; conventions and class maps are registered exactly once via
+/// static guards.
 /// </summary>
 public sealed class MongoDbContext
 {
@@ -21,6 +23,7 @@ public sealed class MongoDbContext
     public MongoDbContext(IMongoClient client, IOptions<MongoOptions> options)
     {
         RegisterConventionsOnce();
+        RegisterClassMapsOnce();
         _database = client.GetDatabase(options.Value.Database);
     }
 
@@ -57,5 +60,17 @@ public sealed class MongoDbContext
             ConventionRegistry.Register("AegisIdentityDefaults", pack, _ => true);
             _conventionsRegistered = true;
         }
+    }
+
+    // ─── BSON class-map registration ─────────────────────────────────────────
+
+    /// <summary>
+    /// Delegates class-map registration to each entity's dedicated map class.
+    /// Class maps must be registered before any serialization occurs, so this is
+    /// called in the constructor alongside convention registration.
+    /// </summary>
+    private static void RegisterClassMapsOnce()
+    {
+        UserClassMap.RegisterOnce();
     }
 }
