@@ -6,18 +6,6 @@ using MongoDB.Bson.Serialization.Serializers;
 
 namespace AegisIdentity.Infrastructure.Persistence.Mappings;
 
-/// <summary>
-/// BSON class map for <see cref="User"/>.
-///
-/// Registered once at startup (called from <see cref="MongoDbContext"/>).
-/// Explicit mapping is intentional: it prevents surprise when property names change and
-/// makes the storage contract visible in code rather than inferred from conventions.
-///
-/// Id strategy:
-/// - The domain model uses <c>string</c> for <see cref="User.Id"/> to stay framework-free.
-/// - The BSON map stores it as MongoDB's native <see cref="ObjectId"/> using
-///   <see cref="StringObjectIdGenerator"/> (generates ObjectId, serialises as string).
-/// </summary>
 public static class UserClassMap
 {
     private static readonly object RegisterLock = new();

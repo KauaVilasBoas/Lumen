@@ -2,11 +2,6 @@ using System.ComponentModel.DataAnnotations;
 
 namespace AegisIdentity.Infrastructure.Configuration;
 
-/// <summary>
-/// Strongly-typed options for JWT token generation, bound to the "Jwt" configuration section.
-/// Placed in Infrastructure because the concrete token-generation adapter lives here.
-/// Validated at startup via ValidateDataAnnotations + ValidateOnStart.
-/// </summary>
 public sealed class JwtOptions
 {
     public const string SectionName = "Jwt";
@@ -17,10 +12,6 @@ public sealed class JwtOptions
     [Required(AllowEmptyStrings = false, ErrorMessage = "Jwt:Audience is required.")]
     public string Audience { get; init; } = string.Empty;
 
-    /// <summary>
-    /// HMAC-SHA256 signing key. Must be at least 32 characters (256 bits) for HS256.
-    /// Set via User Secrets in development; via env var Jwt__Secret in production.
-    /// </summary>
     [Required(AllowEmptyStrings = false, ErrorMessage = "Jwt:Secret is required.")]
     [MinLength(32, ErrorMessage = "Jwt:Secret must be at least 32 characters for HS256.")]
     public string Secret { get; init; } = string.Empty;

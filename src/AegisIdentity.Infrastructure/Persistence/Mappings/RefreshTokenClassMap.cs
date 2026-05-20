@@ -6,16 +6,6 @@ using MongoDB.Bson.Serialization.Serializers;
 
 namespace AegisIdentity.Infrastructure.Persistence.Mappings;
 
-/// <summary>
-/// BSON class map for <see cref="RefreshToken"/>.
-///
-/// Registered once at startup (called from <see cref="MongoDbContext"/>).
-/// Explicit mapping prevents surprises when property names change and keeps the
-/// storage contract visible in code rather than inferred from conventions.
-///
-/// Id strategy: Domain uses <c>string</c> for Id; the BSON map stores it as
-/// MongoDB's native <see cref="ObjectId"/> via <see cref="StringObjectIdGenerator"/>.
-/// </summary>
 public static class RefreshTokenClassMap
 {
     private static readonly object RegisterLock = new();
