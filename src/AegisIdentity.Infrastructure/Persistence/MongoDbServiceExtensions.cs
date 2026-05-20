@@ -1,3 +1,4 @@
+using AegisIdentity.Domain.Tokens;
 using AegisIdentity.Domain.Users;
 using AegisIdentity.Infrastructure.Configuration;
 using AegisIdentity.Infrastructure.Persistence.Indexes;
@@ -24,8 +25,10 @@ public static class MongoDbServiceExtensions
     ///   client; aligns with unit-of-work boundaries and avoids thread-safety ambiguity.
     /// - <see cref="MongoDbContext"/>: singleton — wraps thread-safe driver handles and
     ///   owns the one-time convention and class-map registration; safe to reuse across requests.
-    /// - <see cref="IUserRepository"/>: scoped — follows <see cref="IMongoDatabase"/> lifetime;
-    ///   each request scope gets a fresh repository backed by the scoped database handle.
+    /// - <see cref="IUserRepository"/>, <see cref="IRefreshTokenRepository"/>,
+    ///   <see cref="IPasswordResetTokenRepository"/>, <see cref="IEmailConfirmationTokenRepository"/>:
+    ///   scoped — follow <see cref="IMongoDatabase"/> lifetime; each request scope gets a fresh
+    ///   repository backed by the scoped database handle.
     /// - <see cref="MongoIndexInitializer"/>: hosted service — runs once on startup before
     ///   the app accepts requests.
     /// </summary>
@@ -50,6 +53,9 @@ public static class MongoDbServiceExtensions
 
         // Repositories
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
+        services.AddScoped<IEmailConfirmationTokenRepository, EmailConfirmationTokenRepository>();
 
         // Index initializer — runs on startup, idempotent on restarts.
         services.AddHostedService<MongoIndexInitializer>();
