@@ -72,5 +72,8 @@ public sealed class MongoDbContext
     private static void RegisterClassMapsOnce()
     {
         UserClassMap.RegisterOnce();
+        RefreshTokenClassMap.RegisterOnce();
+        PasswordResetTokenClassMap.RegisterOnce();
+        EmailConfirmationTokenClassMap.RegisterOnce();
     }
 }
