@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (DATA-02)
+- **`User` aggregate** (`src/AegisIdentity.Domain/Users/User.cs`):
+  - Domain entity with all required properties: `Id` (string/ObjectId), `Email` (normalised),
+    `Username`, `PasswordHash`, `Roles` (default `["user"]`), `IsActive` (default `false`),
+    `EmailConfirmedAt`, `LastLoginAt`, `FailedLoginAttempts`, `LockedUntil`,
+    `CreatedAt`, `UpdatedAt`.
+  - Static factory `User.Create(email, username, passwordHash)` — enforces normalisation
+    and non-null invariants at creation time.
+  - `NormalizeEmail` static helper: lowercase + trim, must be applied before persist/compare.
+  - Brute-force protection behaviour: `RecordFailedLogin(threshold, duration)` and `Unlock()`.
+  - `IsLockedOut()` predicate for login gate checks.
+  - Zero external dependencies — pure domain model.
+- **`IUserRepository`** (`src/AegisIdentity.Domain/Users/IUserRepository.cs`):
+  - Domain-layer interface (Dependency Inversion): `FindByEmailAsync`, `FindByIdAsync`,
+    `FindByUsernameAsync`, `InsertAsync`, `UpdateAsync` — all with `CancellationToken`.
+- **`UserClassMap`** (`src/AegisIdentity.Infrastructure/Persistence/Mappings/UserClassMap.cs`):
+  - `BsonClassMap.RegisterClassMap<User>` with explicit element names matching camelCase
+    convention. `Id` mapped as `ObjectId` on the wire via `StringObjectIdGenerator` +
+    `StringSerializer(BsonType.ObjectId)`, keeping the domain model free of MongoDB types.
+  - Registered once via double-checked lock, called from `MongoDbContext` constructor.
+- **`CollectionNames`** (`src/AegisIdentity.Infrastructure/Persistence/CollectionNames.cs`):
+  - Central constant registry for MongoDB collection names (`users`). Eliminates magic strings.
+- **`MongoIndexInitializer`** (`src/AegisIdentity.Infrastructure/Persistence/Indexes/MongoIndexInitializer.cs`):
+  - `IHostedService` that creates all required indexes on startup before the app accepts requests.
+  - Idempotent: named `CreateIndexModel` calls are no-ops when the index already exists.
+  - Indexes: `ix_email_unique` (unique), `ix_username_unique` (unique),
+    `ix_lockedUntil_sparse` (sparse — keeps index small since most users are not locked).
+- **`UserRepository`** (`src/AegisIdentity.Infrastructure/Persistence/Repositories/UserRepository.cs`):
+  - MongoDB implementation of `IUserRepository`. Guards against invalid ObjectId strings in
+    `FindByIdAsync` (returns `null` instead of throwing).
+- **`MongoDbContext` updated** to call `UserClassMap.RegisterOnce()` alongside conventions.
+- **`MongoDbServiceExtensions` updated**:
+  - Registers `IUserRepository` → `UserRepository` as **scoped**.
+  - Registers `MongoIndexInitializer` as a **hosted service**.
+- **Unit tests** (`tests/AegisIdentity.UnitTests/Domain/Users/UserTests.cs`) — 21 scenarios:
+  - Factory validation (blank args, email normalisation, default state, timestamp).
+  - `NormalizeEmail` theory (3 cases).
+  - Lockout behaviour: below threshold, at threshold, `Unlock`, `IsLockedOut` edge cases.
+  - Role independence (separate `List<string>` per instance).
+- **Integration tests** (`tests/AegisIdentity.IntegrationTests/Persistence/UserRepositoryIntegrationTests.cs`):
+  - Full CRUD scenarios via Testcontainers `mongo:7` container.
+  - Index existence verification for all three indexes.
+  - Duplicate-email rejection after unique index creation.
+
 ### Added (DATA-01)
 - **`MongoDbContext`** (`src/AegisIdentity.Infrastructure/Persistence/MongoDbContext.cs`):
   - Singleton wrapper over `IMongoDatabase` exposing `GetCollection<T>(name)` and a
