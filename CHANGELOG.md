@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (DATA-03)
+- **`RefreshToken` aggregate** (`src/AegisIdentity.Domain/Tokens/RefreshToken.cs`):
+  - Properties: `Id`, `UserId`, `TokenHash` (SHA-256 — never plaintext), `CreatedByIp`,
+    `ReplacedByTokenHash`, `CreatedAt`, `ExpiresAt`, `RevokedAt`.
+  - Static factory `RefreshToken.Create(userId, tokenHash, expiresAt, createdByIp)` —
+    guards all required fields; rejects `expiresAt` in the past.
+  - Behaviour: `IsExpired()`, `IsRevoked()`, `IsActive()`, `Revoke(replacedByTokenHash?)`.
+  - `ReplacedByTokenHash` enables auditable rotation chains (token A → B → C).
+  - Zero external dependencies — pure domain model.
+- **`PasswordResetToken` aggregate** (`src/AegisIdentity.Domain/Tokens/PasswordResetToken.cs`):
+  - Properties: `Id`, `UserId`, `TokenHash`, `CreatedAt`, `ExpiresAt`, `UsedAt`.
+  - Factory and behaviour: `Create(userId, tokenHash, expiresAt)`, `IsExpired()`, `IsUsed()`,
+    `IsValid()`, `MarkAsUsed()`. Single-use enforced by `UsedAt` presence check.
+- **`EmailConfirmationToken` aggregate** (`src/AegisIdentity.Domain/Tokens/EmailConfirmationToken.cs`):
+  - Same structure and behaviour as `PasswordResetToken`, scoped to email confirmation flow.
+- **Repository interfaces** in Domain (Dependency Inversion):
+  - `IRefreshTokenRepository`: `FindByTokenHashAsync`, `FindByUserIdAsync`, `InsertAsync`, `UpdateAsync`.
+  - `IPasswordResetTokenRepository`: `FindByTokenHashAsync`, `InsertAsync`, `UpdateAsync`.
+  - `IEmailConfirmationTokenRepository`: `FindByTokenHashAsync`, `InsertAsync`, `UpdateAsync`.
+- **BSON class maps** in Infrastructure (same pattern as `UserClassMap`):
+  - `RefreshTokenClassMap`, `PasswordResetTokenClassMap`, `EmailConfirmationTokenClassMap`.
+  - Each registered once via double-checked lock; called from `MongoDbContext.RegisterClassMapsOnce()`.
+- **`CollectionNames` updated** — added constants:
+  - `RefreshTokens = "refresh_tokens"`, `PasswordResetTokens = "password_reset_tokens"`,
+    `EmailConfirmationTokens = "email_confirmation_tokens"`.
+- **`MongoIndexInitializer` extended** with indexes for all three token collections:
+  - `refresh_tokens`: `ix_tokenHash_unique` (unique), `ix_userId` (non-unique), `ix_expiresAt_ttl` (TTL).
+  - `password_reset_tokens`: `ix_tokenHash_unique` (unique), `ix_expiresAt_ttl` (TTL).
+  - `email_confirmation_tokens`: `ix_tokenHash_unique` (unique), `ix_expiresAt_ttl` (TTL).
+  - TTL indexes use `ExpireAfter = TimeSpan.Zero` — MongoDB auto-deletes expired documents.
+    Application code still validates `ExpiresAt` in code (TTL cleanup has ~60 s delay).
+- **Repository implementations**: `RefreshTokenRepository`, `PasswordResetTokenRepository`,
+  `EmailConfirmationTokenRepository` — all follow `UserRepository` pattern.
+- **`MongoDbServiceExtensions` updated** — registers the three new `IRepository` interfaces as **scoped**.
+- **Unit tests** (36 scenarios across 3 files):
+  - Factory guard clauses (blank args, past `ExpiresAt`).
+  - `IsExpired`, `IsRevoked`/`IsUsed`, `IsActive`/`IsValid` state transitions.
+  - `Revoke` with and without `replacedByTokenHash`; `MarkAsUsed` timestamp.
+- **Integration tests** (Testcontainers `mongo:7`, 4–5 scenarios per entity):
+  - Insert → generate ObjectId; duplicate hash → `MongoWriteException`.
+  - `FindByTokenHashAsync` happy path and not-found.
+  - `UpdateAsync` persists revocation/usage state.
+  - Index existence verification (unique hash, TTL, userId for refresh tokens).
+
 ### Added (DATA-02)
 - **`User` aggregate** (`src/AegisIdentity.Domain/Users/User.cs`):
   - Domain entity with all required properties: `Id` (string/ObjectId), `Email` (normalised),
