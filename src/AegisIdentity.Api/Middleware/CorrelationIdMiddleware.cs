@@ -3,14 +3,9 @@ using Serilog.Context;
 namespace AegisIdentity.Api.Middleware;
 
 /// <summary>
-/// Reads or generates a correlation ID for each request and propagates it through:
-/// <list type="bullet">
-///   <item>The <c>X-Correlation-Id</c> response header.</item>
-///   <item>The Serilog <see cref="LogContext"/> so every log entry in the request scope
-///         includes a <c>CorrelationId</c> property.</item>
-/// </list>
-/// This middleware must be registered before <c>UseSerilogRequestLogging</c> so that
-/// the request-completion log entry also carries the correlation ID.
+/// Reads or generates a correlation id per request and propagates it via the
+/// <c>X-Correlation-Id</c> response header and the Serilog <see cref="LogContext"/>.
+/// Must be registered before <c>UseSerilogRequestLogging</c>.
 /// </summary>
 public sealed class CorrelationIdMiddleware
 {

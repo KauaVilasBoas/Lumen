@@ -7,24 +7,12 @@ using MimeKit;
 
 namespace AegisIdentity.Api.Endpoints.Dev;
 
-// ─── DEV-ONLY ─────────────────────────────────────────────────────────────────
-// This endpoint is registered ONLY when ASPNETCORE_ENVIRONMENT=Development.
-// It is never available in Staging or Production — see Program.cs registration.
-//
-// Purpose: smoke test the local Mailpit relay without writing a full use case.
-// Avoids polluting the domain layer with test-only logic.
-// ─────────────────────────────────────────────────────────────────────────────
-
 /// <summary>
-/// Development-only endpoint for verifying the local Mailpit SMTP relay.
-/// Sends a test email and returns a JSON response with the Mailpit viewer URL.
+/// Development-only endpoint that sends a smoke-test email through the local Mailpit relay.
+/// Registered only when <c>ASPNETCORE_ENVIRONMENT=Development</c>.
 /// </summary>
 public static class EmailTestEndpoint
 {
-    /// <summary>
-    /// Registers <c>GET /dev/email-test</c> on the provided <see cref="IEndpointRouteBuilder"/>.
-    /// Must be called only when <c>app.Environment.IsDevelopment()</c> is true.
-    /// </summary>
     public static void Map(IEndpointRouteBuilder routes)
     {
         routes
@@ -72,7 +60,7 @@ public static class EmailTestEndpoint
         {
             using var client = new SmtpClient();
 
-            // Mailpit does not require TLS; SecureSocketOptions.None avoids STARTTLS negotiation.
+            // Mailpit does not require TLS; SecureSocketOptions.None skips STARTTLS negotiation.
             var socketOptions = smtp.UseStartTls
                 ? SecureSocketOptions.StartTls
                 : SecureSocketOptions.None;
