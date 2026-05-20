@@ -2,10 +2,6 @@ using System.ComponentModel.DataAnnotations;
 
 namespace AegisIdentity.Infrastructure.Configuration;
 
-/// <summary>
-/// Strongly-typed options for MongoDB connection, bound to the "Mongo" configuration section.
-/// Validated at startup via ValidateDataAnnotations + ValidateOnStart.
-/// </summary>
 public sealed class MongoOptions
 {
     public const string SectionName = "Mongo";

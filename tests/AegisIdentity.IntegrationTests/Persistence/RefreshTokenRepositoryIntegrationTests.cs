@@ -9,14 +9,6 @@ using Testcontainers.MongoDb;
 
 namespace AegisIdentity.IntegrationTests.Persistence;
 
-/// <summary>
-/// Integration tests for <see cref="RefreshTokenRepository"/>.
-///
-/// Each test class instance spins up an ephemeral MongoDB container via Testcontainers.
-/// The container is disposed at the end of the test run via <see cref="IAsyncLifetime"/>.
-///
-/// Requires Docker Desktop with the daemon accessible to the test process.
-/// </summary>
 public sealed class RefreshTokenRepositoryIntegrationTests : IAsyncLifetime
 {
     private const string DatabaseName = "aegis_test";
@@ -29,8 +21,6 @@ public sealed class RefreshTokenRepositoryIntegrationTests : IAsyncLifetime
 
     private MongoDbContext _context = null!;
     private RefreshTokenRepository _repository = null!;
-
-    // ─── Lifecycle ────────────────────────────────────────────────────────────
 
     public async Task InitializeAsync()
     {
@@ -48,8 +38,6 @@ public sealed class RefreshTokenRepositoryIntegrationTests : IAsyncLifetime
     }
 
     public async Task DisposeAsync() => await _container.StopAsync();
-
-    // ─── InsertAsync ──────────────────────────────────────────────────────────
 
     [Fact]
     public async Task InsertAsync_StoresTokenAndGeneratesId()
@@ -75,8 +63,6 @@ public sealed class RefreshTokenRepositoryIntegrationTests : IAsyncLifetime
         await act.Should().ThrowAsync<MongoWriteException>();
     }
 
-    // ─── FindByTokenHashAsync ─────────────────────────────────────────────────
-
     [Fact]
     public async Task FindByTokenHashAsync_ExistingHash_ReturnsToken()
     {
@@ -98,8 +84,6 @@ public sealed class RefreshTokenRepositoryIntegrationTests : IAsyncLifetime
         result.Should().BeNull();
     }
 
-    // ─── FindByUserIdAsync ────────────────────────────────────────────────────
-
     [Fact]
     public async Task FindByUserIdAsync_MultipleTokensForUser_ReturnsAll()
     {
@@ -120,8 +104,6 @@ public sealed class RefreshTokenRepositoryIntegrationTests : IAsyncLifetime
         results.Should().BeEmpty();
     }
 
-    // ─── UpdateAsync ──────────────────────────────────────────────────────────
-
     [Fact]
     public async Task UpdateAsync_PersistsRevokedState()
     {
@@ -137,8 +119,6 @@ public sealed class RefreshTokenRepositoryIntegrationTests : IAsyncLifetime
         updated.RevokedAt.Should().NotBeNull();
         updated.ReplacedByTokenHash.Should().Be("new-hash");
     }
-
-    // ─── Index validation ─────────────────────────────────────────────────────
 
     [Fact]
     public async Task Indexes_TokenHash_IsUnique_And_UserId_And_ExpiresAt_TTL_Exist()
@@ -157,8 +137,6 @@ public sealed class RefreshTokenRepositoryIntegrationTests : IAsyncLifetime
         indexNames.Should().Contain("ix_userId");
         indexNames.Should().Contain("ix_expiresAt_ttl");
     }
-
-    // ─── Helpers ──────────────────────────────────────────────────────────────
 
     private static RefreshToken BuildActiveToken(string tokenHash)
         => RefreshToken.Create(UserId, tokenHash, DateTime.UtcNow.AddHours(1), Ip);

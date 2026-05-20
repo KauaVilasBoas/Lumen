@@ -3,17 +3,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace AegisIdentity.Infrastructure.Configuration;
 
-/// <summary>
-/// Extension methods for registering and validating infrastructure-level configuration options.
-/// Call AddInfrastructureOptions(configuration) from Program.cs during service registration.
-/// </summary>
 public static class InfrastructureOptionsExtensions
 {
-    /// <summary>
-    /// Binds and validates all infrastructure configuration options at application startup.
-    /// An <see cref="OptionsValidationException"/> is thrown before the app begins handling
-    /// requests if any required value is missing or fails a constraint.
-    /// </summary>
     public static IServiceCollection AddInfrastructureOptions(
         this IServiceCollection services,
         IConfiguration configuration)

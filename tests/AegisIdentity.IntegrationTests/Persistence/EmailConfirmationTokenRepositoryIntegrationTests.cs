@@ -9,11 +9,6 @@ using Testcontainers.MongoDb;
 
 namespace AegisIdentity.IntegrationTests.Persistence;
 
-/// <summary>
-/// Integration tests for <see cref="EmailConfirmationTokenRepository"/>.
-///
-/// Requires Docker Desktop with the daemon accessible to the test process.
-/// </summary>
 public sealed class EmailConfirmationTokenRepositoryIntegrationTests : IAsyncLifetime
 {
     private const string DatabaseName = "aegis_test";
@@ -25,8 +20,6 @@ public sealed class EmailConfirmationTokenRepositoryIntegrationTests : IAsyncLif
 
     private MongoDbContext _context = null!;
     private EmailConfirmationTokenRepository _repository = null!;
-
-    // ─── Lifecycle ────────────────────────────────────────────────────────────
 
     public async Task InitializeAsync()
     {
@@ -44,8 +37,6 @@ public sealed class EmailConfirmationTokenRepositoryIntegrationTests : IAsyncLif
     }
 
     public async Task DisposeAsync() => await _container.StopAsync();
-
-    // ─── InsertAsync ──────────────────────────────────────────────────────────
 
     [Fact]
     public async Task InsertAsync_StoresTokenAndGeneratesId()
@@ -71,8 +62,6 @@ public sealed class EmailConfirmationTokenRepositoryIntegrationTests : IAsyncLif
         await act.Should().ThrowAsync<MongoWriteException>();
     }
 
-    // ─── FindByTokenHashAsync ─────────────────────────────────────────────────
-
     [Fact]
     public async Task FindByTokenHashAsync_ExistingHash_ReturnsToken()
     {
@@ -94,8 +83,6 @@ public sealed class EmailConfirmationTokenRepositoryIntegrationTests : IAsyncLif
         result.Should().BeNull();
     }
 
-    // ─── UpdateAsync ──────────────────────────────────────────────────────────
-
     [Fact]
     public async Task UpdateAsync_PersistsUsedState()
     {
@@ -110,8 +97,6 @@ public sealed class EmailConfirmationTokenRepositoryIntegrationTests : IAsyncLif
         updated!.IsUsed().Should().BeTrue();
         updated.UsedAt.Should().NotBeNull();
     }
-
-    // ─── Index validation ─────────────────────────────────────────────────────
 
     [Fact]
     public async Task Indexes_TokenHash_IsUnique_And_ExpiresAt_TTL_Exists()
@@ -129,8 +114,6 @@ public sealed class EmailConfirmationTokenRepositoryIntegrationTests : IAsyncLif
         indexNames.Should().Contain("ix_tokenHash_unique");
         indexNames.Should().Contain("ix_expiresAt_ttl");
     }
-
-    // ─── Helpers ──────────────────────────────────────────────────────────────
 
     private static EmailConfirmationToken BuildToken(string tokenHash)
         => EmailConfirmationToken.Create(UserId, tokenHash, DateTime.UtcNow.AddHours(24));

@@ -8,14 +8,6 @@ using Microsoft.Extensions.Options;
 using Serilog;
 using Serilog.Events;
 
-// ─── Two-stage Serilog initialization ────────────────────────────────────────
-// Bootstrap logger captures startup errors before the DI container is ready.
-// The real logger (from appsettings) is configured after WebApplication.CreateBuilder.
-//
-// SENSITIVE DATA POLICY — fields that MUST NEVER appear as structured log arguments:
-//   Password, PasswordHash, Token, AccessToken, RefreshToken, ResetCode, Secret.
-// These are not scrubbed automatically; enforcement is by convention and code review.
-// A destructuring policy or log sink filter can be added in a future security hardening card.
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
     .Enrich.FromLogContext()
@@ -28,20 +20,14 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
-    // Replace bootstrap logger with the full logger defined in appsettings.
     builder.Host.UseSerilog((ctx, services, cfg) =>
         cfg.ReadFrom.Configuration(ctx.Configuration)
            .ReadFrom.Services(services)
            .Enrich.FromLogContext());
 
-    // Infrastructure configuration — bound and validated at startup.
-    // Any missing required value throws OptionsValidationException before the app accepts requests.
     builder.Services.AddInfrastructureOptions(builder.Configuration);
-
-    // MongoDB DI — IMongoClient (singleton), IMongoDatabase (scoped), MongoDbContext (singleton).
     builder.Services.AddMongoDb(builder.Configuration);
 
-    // Health checks — registered before app.Build() so the middleware can resolve them.
     builder.Services
         .AddHealthChecks()
         .AddCheck<MongoDbHealthCheck>("mongodb");
@@ -50,9 +36,7 @@ try
 
     var app = builder.Build();
 
-    // ─── Production hardening: reject localhost SMTP ──────────────────────────
-    // Prevents accidental use of the dev Mailpit relay (localhost:1025) in production,
-    // which would silently drop all outbound emails. Cost: ~5 lines. Risk avoided: high.
+    // Reject loopback SMTP in Production — would silently discard all outbound emails.
     if (app.Environment.IsProduction())
     {
         var smtpOptions = app.Services.GetRequiredService<IOptions<SmtpOptions>>().Value;
@@ -77,12 +61,9 @@ try
     app.UseStaticFiles();
     app.UseRouting();
 
-    // CorrelationId must run before request logging so the log entry includes the field.
+    // Must run before UseSerilogRequestLogging so the request-completion entry carries CorrelationId.
     app.UseMiddleware<CorrelationIdMiddleware>();
 
-    // Log every HTTP request. Health check paths are downgraded to Verbose
-    // so they do not pollute dashboards. When /health endpoints are implemented
-    // (a future card), this filter is already in place.
     app.UseSerilogRequestLogging(opts =>
     {
         opts.GetLevel = (httpContext, _, _) =>
@@ -93,17 +74,11 @@ try
 
     app.MapRazorPages();
 
-    // ─── Health check endpoints ───────────────────────────────────────────────
-    // /health/db: MongoDB connectivity ping. Returns 200 Healthy / 503 Unhealthy.
-    // Requests to /health are already downgraded to Verbose in UseSerilogRequestLogging
-    // so these probes do not pollute dashboards.
     app.MapHealthChecks("/health/db", new HealthCheckOptions
     {
         Predicate = registration => registration.Name == "mongodb",
     });
 
-    // ─── Development-only endpoints ───────────────────────────────────────────
-    // These routes are never registered in Staging or Production.
     if (app.Environment.IsDevelopment())
     {
         EmailTestEndpoint.Map(app);

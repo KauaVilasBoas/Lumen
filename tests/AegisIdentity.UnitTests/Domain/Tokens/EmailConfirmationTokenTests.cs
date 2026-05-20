@@ -8,8 +8,6 @@ public sealed class EmailConfirmationTokenTests
     private const string UserId = "507f1f77bcf86cd799439011";
     private const string Hash = "abc123hash";
 
-    // ─── Factory ──────────────────────────────────────────────────────────────
-
     [Fact]
     public void Create_WithValidArgs_ReturnsUnusedToken()
     {
@@ -61,8 +59,6 @@ public sealed class EmailConfirmationTokenTests
         act.Should().Throw<ArgumentException>().WithMessage("*ExpiresAt*");
     }
 
-    // ─── IsExpired ────────────────────────────────────────────────────────────
-
     [Fact]
     public void IsExpired_ReturnsFalse_WhenExpiresAtIsInFuture()
     {
@@ -78,8 +74,6 @@ public sealed class EmailConfirmationTokenTests
 
         token.IsExpired().Should().BeTrue();
     }
-
-    // ─── IsUsed ───────────────────────────────────────────────────────────────
 
     [Fact]
     public void IsUsed_ReturnsFalse_WhenTokenIsNew()
@@ -99,8 +93,6 @@ public sealed class EmailConfirmationTokenTests
         token.IsUsed().Should().BeTrue();
         token.UsedAt.Should().NotBeNull();
     }
-
-    // ─── IsValid ──────────────────────────────────────────────────────────────
 
     [Fact]
     public void IsValid_ReturnsTrue_WhenNotExpiredAndNotUsed()
@@ -127,8 +119,6 @@ public sealed class EmailConfirmationTokenTests
         token.IsValid().Should().BeFalse();
     }
 
-    // ─── MarkAsUsed ───────────────────────────────────────────────────────────
-
     [Fact]
     public void MarkAsUsed_SetsUsedAt_ToUtcNow()
     {
@@ -139,8 +129,6 @@ public sealed class EmailConfirmationTokenTests
 
         token.UsedAt.Should().BeOnOrAfter(before);
     }
-
-    // ─── Helpers ──────────────────────────────────────────────────────────────
 
     private static EmailConfirmationToken BuildExpiredToken()
     {

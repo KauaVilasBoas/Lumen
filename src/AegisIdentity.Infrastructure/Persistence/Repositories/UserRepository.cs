@@ -4,13 +4,6 @@ using MongoDB.Driver;
 
 namespace AegisIdentity.Infrastructure.Persistence.Repositories;
 
-/// <summary>
-/// MongoDB implementation of <see cref="IUserRepository"/>.
-///
-/// All queries use the normalised (lowercase) email stored in the document, so the
-/// caller must pass already-normalised values — or use <see cref="User.NormalizeEmail"/>
-/// before calling these methods.
-/// </summary>
 public sealed class UserRepository : IUserRepository
 {
     private readonly IMongoCollection<User> _collection;
@@ -20,14 +13,12 @@ public sealed class UserRepository : IUserRepository
         _collection = context.GetCollection<User>(CollectionNames.Users);
     }
 
-    /// <inheritdoc/>
     public async Task<User?> FindByEmailAsync(string email, CancellationToken ct = default)
     {
         var filter = Builders<User>.Filter.Eq(u => u.Email, email);
         return await _collection.Find(filter).FirstOrDefaultAsync(ct);
     }
 
-    /// <inheritdoc/>
     public async Task<User?> FindByIdAsync(string id, CancellationToken ct = default)
     {
         if (!ObjectId.TryParse(id, out _))
@@ -37,20 +28,17 @@ public sealed class UserRepository : IUserRepository
         return await _collection.Find(filter).FirstOrDefaultAsync(ct);
     }
 
-    /// <inheritdoc/>
     public async Task<User?> FindByUsernameAsync(string username, CancellationToken ct = default)
     {
         var filter = Builders<User>.Filter.Eq(u => u.Username, username);
         return await _collection.Find(filter).FirstOrDefaultAsync(ct);
     }
 
-    /// <inheritdoc/>
     public async Task InsertAsync(User user, CancellationToken ct = default)
     {
         await _collection.InsertOneAsync(user, options: null, ct);
     }
 
-    /// <inheritdoc/>
     public async Task UpdateAsync(User user, CancellationToken ct = default)
     {
         var filter = Builders<User>.Filter.Eq(u => u.Id, user.Id);

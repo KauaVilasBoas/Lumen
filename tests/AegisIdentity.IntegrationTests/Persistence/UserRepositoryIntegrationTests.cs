@@ -9,14 +9,6 @@ using Testcontainers.MongoDb;
 
 namespace AegisIdentity.IntegrationTests.Persistence;
 
-/// <summary>
-/// Integration tests for <see cref="UserRepository"/> and the MongoDB index initializer.
-///
-/// Each test class instance spins up an ephemeral MongoDB container via Testcontainers.
-/// The container is disposed at the end of the test run via <see cref="IAsyncLifetime"/>.
-///
-/// Requires Docker Desktop with the daemon accessible to the test process.
-/// </summary>
 public sealed class UserRepositoryIntegrationTests : IAsyncLifetime
 {
     private const string DatabaseName = "aegis_test";
@@ -27,8 +19,6 @@ public sealed class UserRepositoryIntegrationTests : IAsyncLifetime
 
     private MongoDbContext _context = null!;
     private UserRepository _repository = null!;
-
-    // ─── Lifecycle ────────────────────────────────────────────────────────────
 
     public async Task InitializeAsync()
     {
@@ -47,8 +37,6 @@ public sealed class UserRepositoryIntegrationTests : IAsyncLifetime
 
     public async Task DisposeAsync() => await _container.StopAsync();
 
-    // ─── InsertAsync ──────────────────────────────────────────────────────────
-
     [Fact]
     public async Task InsertAsync_StoresUserAndGeneratesId()
     {
@@ -66,16 +54,11 @@ public sealed class UserRepositoryIntegrationTests : IAsyncLifetime
         var duplicate = User.Create("bob@example.com", "bobby", "hash");
 
         await _repository.InsertAsync(first);
-
-        // Index enforcement happens only after MongoIndexInitializer runs.
-        // For this test we create the index manually.
         await CreateUniqueEmailIndexAsync();
 
         var act = async () => await _repository.InsertAsync(duplicate);
         await act.Should().ThrowAsync<MongoWriteException>();
     }
-
-    // ─── FindByEmailAsync ─────────────────────────────────────────────────────
 
     [Fact]
     public async Task FindByEmailAsync_ExistingEmail_ReturnsUser()
@@ -97,8 +80,6 @@ public sealed class UserRepositoryIntegrationTests : IAsyncLifetime
 
         result.Should().BeNull();
     }
-
-    // ─── FindByIdAsync ────────────────────────────────────────────────────────
 
     [Fact]
     public async Task FindByIdAsync_ExistingId_ReturnsUser()
@@ -128,8 +109,6 @@ public sealed class UserRepositoryIntegrationTests : IAsyncLifetime
         result.Should().BeNull();
     }
 
-    // ─── FindByUsernameAsync ──────────────────────────────────────────────────
-
     [Fact]
     public async Task FindByUsernameAsync_ExistingUsername_ReturnsUser()
     {
@@ -150,8 +129,6 @@ public sealed class UserRepositoryIntegrationTests : IAsyncLifetime
         result.Should().BeNull();
     }
 
-    // ─── UpdateAsync ──────────────────────────────────────────────────────────
-
     [Fact]
     public async Task UpdateAsync_PersistsChangesToExistingDocument()
     {
@@ -168,8 +145,6 @@ public sealed class UserRepositoryIntegrationTests : IAsyncLifetime
         updated!.IsActive.Should().BeTrue();
         updated.EmailConfirmedAt.Should().NotBeNull();
     }
-
-    // ─── Index validation ─────────────────────────────────────────────────────
 
     [Fact]
     public async Task Indexes_EmailAndUsername_AreUnique_AndLockedUntil_IsSparse()
@@ -188,8 +163,6 @@ public sealed class UserRepositoryIntegrationTests : IAsyncLifetime
         indexNames.Should().Contain("ix_username_unique");
         indexNames.Should().Contain("ix_lockedUntil_sparse");
     }
-
-    // ─── Helpers ──────────────────────────────────────────────────────────────
 
     private async Task CreateUniqueEmailIndexAsync()
     {
