@@ -10,11 +10,6 @@ using Testcontainers.MongoDb;
 
 namespace AegisIdentity.IntegrationTests.Persistence;
 
-/// <summary>
-/// Integration tests for MongoDB connectivity, DI wiring and the health check.
-/// Each test class instance spins up an ephemeral MongoDB container via Testcontainers;
-/// the container is disposed at the end of the test run via <see cref="IAsyncLifetime"/>.
-/// </summary>
 public sealed class MongoDbContextIntegrationTests : IAsyncLifetime
 {
     private const string DatabaseName = "aegis_test";
@@ -24,8 +19,6 @@ public sealed class MongoDbContextIntegrationTests : IAsyncLifetime
         .Build();
 
     private MongoDbContext _context = null!;
-
-    // ─── Lifecycle ────────────────────────────────────────────────────────────
 
     public async Task InitializeAsync()
     {
@@ -42,8 +35,6 @@ public sealed class MongoDbContextIntegrationTests : IAsyncLifetime
     }
 
     public async Task DisposeAsync() => await _container.StopAsync();
-
-    // ─── Tests ────────────────────────────────────────────────────────────────
 
     [Fact]
     public void GetCollection_Returns_Valid_Collection_Handle()
@@ -87,7 +78,6 @@ public sealed class MongoDbContextIntegrationTests : IAsyncLifetime
     [Fact]
     public async Task HealthCheck_Returns_Unhealthy_When_Mongo_Is_Unreachable()
     {
-        // Point to a non-existent server with an aggressive server-selection timeout.
         var unreachableClient = new MongoClient(
             new MongoClientSettings
             {

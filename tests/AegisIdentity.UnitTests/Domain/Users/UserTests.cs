@@ -5,8 +5,6 @@ namespace AegisIdentity.UnitTests.Domain.Users;
 
 public sealed class UserTests
 {
-    // ─── Factory ──────────────────────────────────────────────────────────────
-
     [Fact]
     public void Create_WithValidArgs_ReturnsInactiveUser()
     {
@@ -65,8 +63,6 @@ public sealed class UserTests
         user.UpdatedAt.Should().BeOnOrAfter(before).And.BeOnOrBefore(after);
     }
 
-    // ─── NormalizeEmail ───────────────────────────────────────────────────────
-
     [Theory]
     [InlineData("Alice@Example.COM", "alice@example.com")]
     [InlineData("  BOB@DOMAIN.IO  ", "bob@domain.io")]
@@ -75,8 +71,6 @@ public sealed class UserTests
     {
         User.NormalizeEmail(input).Should().Be(expected);
     }
-
-    // ─── Lockout behaviour ────────────────────────────────────────────────────
 
     [Fact]
     public void RecordFailedLogin_BelowThreshold_DoesNotLockAccount()
@@ -128,8 +122,6 @@ public sealed class UserTests
         user.IsLockedOut().Should().BeFalse();
     }
 
-    // ─── IsLockedOut ──────────────────────────────────────────────────────────
-
     [Fact]
     public void IsLockedOut_ReturnsFalse_WhenLockedUntilIsNull()
     {
@@ -142,20 +134,14 @@ public sealed class UserTests
     public void IsLockedOut_ReturnsFalse_WhenLockoutHasExpired()
     {
         var user = User.Create("alice@example.com", "alice", "hash");
-        // Simulate an expired lockout by setting LockedUntil directly via the test helper.
-        // In production this would be set via RecordFailedLogin then time passes.
-        // We use the UpdatedAt setter as a canary to confirm object mutation works.
-        user.Unlock(); // resets to a known clean state
+        user.Unlock();
 
-        // Bypass private setter for test purposes: use reflection.
         typeof(User)
             .GetProperty(nameof(User.LockedUntil))!
             .SetValue(user, DateTime.UtcNow.AddSeconds(-1));
 
         user.IsLockedOut().Should().BeFalse();
     }
-
-    // ─── Default roles ────────────────────────────────────────────────────────
 
     [Fact]
     public void DefaultRoles_ContainsUserRole()

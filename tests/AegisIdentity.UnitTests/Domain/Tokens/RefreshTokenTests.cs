@@ -9,8 +9,6 @@ public sealed class RefreshTokenTests
     private const string Hash = "abc123hash";
     private const string Ip = "127.0.0.1";
 
-    // ─── Factory ──────────────────────────────────────────────────────────────
-
     [Fact]
     public void Create_WithValidArgs_ReturnsActiveToken()
     {
@@ -74,8 +72,6 @@ public sealed class RefreshTokenTests
         act.Should().Throw<ArgumentException>().WithMessage("*ExpiresAt*");
     }
 
-    // ─── IsExpired ────────────────────────────────────────────────────────────
-
     [Fact]
     public void IsExpired_ReturnsFalse_WhenExpiresAtIsInFuture()
     {
@@ -91,8 +87,6 @@ public sealed class RefreshTokenTests
 
         token.IsExpired().Should().BeTrue();
     }
-
-    // ─── IsRevoked ────────────────────────────────────────────────────────────
 
     [Fact]
     public void IsRevoked_ReturnsFalse_WhenTokenIsNew()
@@ -112,8 +106,6 @@ public sealed class RefreshTokenTests
         token.IsRevoked().Should().BeTrue();
         token.RevokedAt.Should().NotBeNull();
     }
-
-    // ─── IsActive ─────────────────────────────────────────────────────────────
 
     [Fact]
     public void IsActive_ReturnsTrue_WhenNotExpiredAndNotRevoked()
@@ -140,8 +132,6 @@ public sealed class RefreshTokenTests
         token.IsActive().Should().BeFalse();
     }
 
-    // ─── Revoke ───────────────────────────────────────────────────────────────
-
     [Fact]
     public void Revoke_WithReplacedByHash_SetsReplacedByTokenHash()
     {
@@ -164,11 +154,8 @@ public sealed class RefreshTokenTests
         token.RevokedAt.Should().NotBeNull();
     }
 
-    // ─── Helpers ──────────────────────────────────────────────────────────────
-
     private static RefreshToken BuildExpiredToken()
     {
-        // Bypass private setter using reflection to simulate an already-expired token.
         var token = RefreshToken.Create(UserId, Hash, DateTime.UtcNow.AddHours(1), Ip);
         typeof(RefreshToken)
             .GetProperty(nameof(RefreshToken.ExpiresAt))!
