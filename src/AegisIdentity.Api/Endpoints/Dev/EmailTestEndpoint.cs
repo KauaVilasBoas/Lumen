@@ -1,16 +1,14 @@
+using AegisIdentity.Domain.Notifications;
 using AegisIdentity.Infrastructure.Configuration;
-using MailKit.Net.Smtp;
-using MailKit.Security;
+using AegisIdentity.Infrastructure.Notifications;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using MimeKit;
 
 namespace AegisIdentity.Api.Endpoints.Dev;
 
-/// <summary>
-/// Development-only endpoint that sends a smoke-test email through the local Mailpit relay.
-/// Registered only when <c>ASPNETCORE_ENVIRONMENT=Development</c>.
-/// </summary>
+// Development-only endpoint that exercises the full IEmailService pipeline
+// (rendering + multipart MIME + SMTP) against the local Mailpit relay.
+// Registered only when ASPNETCORE_ENVIRONMENT=Development.
 public static class EmailTestEndpoint
 {
     public static void Map(IEndpointRouteBuilder routes)
@@ -20,7 +18,7 @@ public static class EmailTestEndpoint
             .WithName("DevEmailTest")
             .WithSummary("Dev: send a smoke-test email via Mailpit")
             .WithDescription(
-                "Sends a test email through the configured local SMTP relay (Mailpit). " +
+                "Renders the EmailConfirmation template and dispatches it through IEmailService. " +
                 "Available only in Development. " +
                 "Open http://localhost:8025 after calling this endpoint to inspect the message.")
             .WithTags("Dev");
@@ -28,66 +26,41 @@ public static class EmailTestEndpoint
 
     private static async Task<IResult> HandleAsync(
         [FromQuery] string to,
+        [FromServices] IEmailService emailService,
+        [FromServices] EmailTemplateRenderer renderer,
         [FromServices] IOptions<SmtpOptions> smtpOptionsAccessor,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(to))
-        {
             return Results.BadRequest(new { error = "Query parameter 'to' is required." });
-        }
 
         var smtp = smtpOptionsAccessor.Value;
 
-        var message = new MimeMessage();
-        message.From.Add(MailboxAddress.Parse(smtp.From));
-        message.To.Add(MailboxAddress.Parse(to));
-        message.Subject = "AegisIdentity Mailpit Smoke Test";
-        message.Body = new TextPart("plain")
+        var placeholders = new Dictionary<string, string>
         {
-            Text = $"""
-                    AegisIdentity smoke test email.
-
-                    Sent at : {DateTimeOffset.UtcNow:O}
-                    SMTP    : {smtp.Host}:{smtp.Port}
-                    From    : {smtp.From}
-                    To      : {to}
-
-                    If you can read this in Mailpit (http://localhost:8025), the local email relay is working.
-                    """
+            ["UserName"] = "Developer",
+            ["ConfirmationUrl"] = "http://localhost:5237/dev/email-test",
         };
 
-        try
+        var (html, text) = renderer.Render(EmailTemplate.EmailConfirmation, placeholders);
+
+        var message = new EmailMessage(
+            To: to,
+            Subject: "AegisIdentity Mailpit Smoke Test",
+            HtmlBody: html,
+            TextBody: text);
+
+        // IEmailService is fail-open: returns successfully even if SMTP fails (logged Warning).
+        // The endpoint always reports 200 — open Mailpit to confirm delivery.
+        await emailService.SendAsync(message, cancellationToken);
+
+        return Results.Ok(new
         {
-            using var client = new SmtpClient();
-
-            // Mailpit does not require TLS; SecureSocketOptions.None skips STARTTLS negotiation.
-            var socketOptions = smtp.UseStartTls
-                ? SecureSocketOptions.StartTls
-                : SecureSocketOptions.None;
-
-            await client.ConnectAsync(smtp.Host, smtp.Port, socketOptions, cancellationToken);
-
-            if (!string.IsNullOrWhiteSpace(smtp.User))
-            {
-                await client.AuthenticateAsync(smtp.User, smtp.Pass, cancellationToken);
-            }
-
-            await client.SendAsync(message, cancellationToken);
-            await client.DisconnectAsync(quit: true, cancellationToken);
-
-            return Results.Ok(new
-            {
-                ok = true,
-                to,
-                viewer = "http://localhost:8025"
-            });
-        }
-        catch (Exception ex)
-        {
-            return Results.Problem(
-                title: "Failed to send smoke test email",
-                detail: ex.Message,
-                statusCode: StatusCodes.Status500InternalServerError);
-        }
+            ok = true,
+            to,
+            smtp = $"{smtp.Host}:{smtp.Port}",
+            viewer = "http://localhost:8025",
+            note = "IEmailService is fail-open. Open Mailpit to verify the message actually arrived.",
+        });
     }
 }
