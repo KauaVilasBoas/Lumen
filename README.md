@@ -269,6 +269,7 @@ dotnet test --filter "Category=ExternalApi"
 | DATA-03 | Modelar agregados de tokens (refresh, reset, confirmacao) | Concluido |
 | SEC-04 | Politica de senha forte | Concluido |
 | SEC-05 | Integracao HaveIBeenPwned Pwned Passwords | Concluido |
+| EMAIL-01 | Servico de envio de email via MailKit | Concluido |
 | AUTH-01 | Implementar registro e login | Pendente |
 
 Ver [TASKS_TRELLO.md](./TASKS_TRELLO.md) para o backlog completo.
@@ -279,7 +280,9 @@ Ver [TASKS_TRELLO.md](./TASKS_TRELLO.md) para o backlog completo.
 - Sem CI/CD configurado.
 - Sem deploy publicado.
 - Sem HTTPS em dev (usa HTTP local por padrao via launchSettings).
-- O endpoint `/dev/email-test` depende do container Mailpit estar rodando (`docker compose up -d`). Sem ele, o request retorna HTTP 500 com detalhe do erro de conexao SMTP.
+- O endpoint `/dev/email-test` depende do container Mailpit estar rodando (`docker compose up -d`).
+  `IEmailService` agora e fail-open: o endpoint responde 200 mesmo se o SMTP estiver inacessivel —
+  abra http://localhost:8025 para confirmar que a mensagem chegou. O erro fica registrado como `Warning` no log.
 
 ## Licenca
 
