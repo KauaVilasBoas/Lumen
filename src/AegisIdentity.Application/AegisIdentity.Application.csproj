@@ -7,6 +7,8 @@
   <ItemGroup>
     <!-- Core validation only — no ASP.NET Core dependency in the Application layer -->
     <PackageReference Include="FluentValidation" />
+    <!-- Abstractions only — keeps Application free of the full DI container -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
   </ItemGroup>
 
 </Project>
