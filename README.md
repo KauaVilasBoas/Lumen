@@ -218,10 +218,41 @@ Logue apenas campos seguros (ex: `Email`, `UserId`). Consulte
 A enforcement e por convencao e code review. Um filtro automatico sera adicionado na
 security hardening card quando os casos de uso correspondentes estiverem implementados.
 
+## Politica de senha
+
+Toda senha aceita pelo sistema (registro, troca, reset) e validada pelo
+`IPasswordValidator` em `src/AegisIdentity.Application/Security/`. As regras:
+
+- Minimo **12 caracteres**.
+- Pelo menos **uma letra maiuscula**, **uma minuscula**, **um digito** e
+  **um caractere especial** da lista ``!@#$%^&*()-_=+[]{};:'",.<>/?\|`~``.
+- Nao pode ser igual ao email ou username do usuario (comparacao
+  case-insensitive).
+- Nao pode aparecer na base **HaveIBeenPwned Pwned Passwords**.
+
+A checagem HIBP usa o modelo **k-anonymity**: o cliente em
+`src/AegisIdentity.Infrastructure/Security/PwnedPasswordsClient.cs` envia
+somente os 5 primeiros caracteres hex do `SHA1(senha)` para
+`https://api.pwnedpasswords.com/range/{prefix}` (com header `Add-Padding: true`).
+Resultados sao cacheados em memoria por **1 hora** por prefixo.
+
+O cliente HIBP e **fail-open**: timeouts ou erros da API publica nao bloqueiam
+o registro — geram um `Warning` estruturado e a senha e aceita. Isso e uma
+decisao deliberada: indisponibilidade externa nunca deve negar acesso ao
+proprio sistema. O risco residual e documentado no card SEC-05.
+
+Mensagens de erro sao em PT-BR e cada regra violada gera uma linha
+independente na resposta — o usuario ve tudo o que precisa corrigir de
+uma vez so.
+
 ## Como rodar os testes
 
 ```powershell
+# Tudo, exceto testes que dependem de servicos externos
 dotnet test
+
+# Inclui o teste de integracao que chama a API publica do HaveIBeenPwned
+dotnet test --filter "Category=ExternalApi"
 ```
 
 ## Roadmap / Status atual
@@ -233,7 +264,11 @@ dotnet test
 | SETUP-03 | Configurar variaveis de ambiente e appsettings | Concluido |
 | SETUP-04 | Configurar Serilog para logs estruturados | Concluido |
 | SETUP-05 | Setup Mailpit local via Docker Compose | Concluido |
-| DATA-01 | Definir banco de dados | Pendente |
+| DATA-01 | Configurar contexto MongoDB e health check | Concluido |
+| DATA-02 | Modelar agregado User e persistencia | Concluido |
+| DATA-03 | Modelar agregados de tokens (refresh, reset, confirmacao) | Concluido |
+| SEC-04 | Politica de senha forte | Concluido |
+| SEC-05 | Integracao HaveIBeenPwned Pwned Passwords | Concluido |
 | AUTH-01 | Implementar registro e login | Pendente |
 
 Ver [TASKS_TRELLO.md](./TASKS_TRELLO.md) para o backlog completo.
