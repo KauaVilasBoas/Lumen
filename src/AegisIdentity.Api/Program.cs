@@ -1,5 +1,6 @@
 using AegisIdentity.Api.Endpoints.Dev;
 using AegisIdentity.Api.Middleware;
+using AegisIdentity.Application.Security;
 using AegisIdentity.Infrastructure.Configuration;
 using AegisIdentity.Infrastructure.HealthChecks;
 using AegisIdentity.Infrastructure.Persistence;
@@ -29,6 +30,7 @@ try
     builder.Services.AddInfrastructureOptions(builder.Configuration);
     builder.Services.AddMongoDb(builder.Configuration);
     builder.Services.AddSecurity();
+    builder.Services.AddApplicationSecurity();
 
     builder.Services
         .AddHealthChecks()
