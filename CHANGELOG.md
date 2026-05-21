@@ -7,6 +7,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (EMAIL-01)
+- **`IEmailService`** in Domain (`src/AegisIdentity.Domain/Notifications/IEmailService.cs`):
+  - Single-method abstraction: `Task SendAsync(EmailMessage, CancellationToken)`.
+  - Lives in Domain so future Application handlers (AUTH-08 forgot-password,
+    AUTH-09 reset, AUTH-10 confirm-email, USER-05 password-change) can depend on it
+    without taking an Infrastructure reference.
+- **`EmailMessage`** record (`To`, `Subject`, `HtmlBody`, `TextBody`) — Domain DTO
+  consumed by `IEmailService`.
+- **`MailKitEmailService`** in Infrastructure (`src/AegisIdentity.Infrastructure/Notifications/MailKitEmailService.cs`):
+  - Builds a `multipart/alternative` MIME message via `BodyBuilder` when both bodies
+    are supplied; falls back to single-part `TextPart` when only one is.
+  - Implements the EMAIL-01 retry contract: **2 attempts max** with a 500 ms back-off
+    between them. Configured via `MaxAttempts` / `RetryDelay` constants.
+  - **Fail-open**: transport failures are caught and logged at `Warning` level —
+    they never propagate to the caller. An outage of the SMTP provider therefore
+    cannot bring down user registration / password reset flows. The single exception
+    is `OperationCanceledException` originating from a caller-supplied
+    `CancellationToken`, which is intentionally re-thrown so deadline races behave correctly.
+- **`ISmtpTransport`** + **`MailKitSmtpTransport`** (`src/AegisIdentity.Infrastructure/Notifications/`):
+  - Thin port over `MailKit.Net.Smtp.SmtpClient` introduced as a unit-test seam
+    (sending real SMTP from a unit test was rejected — would couple every test run to Mailpit).
+  - 10 s `Timeout` on `ConnectAsync` per the EMAIL-01 risk mitigation. Honours
+    `SecureSocketOptions.StartTlsWhenAvailable` when `Smtp:UseStartTls=true` —
+    one config value works for both Mailpit (no TLS) and real providers (TLS).
+- **`EmailTemplateRenderer`** (`src/AegisIdentity.Infrastructure/Notifications/EmailTemplateRenderer.cs`):
+  - Loads templates as **embedded resources** and substitutes `{{Placeholder}}` tokens.
+  - Template content is cached in a static `ConcurrentDictionary` after the first read —
+    the embedded payload never changes between calls.
+  - **Razor rejected for the MVP**: it would either drag ASP.NET into Infrastructure
+    (via `Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation`) or push template
+    rendering into the API layer, both for three short transactional emails. Placeholder
+    substitution covers the EMAIL-01 acceptance criteria with zero extra dependencies.
+    Razor or RazorLight remains an option if email layouts grow complex later.
+- **Templates** under `src/AegisIdentity.Infrastructure/Templates/Email/` (embedded resources):
+  - `EmailConfirmation.{html,txt}` — placeholders `UserName`, `ConfirmationUrl`.
+  - `PasswordReset.{html,txt}` — placeholders `UserName`, `ResetUrl`.
+  - `PasswordChanged.{html,txt}` — placeholders `UserName`, `ChangedAt`.
+- **`AddNotifications()`** DI extension
+  (`src/AegisIdentity.Infrastructure/Notifications/NotificationsServiceExtensions.cs`):
+  - Registers `EmailTemplateRenderer` as **singleton** (stateless, caches templates),
+    `ISmtpTransport` and `IEmailService` as **scoped**. Wired into `Program.cs`.
+- **`/dev/email-test` refactored** to go through `IEmailService`:
+  - Endpoint now renders the `EmailConfirmation` template and dispatches via the service,
+    exercising the full pipeline end-to-end. The previous inline MailKit usage was removed,
+    and the `MailKit` `PackageReference` was dropped from the `Api` csproj (Infrastructure owns it).
+- **Unit tests** (15 new scenarios):
+  - `EmailTemplateRendererTests` (7): placeholder substitution across all three templates,
+    null-value defensiveness, unknown-key inertness, unsubstituted-token visibility,
+    and null-dictionary rejection.
+  - `MailKitEmailServiceTests` (8): first-attempt success, retry-then-success, both-attempts-fail
+    fail-open, timeout fail-open, caller cancellation propagation, multipart MIME shape,
+    text-only message shape, and null-message rejection.
+  - `FakeSmtpTransport` queue-based fake replaces real SMTP I/O — tests run offline in <2 s.
+  - `InternalsVisibleTo("AegisIdentity.UnitTests")` added to Infrastructure so tests can
+    reach `MailKitEmailService.MaxAttempts` and related test hooks.
+
 ### Added (SEC-04)
 - **`IPasswordValidator`** (`src/AegisIdentity.Application/Security/IPasswordValidator.cs`):
   - Application-layer contract: `Task<PasswordValidationResult> ValidatePasswordAsync(PasswordValidationContext, CancellationToken)`.
