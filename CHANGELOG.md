@@ -7,6 +7,87 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (SEC-04)
+- **`IPasswordValidator`** (`src/AegisIdentity.Application/Security/IPasswordValidator.cs`):
+  - Application-layer contract: `Task<PasswordValidationResult> ValidatePasswordAsync(PasswordValidationContext, CancellationToken)`.
+  - Consumed by future AUTH-01 (registration), USER-05 (password change) and AUTH-09 (password reset) handlers.
+- **`PasswordValidationContext`** record (`Password`, `Email`, `Username`) — input.
+- **`PasswordValidationResult`** record (`IsValid`, `Errors`) — output. Aggregates every failed rule's PT-BR message so callers can surface all violations at once.
+- **`PasswordValidator`** (`src/AegisIdentity.Application/Security/PasswordValidator.cs`):
+  - Implements both `IPasswordValidator` and FluentValidation's
+    `AbstractValidator<PasswordValidationContext>`. Callers can pick either contract.
+  - Rules (PT-BR error messages, exactly as specified by the card):
+    - Minimum **12 characters** — `"A senha deve ter no mínimo 12 caracteres."`
+    - At least one uppercase letter — `"A senha deve conter pelo menos uma letra maiúscula."`
+    - At least one lowercase letter — `"A senha deve conter pelo menos uma letra minúscula."`
+    - At least one digit — `"A senha deve conter pelo menos um dígito."`
+    - At least one special character from ``!@#$%^&*()-_=+[]{};:'",.<>/?\|`~`` — `"A senha deve conter pelo menos um caractere especial."`
+    - Password must not match email or username (case-insensitive) — `"A senha não pode ser igual ao seu email/username."`
+    - Password must not appear in the HIBP database — `"Esta senha aparece em vazamentos públicos conhecidos. Escolha outra."`
+  - HIBP check is gated behind a `When(...)` clause that only runs once every
+    structural rule passes — a clearly weak password never burns an external HTTP call.
+- **`AddApplicationSecurity()`** DI extension (`src/AegisIdentity.Application/Security/SecurityServiceExtensions.cs`):
+  - Registers `IPasswordValidator` → `PasswordValidator` as **scoped**. Wired into `Program.cs`.
+- **`Microsoft.Extensions.DependencyInjection.Abstractions` 8.0.2** added to the
+  central package versions and referenced by the Application project so it can
+  expose `IServiceCollection`-based extension methods without taking a dependency
+  on the full DI container or on ASP.NET Core.
+- **Unit tests** (`tests/AegisIdentity.UnitTests/Application/Security/PasswordValidatorTests.cs`) — 48 scenarios:
+  - Length boundary at 11 vs 12 characters.
+  - Missing uppercase / lowercase / digit / special character.
+  - Password equal to email and username with case-insensitive theories.
+  - HIBP hit (mocked `IPwnedPasswordsClient` returning `true`) — fails the rule.
+  - HIBP miss — passes.
+  - Error-message accumulation when multiple structural rules fail at once.
+  - Assertion that the HIBP client is **never called** when structural rules fail.
+  - 32-case theory covering every character in the allowed special-character set.
+
+### Added (SEC-05)
+- **`IPwnedPasswordsClient`** in Domain (`src/AegisIdentity.Domain/Security/IPwnedPasswordsClient.cs`):
+  - Single-method abstraction: `Task<bool> IsPwnedAsync(string password, CancellationToken)`.
+  - Lives in Domain (Dependency Inversion) so `PasswordValidator` in Application
+    can depend on it without taking an Infrastructure reference.
+- **`PwnedPasswordsClient`** in Infrastructure (`src/AegisIdentity.Infrastructure/Security/PwnedPasswordsClient.cs`):
+  - Queries the public HaveIBeenPwned Pwned Passwords API at
+    `https://api.pwnedpasswords.com/range/{prefix}`.
+  - **k-anonymity**: sends only the first 5 hex characters of `SHA1(password)`;
+    the full hash and the password itself never leave the process.
+  - Sends `Add-Padding: true` to defeat traffic-size correlation, and a configurable
+    `User-Agent` from `Hibp:UserAgent` (HIBP rejects empty user-agents with 403).
+  - **Fail-open**: timeouts (`TaskCanceledException` with inner `TimeoutException`),
+    HTTP error status (`EnsureSuccessStatusCode`) and `HttpRequestException` are
+    caught and logged at `Warning` level; the method returns `false` so an outage
+    of an external dependency cannot block registration.
+  - **In-memory cache** via `IMemoryCache` keyed on the range prefix, TTL **1 hour** —
+    chosen to match the HIBP card requirement: keeps dev loops fast and stays well
+    under the 1.5M req/day soft limit. Test inputs that share a prefix hit the API
+    only once.
+- **`AddSecurity()`** DI extension (`src/AegisIdentity.Infrastructure/Security/SecurityServiceExtensions.cs`):
+  - Registers `IPwnedPasswordsClient` → `PwnedPasswordsClient` via
+    `AddHttpClient<TClient, TImplementation>` with a typed `HttpClient`:
+    `BaseAddress` from `Hibp:ApiBaseUrl`, `Timeout = 2s`, the required headers
+    pre-configured. Also calls `AddMemoryCache()`.
+  - Wired into `Program.cs`.
+- **`Microsoft.Extensions.Caching.Memory` 8.0.1** added to the central package versions
+  and referenced by the Infrastructure project.
+- **Unit tests** (`tests/AegisIdentity.UnitTests/Infrastructure/Security/PwnedPasswordsClientTests.cs`) — 9 scenarios:
+  - Suffix-present with positive count → `true`.
+  - Suffix-absent → `false`.
+  - Suffix-present with count `0` (HIBP padding entries) → `false`.
+  - Server error (`500`) → fail-open `false`, no throw.
+  - `HttpRequestException` → fail-open `false`, no throw.
+  - HTTP-client timeout (`TaskCanceledException(TimeoutException)`) → fail-open
+    `false`, no throw.
+  - Two calls sharing a prefix → API is hit only once (cache contract).
+  - Empty password → `ArgumentException`.
+  - Outbound request URL shape matches `https://api.pwnedpasswords.com/range/{prefix}`.
+  - Backed by a hand-rolled `StubHttpMessageHandler` so the suite never touches the network.
+- **Integration test** (`tests/AegisIdentity.IntegrationTests/Security/PwnedPasswordsClientIntegrationTests.cs`)
+  marked `[Trait("Category","ExternalApi")]` — calls the real HIBP API for smoke checks
+  (`"password"` → `true`, fresh random Guid → `false`). Excluded from default test runs
+  to keep CI deterministic; run explicitly with
+  `dotnet test --filter "Category=ExternalApi"`.
+
 ### Added (DATA-03)
 - **`RefreshToken` aggregate** (`src/AegisIdentity.Domain/Tokens/RefreshToken.cs`):
   - Properties: `Id`, `UserId`, `TokenHash` (SHA-256 — never plaintext), `CreatedByIp`,
