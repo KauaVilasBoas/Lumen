@@ -3,6 +3,7 @@ using AegisIdentity.Api.Middleware;
 using AegisIdentity.Infrastructure.Configuration;
 using AegisIdentity.Infrastructure.HealthChecks;
 using AegisIdentity.Infrastructure.Persistence;
+using AegisIdentity.Infrastructure.Security;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Serilog;
@@ -27,6 +28,7 @@ try
 
     builder.Services.AddInfrastructureOptions(builder.Configuration);
     builder.Services.AddMongoDb(builder.Configuration);
+    builder.Services.AddSecurity();
 
     builder.Services
         .AddHealthChecks()
