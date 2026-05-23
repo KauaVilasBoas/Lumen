@@ -89,6 +89,7 @@ try
     });
 
     RegisterEndpoint.Map(app);
+    LoginEndpoint.Map(app);
 
     if (app.Environment.IsDevelopment())
     {
