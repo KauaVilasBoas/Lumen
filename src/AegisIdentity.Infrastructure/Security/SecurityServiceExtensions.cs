@@ -16,6 +16,7 @@ public static class SecurityServiceExtensions
         services.AddMemoryCache();
 
         services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
+        services.AddSingleton<IJwtService, JwtService>();
 
 
         services
