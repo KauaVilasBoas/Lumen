@@ -1,10 +1,15 @@
+using System.Security.Cryptography;
+
 namespace AegisIdentity.Domain.Users;
 
 public sealed class User
 {
     public static readonly IReadOnlyList<string> DefaultRoles = ["user"];
 
-    public string Id { get; init; } = string.Empty;
+    // A valid 24-character lowercase hex string is a valid MongoDB ObjectId representation.
+    // Generating it here means the aggregate has identity from birth, not from persistence —
+    // which aligns with DDD and makes unit testing straightforward (no MongoDB driver needed).
+    public string Id { get; init; } = GenerateObjectId();
 
     public string Email { get; private set; } = string.Empty;
 
@@ -62,4 +67,10 @@ public sealed class User
     }
 
     public bool IsLockedOut() => LockedUntil.HasValue && LockedUntil.Value > DateTime.UtcNow;
+
+    // MongoDB ObjectId layout: 4-byte timestamp + 5-byte random + 3-byte counter.
+    // We skip the counter and use 12 random bytes, which is collision-resistant at the
+    // scale of this application and produces a valid 24-character lowercase hex Id.
+    private static string GenerateObjectId()
+        => Convert.ToHexString(RandomNumberGenerator.GetBytes(12)).ToLowerInvariant();
 }
