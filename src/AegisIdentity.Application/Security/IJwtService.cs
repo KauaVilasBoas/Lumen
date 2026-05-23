@@ -13,4 +13,9 @@ public interface IJwtService
     /// Generates a cryptographically secure opaque refresh token value.
     /// </summary>
     string GenerateRefreshTokenValue();
+
+    /// <summary>
+    /// Lifetime of the access token in seconds. Matches the value embedded in the JWT "exp" claim.
+    /// </summary>
+    int AccessTokenExpiresIn { get; }
 }

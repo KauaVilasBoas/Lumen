@@ -45,6 +45,8 @@ public sealed class JwtService : IJwtService
         return handler.WriteToken(token);
     }
 
+    public int AccessTokenExpiresIn => _options.ExpirationMinutes * 60;
+
     public string GenerateRefreshTokenValue()
     {
         var bytes = RandomNumberGenerator.GetBytes(RefreshTokenByteLength);

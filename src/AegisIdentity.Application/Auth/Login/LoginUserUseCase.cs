@@ -97,17 +97,10 @@ public sealed class LoginUserUseCase : ILoginUserUseCase
 
         _logger.LogInformation("User {UserId} logged in successfully", user.Id);
 
-        var expiresIn = _appSettings.RefreshTokenExpirationDays > 0
-            ? (int)TimeSpan.FromDays(1).TotalSeconds   // access token is short-lived; ExpirationMinutes drives the JWT
-            : 900;
-
-        // ExpiresIn in the response reflects the JWT access token lifetime (in seconds).
-        // We derive it from JwtOptions via the token itself, but for simplicity we use
-        // a well-known constant; the actual expiry is embedded in the JWT claims.
         var response = new LoginResponse(
             AccessToken: accessToken,
             RefreshToken: refreshTokenValue,
-            ExpiresIn: 900); // placeholder — real expiry is in the JWT "exp" claim
+            ExpiresIn: _jwtService.AccessTokenExpiresIn);
 
         return new LoginResult.Success(response);
     }

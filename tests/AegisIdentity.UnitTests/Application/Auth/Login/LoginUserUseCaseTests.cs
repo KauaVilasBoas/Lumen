@@ -34,6 +34,7 @@ public sealed class LoginUserUseCaseTests
 
         _jwtService.GenerateAccessToken(Arg.Any<User>()).Returns(FakeAccessToken);
         _jwtService.GenerateRefreshTokenValue().Returns(FakeRefreshTokenValue);
+        _jwtService.AccessTokenExpiresIn.Returns(900);
     }
 
     // ── User not found ────────────────────────────────────────────────────
