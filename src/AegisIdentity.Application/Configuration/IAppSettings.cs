@@ -11,4 +11,19 @@ public interface IAppSettings
     /// Used to build absolute links included in outbound emails.
     /// </summary>
     string BaseUrl { get; }
+
+    /// <summary>
+    /// Number of consecutive failed login attempts before the account is locked.
+    /// </summary>
+    int LockoutThreshold { get; }
+
+    /// <summary>
+    /// How long an account remains locked after reaching the lockout threshold.
+    /// </summary>
+    TimeSpan LockoutDuration { get; }
+
+    /// <summary>
+    /// Lifetime of the refresh token in days.
+    /// </summary>
+    int RefreshTokenExpirationDays { get; }
 }
