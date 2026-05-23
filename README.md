@@ -2,7 +2,7 @@
 
 Plataforma de gestao de identidade e acesso (IAM) construida em .NET 8 — projeto de portfolio.
 
-> Status: **Em desenvolvimento** — endpoint de registro implementado (AUTH-01). Login e demais flows em andamento.
+> Status: **Em desenvolvimento** — registro (AUTH-01) e login (AUTH-02) implementados. Confirmacao de email e demais flows em andamento.
 
 ## O que faz
 
@@ -272,6 +272,7 @@ dotnet test --filter "Category=ExternalApi"
 | SEC-05 | Integracao HaveIBeenPwned Pwned Passwords | Concluido |
 | EMAIL-01 | Servico de envio de email via MailKit | Concluido |
 | AUTH-01 | Endpoint de registro `POST /api/auth/register` | Concluido |
+| AUTH-02 | Endpoint de login `POST /api/auth/login` | Concluido |
 
 Ver [TASKS_TRELLO.md](./TASKS_TRELLO.md) para o backlog completo.
 
@@ -281,7 +282,7 @@ Ver [TASKS_TRELLO.md](./TASKS_TRELLO.md) para o backlog completo.
 |---|---|---|---|
 | `POST` | `/api/auth/register` | Registra um novo usuario e envia email de confirmacao | Disponivel |
 | `GET` | `/api/auth/confirm-email` | Confirma o email via token | Planejado (AUTH-10) |
-| `POST` | `/api/auth/login` | Autentica e retorna JWT + refresh token | Planejado |
+| `POST` | `/api/auth/login` | Autentica e retorna JWT + refresh token | Disponivel |
 | `GET` | `/health/db` | Health check do MongoDB | Disponivel |
 | `GET` | `/dev/email-test` | Smoke test de email (somente Development) | Disponivel |
 
@@ -298,10 +299,32 @@ curl -X POST http://localhost:5237/api/auth/register `
 
 O usuario nasce com `isActive = false`. Um email de confirmacao e enviado automaticamente.
 
+### Exemplo: autenticar um usuario
+
+```powershell
+# Aceita email ou username no campo "identifier"
+curl -X POST http://localhost:5237/api/auth/login `
+  -H "Content-Type: application/json" `
+  -d '{"identifier":"voce@exemplo.com","password":"Str0ng!Passw0rd-2026"}'
+
+# 200 OK
+# { "accessToken": "<jwt>", "refreshToken": "<opaque>", "expiresIn": 900 }
+```
+
+Codigos de resposta possiveis:
+
+| Codigo | Significado |
+|---|---|
+| `200` | Login bem-sucedido — retorna `accessToken`, `refreshToken` e `expiresIn` |
+| `400` | Validacao falhou — `identifier` ou `password` em branco |
+| `401` | Credenciais invalidas — usuario nao existe ou senha errada (resposta intencional e opaca para evitar enumeracao) |
+| `403` | Email ainda nao confirmado |
+| `423` | Conta bloqueada por tentativas excessivas — aguarde e tente novamente |
+
 ## Limitacoes conhecidas
 
-- Login e demais flows de autenticacao ainda nao implementados.
-- Confirmacao de email (AUTH-10) ainda nao implementada — o link do email e gerado, mas o endpoint nao existe.
+- Confirmacao de email (AUTH-10) ainda nao implementada — o link e gerado no registro, mas o endpoint nao existe.
+- Sem renovacao de refresh token (token rotation) — use case de refresh planejado.
 - Sem rate limiting por IP no registro (card dedicado pendente).
 - Sem CI/CD configurado.
 - Sem deploy publicado.
