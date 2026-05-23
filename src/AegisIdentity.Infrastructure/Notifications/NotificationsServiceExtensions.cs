@@ -1,3 +1,4 @@
+using AegisIdentity.Application.Notifications;
 using AegisIdentity.Domain.Notifications;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -9,6 +10,9 @@ public static class NotificationsServiceExtensions
     {
         // Renderer is stateless and caches templates in a static dictionary — singleton.
         services.AddSingleton<EmailTemplateRenderer>();
+
+        // Adapter exposes the concrete renderer through the Application abstraction.
+        services.AddSingleton<IEmailTemplateRenderer, EmailTemplateRendererAdapter>();
 
         // Transport opens a fresh SmtpClient per call (MailKit guidance for short-lived sends).
         // Scoped is sufficient and aligns with the rest of the Infra registrations.

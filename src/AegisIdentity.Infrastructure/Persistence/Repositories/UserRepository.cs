@@ -6,6 +6,9 @@ namespace AegisIdentity.Infrastructure.Persistence.Repositories;
 
 public sealed class UserRepository : IUserRepository
 {
+    // MongoDB duplicate-key error code as defined by the BSON spec.
+    private const int MongoDuplicateKeyCode = 11000;
+
     private readonly IMongoCollection<User> _collection;
 
     public UserRepository(MongoDbContext context)
@@ -36,7 +39,19 @@ public sealed class UserRepository : IUserRepository
 
     public async Task InsertAsync(User user, CancellationToken ct = default)
     {
-        await _collection.InsertOneAsync(user, options: null, ct);
+        try
+        {
+            await _collection.InsertOneAsync(user, options: null, ct);
+        }
+        catch (MongoWriteException ex) when (ex.WriteError.Code == MongoDuplicateKeyCode)
+        {
+            // Translate the storage-level constraint to a domain exception so the
+            // Application layer can handle conflicts without a MongoDB dependency.
+            if (IsEmailIndex(ex.WriteError.Message))
+                throw new DuplicateEmailException(user.Email);
+
+            throw new DuplicateUsernameException(user.Username);
+        }
     }
 
     public async Task UpdateAsync(User user, CancellationToken ct = default)
@@ -44,4 +59,11 @@ public sealed class UserRepository : IUserRepository
         var filter = Builders<User>.Filter.Eq(u => u.Id, user.Id);
         await _collection.ReplaceOneAsync(filter, user, cancellationToken: ct);
     }
+
+    // The error message includes the index name ("ix_email_unique" or "ix_username_unique").
+    // Falling back to username conflict when the message doesn't contain the email index
+    // name is intentional — it handles both expected cases without needing reflection.
+    private static bool IsEmailIndex(string errorMessage)
+        => errorMessage.Contains("ix_email_unique", StringComparison.OrdinalIgnoreCase)
+        || errorMessage.Contains("\"email\"", StringComparison.OrdinalIgnoreCase);
 }

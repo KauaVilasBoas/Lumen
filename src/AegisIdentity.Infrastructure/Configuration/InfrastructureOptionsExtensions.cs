@@ -1,3 +1,4 @@
+using AegisIdentity.Application.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -38,6 +39,9 @@ public static class InfrastructureOptionsExtensions
             .Bind(configuration.GetSection(AppOptions.SectionName))
             .ValidateDataAnnotations()
             .ValidateOnStart();
+
+        // Adapter bridges AppOptions to the Application-layer abstraction.
+        services.AddSingleton<IAppSettings, AppSettingsAdapter>();
 
         return services;
     }
