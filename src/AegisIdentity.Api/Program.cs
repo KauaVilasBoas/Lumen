@@ -1,5 +1,7 @@
+using AegisIdentity.Api.Endpoints.Auth;
 using AegisIdentity.Api.Endpoints.Dev;
 using AegisIdentity.Api.Middleware;
+using AegisIdentity.Application.Auth;
 using AegisIdentity.Application.Security;
 using AegisIdentity.Infrastructure.Configuration;
 using AegisIdentity.Infrastructure.HealthChecks;
@@ -33,6 +35,7 @@ try
     builder.Services.AddSecurity();
     builder.Services.AddNotifications();
     builder.Services.AddApplicationSecurity();
+    builder.Services.AddAuthUseCases();
 
     builder.Services
         .AddHealthChecks()
@@ -84,6 +87,8 @@ try
     {
         Predicate = registration => registration.Name == "mongodb",
     });
+
+    RegisterEndpoint.Map(app);
 
     if (app.Environment.IsDevelopment())
     {

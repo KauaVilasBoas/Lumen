@@ -22,9 +22,10 @@
     <PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.0" />
   </ItemGroup>
 
-  <!-- ─── Dependency Injection (Abstractions only — for Application service-collection extensions) ─── -->
+  <!-- ─── Dependency Injection / Logging (Abstractions only — for Application service-collection extensions) ─── -->
   <ItemGroup>
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.3" />
   </ItemGroup>
 
   <!-- ─── Messaging / Email ────────────────────────────────────────── -->

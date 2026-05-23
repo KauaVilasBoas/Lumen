@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (AUTH-01)
+- **`POST /api/auth/register`** endpoint (`src/AegisIdentity.Api/Endpoints/Auth/RegisterEndpoint.cs`):
+  - Returns **201 Created** with `{ id, email, username }` on success.
+  - Returns **400 Bad Request** (ValidationProblem) on FluentValidation failure or weak password.
+  - Returns **409 Conflict** with a field-specific message on duplicate email or username.
+  - Registered for all environments (not dev-only).
+- **`IPasswordHasher`** / **`BCryptPasswordHasher`**:
+  - `IPasswordHasher` interface in Application (`src/AegisIdentity.Application/Security/IPasswordHasher.cs`): `Hash(plainText)` + `Verify(plainText, hash)`.
+  - `BCryptPasswordHasher` in Infrastructure (`src/AegisIdentity.Infrastructure/Security/BCryptPasswordHasher.cs`): BCrypt work factor **12**. Registered as singleton in DI.
+- **`IRegisterUserUseCase`** / **`RegisterUserUseCase`** (`src/AegisIdentity.Application/Auth/Register/`):
+  - Validates password strength via `IPasswordValidator` before hashing — weak passwords are rejected without touching the database.
+  - Hashes the password with `IPasswordHasher` (BCrypt cost 12).
+  - Inserts the user via `IUserRepository` (user is created with `IsActive = false`).
+  - Translates `DuplicateEmailException` / `DuplicateUsernameException` to typed `RegisterResult` variants — no MongoDB dependency in the use case.
+  - Generates a **32-byte cryptographically random token**, Base64Url-encoded for use in email links.
+  - Persists only the **SHA-256 hex hash** of the token in `email_confirmation_tokens` via `IEmailConfirmationTokenRepository`. Token is valid for **24 hours**.
+  - Dispatches a confirmation email via `IEmailService` using the `EmailConfirmation` template with `UserName` and `ConfirmationUrl` placeholders. The email step is **fail-open**: SMTP failures are logged and swallowed — the 201 is still returned.
+  - Confirmation URL: `{App:BaseUrl}/api/auth/confirm-email?token={rawToken}` (endpoint not yet implemented — AUTH-10).
+- **`RegisterRequest`** / **`RegisterResponse`** / **`RegisterResult`** DTOs in Application.
+- **`RegisterRequestValidator`** (FluentValidation): email format, username 3–32 chars alphanumeric/underscore/hyphen, password required.
+- **`DuplicateEmailException`** / **`DuplicateUsernameException`** in Domain — thrown by `UserRepository.InsertAsync` when MongoDB returns error code 11000. Index name (`ix_email_unique` / `ix_username_unique`) used to distinguish the two cases.
+- **`IAppSettings`** interface in Application (`src/AegisIdentity.Application/Configuration/`) + `AppSettingsAdapter` in Infrastructure: bridges `AppOptions` (Infrastructure) to use cases without coupling them to `IOptions<T>`.
+- **`AppOptions`** (`App:BaseUrl`) registered in `InfrastructureOptionsExtensions` with `ValidateOnStart`. Added to all `appsettings*.json` files.
+- **`IEmailTemplateRenderer`** interface in Application + `EmailTemplateRendererAdapter` in Infrastructure: decouples use cases from the concrete `EmailTemplateRenderer` Infrastructure type.
+- **`AuthServiceExtensions.AddAuthUseCases()`** registers `IValidator<RegisterRequest>` and `IRegisterUserUseCase` as scoped services.
+- **`Microsoft.Extensions.Logging.Abstractions`** added to `AegisIdentity.Application.csproj` (logging without ASP.NET Core dependency).
+- **Unit tests** (29 new scenarios):
+  - `RegisterRequestValidatorTests` (13): email required/format/length, username required/min/max/pattern, password required, full valid request.
+  - `RegisterUserUseCaseTests` (13): weak password returns `WeakPassword`, duplicate email/username returns correct variant, success returns user data, password is hashed, user starts inactive, token is inserted, confirmation email is sent, confirmation URL contains BaseUrl, validator receives email+username context.
+  - `BCryptPasswordHasherTests` (8): non-empty output, salt randomisation, BCrypt format, correct verify, wrong-password verify, empty-input guards.
+
 ### Added (EMAIL-01)
 - **`IEmailService`** in Domain (`src/AegisIdentity.Domain/Notifications/IEmailService.cs`):
   - Single-method abstraction: `Task SendAsync(EmailMessage, CancellationToken)`.
