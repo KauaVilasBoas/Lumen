@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using AegisIdentity.Application.Security;
 using AegisIdentity.Domain.Security;
 using AegisIdentity.Infrastructure.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +14,9 @@ public static class SecurityServiceExtensions
     public static IServiceCollection AddSecurity(this IServiceCollection services)
     {
         services.AddMemoryCache();
+
+        services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
+
 
         services
             .AddHttpClient<IPwnedPasswordsClient, PwnedPasswordsClient>((sp, client) =>
