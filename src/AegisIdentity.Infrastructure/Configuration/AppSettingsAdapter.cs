@@ -15,4 +15,10 @@ public sealed class AppSettingsAdapter : IAppSettings
     }
 
     public string BaseUrl => _options.BaseUrl;
+
+    public int LockoutThreshold => _options.LockoutThreshold;
+
+    public TimeSpan LockoutDuration => TimeSpan.FromMinutes(_options.LockoutDurationMinutes);
+
+    public int RefreshTokenExpirationDays => _options.RefreshTokenExpirationDays;
 }

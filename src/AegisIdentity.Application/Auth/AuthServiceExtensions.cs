@@ -1,3 +1,4 @@
+using AegisIdentity.Application.Auth.Login;
 using AegisIdentity.Application.Auth.Register;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,6 +11,10 @@ public static class AuthServiceExtensions
     {
         services.AddScoped<IValidator<RegisterRequest>, RegisterRequestValidator>();
         services.AddScoped<IRegisterUserUseCase, RegisterUserUseCase>();
+
+        services.AddScoped<IValidator<LoginRequest>, LoginRequestValidator>();
+        services.AddScoped<ILoginUserUseCase, LoginUserUseCase>();
+
         return services;
     }
 }

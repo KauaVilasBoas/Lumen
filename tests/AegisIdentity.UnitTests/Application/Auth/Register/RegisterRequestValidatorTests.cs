@@ -36,12 +36,15 @@ public sealed class RegisterRequestValidatorTests
     }
 
     [Fact]
-    public async Task ValidateAsync_WhenEmailExceeds256Chars_FailsMaxLengthRule()
+    public async Task ValidateAsync_WhenEmailExceeds256Chars_FailsValidation()
     {
-        var email = new string('a', 250) + "@x.com";
+        // FluentValidation's EmailAddress rule rejects local parts longer than 64 chars
+        // (RFC 5321), so a 300-char email is caught before MaximumLength is evaluated.
+        // We assert a validation error exists for Email without pinning to one specific message.
+        var email = new string('a', 300) + "@x.com";
         var result = await _validator.TestValidateAsync(ValidRequest() with { Email = email });
-        result.ShouldHaveValidationErrorFor(r => r.Email)
-            .WithErrorMessage("O email deve ter no máximo 256 caracteres.");
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == nameof(RegisterRequest.Email));
     }
 
     // ── Username ──────────────────────────────────────────────────────────

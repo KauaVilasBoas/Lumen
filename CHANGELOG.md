@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (AUTH-02)
+- **`POST /api/auth/login`** endpoint (`src/AegisIdentity.Api/Endpoints/Auth/LoginEndpoint.cs`):
+  - Accepts `{ identifier, password }` where `identifier` is an email address or a username.
+    Discriminated by the presence of `@`: if the identifier contains `@`, the lookup is by
+    normalised email; otherwise by username.
+  - Returns **200 OK** with `{ accessToken, refreshToken, expiresIn }` on success.
+  - Returns **400 Bad Request** (ValidationProblem) when `identifier` or `password` is blank.
+  - Returns **401 Unauthorized** for invalid credentials (user not found or wrong password).
+    The same response is returned for both cases to prevent user enumeration.
+  - Returns **403 Forbidden** when the account exists but has not confirmed its email.
+  - Returns **423 Locked** when the account is temporarily locked due to repeated failures.
+- **`ILoginUserUseCase`** / **`LoginUserUseCase`** (`src/AegisIdentity.Application/Auth/Login/`):
+  - Resolves the user by email or username depending on the identifier format.
+  - Checks lockout **before** password verification — prevents BCrypt work on locked accounts.
+  - Calls `IPasswordHasher.Verify` for constant-time comparison.
+  - On wrong password: increments `FailedLoginAttempts` via `User.RecordFailedLogin` and
+    persists the change. Account is locked when the threshold is reached.
+  - On success: resets failed attempts (`User.Unlock`) if any, updates `LastLoginAt`, persists
+    via `IUserRepository.UpdateAsync`, issues a JWT access token, generates an opaque refresh
+    token value, hashes it (SHA-256 hex), persists the `RefreshToken` aggregate via
+    `IRefreshTokenRepository.InsertAsync`.
+  - `ExpiresIn` in the response is derived from `IJwtService.AccessTokenExpiresIn` — no
+    hardcoded constant.
+- **`IJwtService`** interface in Application (`src/AegisIdentity.Application/Security/IJwtService.cs`):
+  - `GenerateAccessToken(User)` → signed JWT.
+  - `GenerateRefreshTokenValue()` → URL-safe Base64 (32 random bytes).
+  - `AccessTokenExpiresIn` → token lifetime in seconds.
+- **`JwtService`** in Infrastructure (`src/AegisIdentity.Infrastructure/Security/JwtService.cs`):
+  - HS256-signed JWT with claims: `sub` (user ID), `email`, `username`, `jti`, `role[]`.
+  - Expiry driven by `Jwt:ExpirationMinutes` configuration.
+  - Registered as **singleton** in `SecurityServiceExtensions`.
+- **`LoginRequest`** / **`LoginResponse`** / **`LoginResult`** DTOs in Application.
+- **`LoginRequestValidator`** (FluentValidation): `identifier` and `password` required (not empty).
+- **`IAppSettings`** extended with `LockoutThreshold`, `LockoutDuration`, `RefreshTokenExpirationDays`.
+- **`AppOptions`** extended with `LockoutThreshold` (default 5), `LockoutDurationMinutes` (default 15),
+  `RefreshTokenExpirationDays` (default 7) — all validated with `[Range]` on startup.
+- **`AppSettingsAdapter`** updated to expose the three new properties.
+- **Unit tests** (30 new scenarios):
+  - `LoginRequestValidatorTests` (7): identifier required, password required, full valid request.
+  - `LoginUserUseCaseTests` (13): email not found, username not found, email vs username routing,
+    wrong password, wrong password increments attempts, account locked skips verify,
+    account locked returns expiry, email not confirmed, happy path returns tokens,
+    happy path inserts refresh token, happy path updates `LastLoginAt`,
+    previous failures reset on success.
+  - `JwtServiceTests` (10): valid JWT structure, signature verifies, `sub` claim, `email` claim,
+    `username` claim, role claims, expiry matches config, refresh value non-empty, values differ
+    each call, URL-safe charset.
+
 ### Added (AUTH-01)
 - **`POST /api/auth/register`** endpoint (`src/AegisIdentity.Api/Endpoints/Auth/RegisterEndpoint.cs`):
   - Returns **201 Created** with `{ id, email, username }` on success.
