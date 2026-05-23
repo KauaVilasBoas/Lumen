@@ -2,7 +2,7 @@
 
 Plataforma de gestao de identidade e acesso (IAM) construida em .NET 8 — projeto de portfolio.
 
-> Status: **Bootstrap concluido** — arquitetura em pe, configuracao de ambiente definida, sem dominio implementado.
+> Status: **Em desenvolvimento** — endpoint de registro implementado (AUTH-01). Login e demais flows em andamento.
 
 ## O que faz
 
@@ -134,6 +134,7 @@ A aplicacao sobe em `http://localhost:5237` (HTTP) ou `https://localhost:7068` (
 | `Hibp__UserAgent` | `Hibp:UserAgent` | User-Agent para a API HIBP | `SeuApp/1.0 (contact@seudominio.com)` |
 | `Hibp__ApiBaseUrl` | `Hibp:ApiBaseUrl` | URL base da API HIBP | `https://api.pwnedpasswords.com` |
 | `Cors__AllowedOrigins__0` | `Cors:AllowedOrigins[0]` | Origem permitida pelo CORS | `https://seudominio.com` |
+| `App__BaseUrl` | `App:BaseUrl` | URL publica da API (sem trailing slash) — usada em links enviados por email | `https://api.seudominio.com` |
 
 > **Nota:** Todas as variaveis `[Required]` causam falha imediata no startup se ausentes (ValidateOnStart).
 
@@ -270,13 +271,38 @@ dotnet test --filter "Category=ExternalApi"
 | SEC-04 | Politica de senha forte | Concluido |
 | SEC-05 | Integracao HaveIBeenPwned Pwned Passwords | Concluido |
 | EMAIL-01 | Servico de envio de email via MailKit | Concluido |
-| AUTH-01 | Implementar registro e login | Pendente |
+| AUTH-01 | Endpoint de registro `POST /api/auth/register` | Concluido |
 
 Ver [TASKS_TRELLO.md](./TASKS_TRELLO.md) para o backlog completo.
 
+## Endpoints disponiveis
+
+| Metodo | Rota | Descricao | Status |
+|---|---|---|---|
+| `POST` | `/api/auth/register` | Registra um novo usuario e envia email de confirmacao | Disponivel |
+| `GET` | `/api/auth/confirm-email` | Confirma o email via token | Planejado (AUTH-10) |
+| `POST` | `/api/auth/login` | Autentica e retorna JWT + refresh token | Planejado |
+| `GET` | `/health/db` | Health check do MongoDB | Disponivel |
+| `GET` | `/dev/email-test` | Smoke test de email (somente Development) | Disponivel |
+
+### Exemplo: registrar um usuario
+
+```powershell
+curl -X POST http://localhost:5237/api/auth/register `
+  -H "Content-Type: application/json" `
+  -d '{"email":"voce@exemplo.com","username":"voce","password":"Str0ng!Passw0rd-2026"}'
+
+# 201 Created
+# { "id": "...", "email": "voce@exemplo.com", "username": "voce" }
+```
+
+O usuario nasce com `isActive = false`. Um email de confirmacao e enviado automaticamente.
+
 ## Limitacoes conhecidas
 
-- Nenhum handler de dominio implementado ainda.
+- Login e demais flows de autenticacao ainda nao implementados.
+- Confirmacao de email (AUTH-10) ainda nao implementada — o link do email e gerado, mas o endpoint nao existe.
+- Sem rate limiting por IP no registro (card dedicado pendente).
 - Sem CI/CD configurado.
 - Sem deploy publicado.
 - Sem HTTPS em dev (usa HTTP local por padrao via launchSettings).
