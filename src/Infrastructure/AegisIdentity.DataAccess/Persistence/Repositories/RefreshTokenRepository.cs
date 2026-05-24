@@ -35,4 +35,11 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository
         var filter = Builders<RefreshToken>.Filter.Eq(t => t.Id, token.Id);
         await _collection.ReplaceOneAsync(filter, token, cancellationToken: ct);
     }
+
+    public async Task<long> DeleteExpiredAsync(DateTime cutoff, CancellationToken ct = default)
+    {
+        var filter = Builders<RefreshToken>.Filter.Lt(t => t.ExpiresAt, cutoff);
+        var result = await _collection.DeleteManyAsync(filter, ct);
+        return result.DeletedCount;
+    }
 }
