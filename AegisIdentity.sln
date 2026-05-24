@@ -31,6 +31,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AegisIdentity.IntegrationTe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AegisIdentity.DataAccess", "src\Infrastructure\AegisIdentity.DataAccess\AegisIdentity.DataAccess.csproj", "{FD468E05-40B4-482F-B39B-F14A60066FFB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AegisIdentity.Integration", "src\Infrastructure\AegisIdentity.Integration\AegisIdentity.Integration.csproj", "{D73A0955-25DF-4F95-B069-D187C263A496}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -72,6 +74,10 @@ Global
 		{FD468E05-40B4-482F-B39B-F14A60066FFB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FD468E05-40B4-482F-B39B-F14A60066FFB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FD468E05-40B4-482F-B39B-F14A60066FFB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D73A0955-25DF-4F95-B069-D187C263A496}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D73A0955-25DF-4F95-B069-D187C263A496}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D73A0955-25DF-4F95-B069-D187C263A496}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D73A0955-25DF-4F95-B069-D187C263A496}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{E505FB60-593A-4BA5-8875-4BEB23837533} = {E4DA74F3-0A23-4E4C-B12E-7E8F963433BF}
@@ -82,5 +88,6 @@ Global
 		{BE1B7CDB-8A78-4DDE-A4F2-3B289BBDC215} = {A631778C-A0AF-4DCD-8807-0579B1515A3B}
 		{CEAC69A1-8A7E-4C2D-96C3-E7BB8C8B36B1} = {A631778C-A0AF-4DCD-8807-0579B1515A3B}
 		{FD468E05-40B4-482F-B39B-F14A60066FFB} = {10B6233E-EA13-4BEC-95D5-9BF33C867F31}
+		{D73A0955-25DF-4F95-B069-D187C263A496} = {10B6233E-EA13-4BEC-95D5-9BF33C867F31}
 	EndGlobalSection
 EndGlobal

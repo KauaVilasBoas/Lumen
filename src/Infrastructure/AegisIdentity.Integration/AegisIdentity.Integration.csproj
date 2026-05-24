@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <!--
+      Email templates are embedded into the assembly so the service is
+      cwd-independent — no extra copy-to-output configuration required.
+    -->
+    <EmbeddedResource Include="Templates\Email\*.html" />
+    <EmbeddedResource Include="Templates\Email\*.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Expose internal hooks (MaxAttempts, RetryDelay, ConnectTimeout) to the test project. -->
+    <InternalsVisibleTo Include="AegisIdentity.UnitTests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\AegisIdentity.Application\AegisIdentity.Application.csproj" />
+    <ProjectReference Include="..\..\AegisIdentity.Domain\AegisIdentity.Domain.csproj" />
+    <ProjectReference Include="..\..\AegisIdentity.Infrastructure\AegisIdentity.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\SharedKernel\AegisIdentity.SharedKernel\AegisIdentity.SharedKernel.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MailKit" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" />
+  </ItemGroup>
+
+</Project>
