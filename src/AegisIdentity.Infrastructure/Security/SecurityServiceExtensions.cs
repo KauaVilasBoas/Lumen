@@ -1,4 +1,4 @@
-using AegisIdentity.Application.Security;
+using AegisIdentity.Domain.Security;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace AegisIdentity.Infrastructure.Security;

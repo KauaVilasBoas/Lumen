@@ -1,4 +1,4 @@
-using AegisIdentity.Application.Configuration;
+using AegisIdentity.Domain.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace AegisIdentity.Infrastructure.Configuration;

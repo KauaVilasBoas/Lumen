@@ -1,4 +1,4 @@
-using AegisIdentity.Application.Notifications;
+using AegisIdentity.Domain.Notifications;
 
 namespace AegisIdentity.Integration.Notifications;
 

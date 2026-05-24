@@ -1,4 +1,3 @@
-using AegisIdentity.Application.Notifications;
 using AegisIdentity.Domain.Notifications;
 using Microsoft.Extensions.DependencyInjection;
 

@@ -1,4 +1,4 @@
-using AegisIdentity.Application.Configuration;
+using AegisIdentity.Domain.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 

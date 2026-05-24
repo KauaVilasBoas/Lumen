@@ -1,4 +1,4 @@
-using AegisIdentity.Application.Security;
+using AegisIdentity.Domain.Security;
 
 namespace AegisIdentity.Infrastructure.Security;
 

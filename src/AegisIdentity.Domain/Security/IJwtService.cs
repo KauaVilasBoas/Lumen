@@ -1,7 +1,12 @@
 using AegisIdentity.Domain.Users;
 
-namespace AegisIdentity.Application.Security;
+namespace AegisIdentity.Domain.Security;
 
+/// <summary>
+/// Port for JWT generation and refresh-token value creation.
+/// Defined in Domain so command handlers depend only on the abstraction;
+/// the HMAC-SHA-256 implementation lives in Infrastructure.
+/// </summary>
 public interface IJwtService
 {
     /// <summary>

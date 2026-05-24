@@ -1,5 +1,10 @@
-namespace AegisIdentity.Application.Notifications;
+namespace AegisIdentity.Domain.Notifications;
 
+/// <summary>
+/// Port for rendering transactional email templates.
+/// Defined in Domain so command handlers can request rendered email bodies
+/// without depending on the concrete template engine in Infrastructure.
+/// </summary>
 public interface IEmailTemplateRenderer
 {
     /// <summary>

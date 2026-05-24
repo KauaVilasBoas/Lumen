@@ -1,7 +1,7 @@
-namespace AegisIdentity.Application.Configuration;
+namespace AegisIdentity.Domain.Configuration;
 
 /// <summary>
-/// Exposes application-level settings to use cases without coupling them
+/// Exposes application-level settings to command handlers without coupling them
 /// to a specific configuration provider or IOptions&lt;T&gt;.
 /// </summary>
 public interface IAppSettings

@@ -1,6 +1,6 @@
 using AegisIdentity.Application.Auth.Login;
-using AegisIdentity.Application.Configuration;
-using AegisIdentity.Application.Security;
+using AegisIdentity.Domain.Configuration;
+using AegisIdentity.Domain.Security;
 using AegisIdentity.Domain.Tokens;
 using AegisIdentity.Domain.Users;
 using FluentAssertions;
