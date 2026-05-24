@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>AegisIdentity.Jobs</RootNamespace>
+    <AssemblyName>AegisIdentity.Jobs</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Domain: IRefreshTokenRepository is consumed by CleanupExpiredRefreshTokensJob.
+      Infrastructure: MongoOptions POCO is used to resolve the Hangfire storage
+      connection string from the same IConfiguration section the app already uses.
+    -->
+    <ProjectReference Include="..\..\AegisIdentity.Domain\AegisIdentity.Domain.csproj" />
+    <ProjectReference Include="..\..\AegisIdentity.Infrastructure\AegisIdentity.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Hangfire.AspNetCore" />
+    <PackageReference Include="Hangfire.Mongo" />
+    <!--
+      Pin MongoDB.Driver to the same version as DataAccess (2.30.0) so the
+      entire solution resolves to one consistent driver version.
+      Hangfire.Mongo 1.10.7 requires >= 2.26.0; 2.30.0 satisfies that.
+    -->
+    <PackageReference Include="MongoDB.Driver" />
+  </ItemGroup>
+
+</Project>
