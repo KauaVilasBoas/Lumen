@@ -9,6 +9,7 @@
     <ProjectReference Include="..\AegisIdentity.Infrastructure\AegisIdentity.Infrastructure.csproj" />
     <ProjectReference Include="..\Infrastructure\AegisIdentity.DataAccess\AegisIdentity.DataAccess.csproj" />
     <ProjectReference Include="..\Infrastructure\AegisIdentity.Integration\AegisIdentity.Integration.csproj" />
+    <ProjectReference Include="..\Jobs\AegisIdentity.Jobs\AegisIdentity.Jobs.csproj" />
   </ItemGroup>
 
   <ItemGroup>

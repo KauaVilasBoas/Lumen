@@ -8,7 +8,10 @@ using AegisIdentity.Infrastructure.Configuration;
 using AegisIdentity.Infrastructure.Security;
 using AegisIdentity.Integration.Notifications;
 using AegisIdentity.Integration.Security;
+using AegisIdentity.Jobs.Configuration;
+using AegisIdentity.Jobs.Jobs;
 using FluentValidation;
+using Hangfire;
 using MediatR;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
@@ -39,6 +42,12 @@ try
     builder.Services.AddHibpClient();     // IPwnedPasswordsClient
     builder.Services.AddNotifications(); // IEmailService, IEmailTemplateRenderer
 
+    // ── Background Jobs (Hangfire + Mongo storage) ───────────────────────────
+    // AddInfrastructureOptions is called earlier — MongoOptions is already
+    // registered in the DI container and available to AddAegisHangfire.
+    builder.Services.AddAegisHangfire(builder.Configuration);
+    builder.Services.AddAegisHangfireServer();
+
     // ── Application (MediatR + FluentValidation) ──────────────────────────────
     builder.Services.AddMediatR(cfg =>
     {
@@ -65,6 +74,14 @@ try
     builder.Services.AddRazorPages();
 
     var app = builder.Build();
+
+    // ── Recurring jobs ────────────────────────────────────────────────────────
+    // Registered after Build() so the DI container is fully constructed.
+    // Cron "0 3 * * *" = daily at 03:00 UTC — low-traffic window for cleanup.
+    RecurringJob.AddOrUpdate<CleanupExpiredRefreshTokensJob>(
+        recurringJobId: "cleanup-expired-refresh-tokens",
+        methodCall:     job => job.ExecuteAsync(CancellationToken.None),
+        cronExpression: "0 3 * * *");
 
     // Reject loopback SMTP in Production — would silently discard all outbound emails.
     if (app.Environment.IsProduction())
