@@ -1,6 +1,6 @@
 using AegisIdentity.Domain.Notifications;
 using AegisIdentity.Infrastructure.Configuration;
-using AegisIdentity.Infrastructure.Notifications;
+using AegisIdentity.Integration.Notifications;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 

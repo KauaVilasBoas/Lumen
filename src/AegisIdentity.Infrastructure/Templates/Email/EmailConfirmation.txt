@@ -1,9 +1,0 @@
-Welcome to AegisIdentity
-
-Hi {{UserName}},
-
-Please confirm your email address by opening the link below. This link expires in 24 hours.
-
-{{ConfirmationUrl}}
-
-If you didn't create an account with AegisIdentity, you can safely ignore this email.
