@@ -15,7 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\AegisIdentity.Application\AegisIdentity.Application.csproj" />
     <ProjectReference Include="..\..\AegisIdentity.Domain\AegisIdentity.Domain.csproj" />
     <ProjectReference Include="..\..\AegisIdentity.Infrastructure\AegisIdentity.Infrastructure.csproj" />
     <ProjectReference Include="..\..\SharedKernel\AegisIdentity.SharedKernel\AegisIdentity.SharedKernel.csproj" />

@@ -5,7 +5,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AegisIdentity.Application\AegisIdentity.Application.csproj" />
     <ProjectReference Include="..\Application\AegisIdentity.CommandHandlers\AegisIdentity.CommandHandlers.csproj" />
     <ProjectReference Include="..\AegisIdentity.Infrastructure\AegisIdentity.Infrastructure.csproj" />
     <ProjectReference Include="..\Infrastructure\AegisIdentity.DataAccess\AegisIdentity.DataAccess.csproj" />
