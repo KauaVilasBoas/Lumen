@@ -37,6 +37,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AegisIdentity.ReadModels", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AegisIdentity.EventHandlers", "src\Application\AegisIdentity.EventHandlers\AegisIdentity.EventHandlers.csproj", "{74019CE6-73A2-4F2D-9D83-51BFF6C7DF5B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AegisIdentity.Backoffice", "src\Presentation\AegisIdentity.Backoffice\AegisIdentity.Backoffice.csproj", "{DBF5ED7E-FF81-4074-8DC8-4B92FDBC5982}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -90,6 +92,10 @@ Global
 		{74019CE6-73A2-4F2D-9D83-51BFF6C7DF5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{74019CE6-73A2-4F2D-9D83-51BFF6C7DF5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{74019CE6-73A2-4F2D-9D83-51BFF6C7DF5B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DBF5ED7E-FF81-4074-8DC8-4B92FDBC5982}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DBF5ED7E-FF81-4074-8DC8-4B92FDBC5982}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DBF5ED7E-FF81-4074-8DC8-4B92FDBC5982}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DBF5ED7E-FF81-4074-8DC8-4B92FDBC5982}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{E505FB60-593A-4BA5-8875-4BEB23837533} = {E4DA74F3-0A23-4E4C-B12E-7E8F963433BF}
@@ -103,5 +109,6 @@ Global
 		{DF9360ED-2212-4BEC-8E76-4FACD8416A62} = {808ABAA1-0F00-4272-8261-E47B255B1FC9}
 		{1A559506-ED56-4919-AB6D-C50344161538} = {808ABAA1-0F00-4272-8261-E47B255B1FC9}
 		{74019CE6-73A2-4F2D-9D83-51BFF6C7DF5B} = {808ABAA1-0F00-4272-8261-E47B255B1FC9}
+		{DBF5ED7E-FF81-4074-8DC8-4B92FDBC5982} = {E4DA74F3-0A23-4E4C-B12E-7E8F963433BF}
 	EndGlobalSection
 EndGlobal
