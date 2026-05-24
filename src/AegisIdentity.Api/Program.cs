@@ -1,15 +1,15 @@
-using AegisIdentity.Api.Endpoints.Auth;
-using AegisIdentity.Api.Endpoints.Dev;
+using AegisIdentity.Api.ExceptionHandlers;
 using AegisIdentity.Api.Middleware;
-using AegisIdentity.Application.Auth;
-using AegisIdentity.Application.Security;
 using AegisIdentity.CommandHandlers.Auth.Register;
-using AegisIdentity.Infrastructure.Configuration;
+using AegisIdentity.CommandHandlers.Behaviors;
 using AegisIdentity.DataAccess.HealthChecks;
 using AegisIdentity.DataAccess.Persistence;
+using AegisIdentity.Infrastructure.Configuration;
+using AegisIdentity.Infrastructure.Security;
 using AegisIdentity.Integration.Notifications;
 using AegisIdentity.Integration.Security;
-using AegisIdentity.Infrastructure.Security;
+using FluentValidation;
+using MediatR;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Serilog;
@@ -32,17 +32,32 @@ try
            .ReadFrom.Services(services)
            .Enrich.FromLogContext());
 
+    // ── Infrastructure ────────────────────────────────────────────────────────
     builder.Services.AddInfrastructureOptions(builder.Configuration);
     builder.Services.AddMongoDb(builder.Configuration);
-    builder.Services.AddSecurity();
-    builder.Services.AddHibpClient();
-    builder.Services.AddNotifications();
-    builder.Services.AddApplicationSecurity();
-    builder.Services.AddAuthValidators();
+    builder.Services.AddSecurity();       // BCryptPasswordHasher, JwtService, PasswordValidator
+    builder.Services.AddHibpClient();     // IPwnedPasswordsClient
+    builder.Services.AddNotifications(); // IEmailService, IEmailTemplateRenderer
 
+    // ── Application (MediatR + FluentValidation) ──────────────────────────────
     builder.Services.AddMediatR(cfg =>
-        cfg.RegisterServicesFromAssemblyContaining<RegisterUserCommandHandler>());
+    {
+        cfg.RegisterServicesFromAssemblyContaining<RegisterUserCommandHandler>();
+        // ValidationBehavior runs all IValidator<TRequest> before each handler.
+        cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+    });
 
+    // Register all AbstractValidator<T> nested in the CommandHandlers assembly.
+    builder.Services.AddValidatorsFromAssemblyContaining<RegisterUserCommandHandler>();
+
+    // ── Presentation ──────────────────────────────────────────────────────────
+    builder.Services.AddControllers();
+
+    // ValidationExceptionHandler maps FluentValidation.ValidationException → 400 ProblemDetails.
+    builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
+    builder.Services.AddProblemDetails();
+
+    // ── Health checks ─────────────────────────────────────────────────────────
     builder.Services
         .AddHealthChecks()
         .AddCheck<MongoDbHealthCheck>("mongodb");
@@ -66,9 +81,13 @@ try
         }
     }
 
+    // ── Middleware pipeline ───────────────────────────────────────────────────
+
+    // Global exception handler must be first so it catches exceptions from all middleware.
+    app.UseExceptionHandler();
+
     if (!app.Environment.IsDevelopment())
     {
-        app.UseExceptionHandler("/Error");
         app.UseHsts();
     }
 
@@ -87,6 +106,7 @@ try
                 : LogEventLevel.Information;
     });
 
+    // ── Endpoints ─────────────────────────────────────────────────────────────
     app.MapRazorPages();
 
     app.MapHealthChecks("/health/db", new HealthCheckOptions
@@ -94,12 +114,13 @@ try
         Predicate = registration => registration.Name == "mongodb",
     });
 
-    RegisterEndpoint.Map(app);
-    LoginEndpoint.Map(app);
+    app.MapControllers();
 
     if (app.Environment.IsDevelopment())
     {
-        EmailTestEndpoint.Map(app);
+        // Dev-only endpoints (e.g. DevController) are part of MapControllers above.
+        // The guard is enforced by DevController's own ApiExplorerSettings and the
+        // conditional Swagger registration below (when added in a future iteration).
     }
 
     app.Run();
