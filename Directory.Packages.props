@@ -81,6 +81,19 @@
     insufficient.
   -->
 
+  <!-- ─── Background Jobs ─────────────────────────────────────────── -->
+  <ItemGroup>
+    <!--
+      Hangfire.Mongo 1.10.7 — last release targeting MongoDB.Driver 2.x.
+      The project pins MongoDB.Driver at 2.30.0 (higher than Hangfire.Mongo's
+      minimum of 2.26.0); NuGet resolves to 2.30.0 via highest-version wins.
+      Upgrade to Hangfire.Mongo 1.11+ only after the project migrates to
+      MongoDB.Driver 3.x.
+    -->
+    <PackageVersion Include="Hangfire.AspNetCore" Version="1.8.14" />
+    <PackageVersion Include="Hangfire.Mongo" Version="1.10.7" />
+  </ItemGroup>
+
   <!-- ─── Testing ──────────────────────────────────────────────────── -->
   <ItemGroup>
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
