@@ -1,0 +1,34 @@
+@model AegisIdentity.Backoffice.ViewComponents.UserDetailViewComponent.ViewModel
+
+<div class="card shadow-sm">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Detalhes do Usuário</h5>
+    </div>
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">ID</dt>
+            <dd class="col-sm-9 text-muted font-monospace small">@Model.UserId</dd>
+
+            <dt class="col-sm-3">Email</dt>
+            <dd class="col-sm-9">@Model.Email</dd>
+
+            <dt class="col-sm-3">Username</dt>
+            <dd class="col-sm-9">@Model.Username</dd>
+
+            <dt class="col-sm-3">Perfis</dt>
+            <dd class="col-sm-9">
+                @if (Model.Roles.Count == 0)
+                {
+                    <span class="text-muted">Nenhum perfil atribuído</span>
+                }
+                else
+                {
+                    foreach (var role in Model.Roles)
+                    {
+                        <span class="badge bg-secondary me-1">@role</span>
+                    }
+                }
+            </dd>
+        </dl>
+    </div>
+</div>
