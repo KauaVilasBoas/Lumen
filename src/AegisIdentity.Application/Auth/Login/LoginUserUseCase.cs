@@ -1,9 +1,8 @@
-using System.Security.Cryptography;
-using System.Text;
 using AegisIdentity.Domain.Configuration;
 using AegisIdentity.Domain.Security;
 using AegisIdentity.Domain.Tokens;
 using AegisIdentity.Domain.Users;
+using AegisIdentity.SharedKernel.Util;
 using Microsoft.Extensions.Logging;
 
 namespace AegisIdentity.Application.Auth.Login;
@@ -85,7 +84,7 @@ public sealed class LoginUserUseCase : ILoginUserUseCase
 
         var accessToken = _jwtService.GenerateAccessToken(user);
         var refreshTokenValue = _jwtService.GenerateRefreshTokenValue();
-        var refreshTokenHash = ComputeSha256Hex(refreshTokenValue);
+        var refreshTokenHash = Sha256Hasher.ComputeHex(refreshTokenValue);
 
         var refreshToken = RefreshToken.Create(
             userId: user.Id,
@@ -118,12 +117,5 @@ public sealed class LoginUserUseCase : ILoginUserUseCase
         }
 
         return await _userRepository.FindByUsernameAsync(identifier, ct);
-    }
-
-    private static string ComputeSha256Hex(string input)
-    {
-        var inputBytes = Encoding.UTF8.GetBytes(input);
-        var hashBytes = SHA256.HashData(inputBytes);
-        return Convert.ToHexString(hashBytes).ToLowerInvariant();
     }
 }

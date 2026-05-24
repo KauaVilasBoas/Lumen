@@ -1,24 +1,11 @@
 using AegisIdentity.Domain.Security;
+using AegisIdentity.SharedKernel.Constants;
 using FluentValidation;
 
 namespace AegisIdentity.Application.Security;
 
 public sealed class PasswordValidator : AbstractValidator<PasswordValidationContext>, IPasswordValidator
 {
-    public const int MinimumLength = 12;
-    public const string SpecialCharacters = "!@#$%^&*()-_=+[]{};:'\",.<>/?\\|`~";
-
-    internal static class Messages
-    {
-        public const string TooShort = "A senha deve ter no mínimo 12 caracteres.";
-        public const string MissingUppercase = "A senha deve conter pelo menos uma letra maiúscula.";
-        public const string MissingLowercase = "A senha deve conter pelo menos uma letra minúscula.";
-        public const string MissingDigit = "A senha deve conter pelo menos um dígito.";
-        public const string MissingSpecial = "A senha deve conter pelo menos um caractere especial.";
-        public const string EqualsIdentity = "A senha não pode ser igual ao seu email/username.";
-        public const string Pwned = "Esta senha aparece em vazamentos públicos conhecidos. Escolha outra.";
-    }
-
     private readonly IPwnedPasswordsClient _pwnedPasswordsClient;
 
     public PasswordValidator(IPwnedPasswordsClient pwnedPasswordsClient)
@@ -26,34 +13,34 @@ public sealed class PasswordValidator : AbstractValidator<PasswordValidationCont
         _pwnedPasswordsClient = pwnedPasswordsClient;
 
         RuleFor(x => x.Password)
-            .Must(p => !string.IsNullOrEmpty(p) && p.Length >= MinimumLength)
-            .WithMessage(Messages.TooShort);
+            .Must(p => !string.IsNullOrEmpty(p) && p.Length >= ValidationLimits.PasswordMinLength)
+            .WithMessage(AuthErrorMessages.PasswordTooShort);
 
         RuleFor(x => x.Password)
             .Must(p => !string.IsNullOrEmpty(p) && p.Any(char.IsUpper))
-            .WithMessage(Messages.MissingUppercase);
+            .WithMessage(AuthErrorMessages.PasswordMissingUppercase);
 
         RuleFor(x => x.Password)
             .Must(p => !string.IsNullOrEmpty(p) && p.Any(char.IsLower))
-            .WithMessage(Messages.MissingLowercase);
+            .WithMessage(AuthErrorMessages.PasswordMissingLowercase);
 
         RuleFor(x => x.Password)
             .Must(p => !string.IsNullOrEmpty(p) && p.Any(char.IsDigit))
-            .WithMessage(Messages.MissingDigit);
+            .WithMessage(AuthErrorMessages.PasswordMissingDigit);
 
         RuleFor(x => x.Password)
             .Must(p => !string.IsNullOrEmpty(p) && p.Any(IsSpecialCharacter))
-            .WithMessage(Messages.MissingSpecial);
+            .WithMessage(AuthErrorMessages.PasswordMissingSpecial);
 
         RuleFor(x => x)
             .Must(NotMatchIdentity)
-            .WithMessage(Messages.EqualsIdentity);
+            .WithMessage(AuthErrorMessages.PasswordEqualsIdentity);
 
         // HIBP check is the most expensive rule — only run when the structural rules above pass,
         // so a clearly weak password never burns an external HTTP call.
         RuleFor(x => x.Password)
             .MustAsync(NotBePwnedAsync)
-            .WithMessage(Messages.Pwned)
+            .WithMessage(AuthErrorMessages.PasswordPwned)
             .When(_ => StructuralRulesPass(_));
     }
 
@@ -68,7 +55,7 @@ public sealed class PasswordValidator : AbstractValidator<PasswordValidationCont
             : PasswordValidationResult.Failure(result.Errors.Select(e => e.ErrorMessage).ToArray());
     }
 
-    private static bool IsSpecialCharacter(char c) => SpecialCharacters.Contains(c);
+    private static bool IsSpecialCharacter(char c) => ValidationLimits.PasswordSpecialCharacters.Contains(c);
 
     private static bool NotMatchIdentity(PasswordValidationContext ctx)
     {
@@ -97,7 +84,7 @@ public sealed class PasswordValidator : AbstractValidator<PasswordValidationCont
         var password = ctx.Password;
 
         if (string.IsNullOrEmpty(password)) return false;
-        if (password.Length < MinimumLength) return false;
+        if (password.Length < ValidationLimits.PasswordMinLength) return false;
         if (!password.Any(char.IsUpper)) return false;
         if (!password.Any(char.IsLower)) return false;
         if (!password.Any(char.IsDigit)) return false;

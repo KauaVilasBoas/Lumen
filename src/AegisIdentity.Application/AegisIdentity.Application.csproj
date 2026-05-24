@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AegisIdentity.Domain\AegisIdentity.Domain.csproj" />
+    <ProjectReference Include="..\SharedKernel\AegisIdentity.SharedKernel\AegisIdentity.SharedKernel.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -4,6 +4,8 @@ using AegisIdentity.Domain.Notifications;
 using AegisIdentity.Domain.Security;
 using AegisIdentity.Domain.Tokens;
 using AegisIdentity.Domain.Users;
+using AegisIdentity.SharedKernel.Constants;
+using AegisIdentity.SharedKernel.Util;
 using Microsoft.Extensions.Logging;
 
 namespace AegisIdentity.Application.Auth.Register;
@@ -13,10 +15,6 @@ public sealed class RegisterUserUseCase : IRegisterUserUseCase
     // Token is valid for 24 hours — long enough to be user-friendly, short
     // enough to limit the exposure window of a compromised confirmation link.
     private static readonly TimeSpan TokenLifetime = TimeSpan.FromHours(24);
-
-    // 32 bytes of entropy ≈ 256-bit token — no practical brute-force risk
-    // for a single-use, expiring value stored hashed in the database.
-    private const int RawTokenByteLength = 32;
 
     private readonly IUserRepository _userRepository;
     private readonly IEmailConfirmationTokenRepository _tokenRepository;
@@ -83,7 +81,7 @@ public sealed class RegisterUserUseCase : IRegisterUserUseCase
     private async Task SendConfirmationEmailAsync(User user, CancellationToken ct)
     {
         var rawToken = GenerateRawToken();
-        var tokenHash = ComputeSha256Hash(rawToken);
+        var tokenHash = Sha256Hasher.ComputeHex(rawToken);
 
         var confirmationToken = EmailConfirmationToken.Create(
             userId: user.Id,
@@ -97,15 +95,15 @@ public sealed class RegisterUserUseCase : IRegisterUserUseCase
 
         var placeholders = new Dictionary<string, string>
         {
-            ["UserName"] = user.Username,
-            ["ConfirmationUrl"] = confirmationUrl,
+            [EmailPlaceholderKeys.UserName] = user.Username,
+            [EmailPlaceholderKeys.ConfirmationUrl] = confirmationUrl,
         };
 
-        var (htmlBody, textBody) = _templateRenderer.Render("EmailConfirmation", placeholders);
+        var (htmlBody, textBody) = _templateRenderer.Render(EmailTemplateNames.EmailConfirmation, placeholders);
 
         var message = new EmailMessage(
             To: user.Email,
-            Subject: "Confirme seu email — AegisIdentity",
+            Subject: EmailSubjects.EmailConfirmation,
             HtmlBody: htmlBody,
             TextBody: textBody);
 
@@ -117,23 +115,9 @@ public sealed class RegisterUserUseCase : IRegisterUserUseCase
 
     private static string GenerateRawToken()
     {
-        var bytes = RandomNumberGenerator.GetBytes(RawTokenByteLength);
-        // Base64Url encoding is URL-safe: no +, /, or = padding characters.
-        return Base64UrlEncode(bytes);
+        // 32 bytes of entropy ≈ 256-bit token — no practical brute-force risk
+        // for a single-use, expiring value stored hashed in the database.
+        var bytes = RandomNumberGenerator.GetBytes(TokenSizes.RawTokenBytes);
+        return Base64UrlEncoder.Encode(bytes);
     }
-
-    private static string ComputeSha256Hash(string input)
-    {
-        var inputBytes = System.Text.Encoding.UTF8.GetBytes(input);
-        var hashBytes = SHA256.HashData(inputBytes);
-        return Convert.ToHexString(hashBytes).ToLowerInvariant();
-    }
-
-    // WebEncoders.Base64UrlEncode is in Microsoft.AspNetCore.WebUtilities (not available in
-    // Application layer). Implementing manually keeps Application free of ASP.NET dependencies.
-    private static string Base64UrlEncode(byte[] bytes)
-        => Convert.ToBase64String(bytes)
-            .TrimEnd('=')
-            .Replace('+', '-')
-            .Replace('/', '_');
 }
