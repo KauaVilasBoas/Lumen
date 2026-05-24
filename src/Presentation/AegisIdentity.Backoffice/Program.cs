@@ -1,10 +1,21 @@
 using AegisIdentity.Backoffice.Services;
+using AegisIdentity.Infrastructure.Configuration;
+using AegisIdentity.Jobs.Configuration;
+using AegisIdentity.Jobs.Dashboard;
+using Hangfire;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ── MVC ──────────────────────────────────────────────────────────────────────
 builder.Services.AddControllersWithViews();
+
+// ── Hangfire dashboard (storage only — no job server) ────────────────────────
+// The Backoffice reads from the same Hangfire Mongo database as the Api so
+// the dashboard reflects live job state.  AddAegisHangfireServer is NOT called
+// here; only the Api runs jobs to avoid competing consumers.
+builder.Services.AddInfrastructureOptions(builder.Configuration);
+builder.Services.AddAegisHangfire(builder.Configuration);
 
 // ── Authentication ────────────────────────────────────────────────────────────
 // Strategy: Cookie authentication backed by claims extracted from the Api JWT.
@@ -64,6 +75,18 @@ app.UseRouting();
 // Order matters: Authentication must precede Authorization.
 app.UseAuthentication();
 app.UseAuthorization();
+
+// ── Hangfire Dashboard ────────────────────────────────────────────────────────
+// Protected by HangfireDashboardAuthorizationFilter (requires authenticated
+// Backoffice session cookie).  Unauthenticated requests receive 401/403 which
+// the cookie auth middleware converts to a redirect to /Account/Login.
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = [new HangfireDashboardAuthorizationFilter()],
+    // Dashboard is read-only from the Backoffice perspective — job execution
+    // is handled exclusively by the Api's Hangfire server.
+    IsReadOnlyFunc = _ => false,
+});
 
 app.MapControllerRoute(
     name: "default",
