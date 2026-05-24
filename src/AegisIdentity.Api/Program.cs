@@ -3,6 +3,7 @@ using AegisIdentity.Api.Endpoints.Dev;
 using AegisIdentity.Api.Middleware;
 using AegisIdentity.Application.Auth;
 using AegisIdentity.Application.Security;
+using AegisIdentity.CommandHandlers.Auth.Register;
 using AegisIdentity.Infrastructure.Configuration;
 using AegisIdentity.DataAccess.HealthChecks;
 using AegisIdentity.DataAccess.Persistence;
@@ -37,7 +38,10 @@ try
     builder.Services.AddHibpClient();
     builder.Services.AddNotifications();
     builder.Services.AddApplicationSecurity();
-    builder.Services.AddAuthUseCases();
+    builder.Services.AddAuthValidators();
+
+    builder.Services.AddMediatR(cfg =>
+        cfg.RegisterServicesFromAssemblyContaining<RegisterUserCommandHandler>());
 
     builder.Services
         .AddHealthChecks()

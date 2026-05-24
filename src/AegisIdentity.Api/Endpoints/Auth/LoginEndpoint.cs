@@ -1,5 +1,7 @@
 using AegisIdentity.Application.Auth.Login;
+using AegisIdentity.CommandHandlers.Auth.Login;
 using FluentValidation;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AegisIdentity.Api.Endpoints.Auth;
@@ -30,7 +32,7 @@ public static class LoginEndpoint
 
     private static async Task<IResult> HandleAsync(
         [FromBody] LoginRequest request,
-        [FromServices] ILoginUserUseCase useCase,
+        [FromServices] IMediator mediator,
         [FromServices] IValidator<LoginRequest> validator,
         HttpContext httpContext,
         CancellationToken cancellationToken)
@@ -40,20 +42,21 @@ public static class LoginEndpoint
             return Results.ValidationProblem(validation.ToDictionary());
 
         var clientIp = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        var result = await useCase.ExecuteAsync(request, clientIp, cancellationToken);
+        var command = new LoginUserCommandHandler.Command(request.Identifier, request.Password, clientIp);
+        var result = await mediator.Send(command, cancellationToken);
 
         return result switch
         {
-            LoginResult.Success success =>
-                Results.Ok(success.Response),
+            LoginUserCommandHandler.Result.Success success =>
+                Results.Ok(new LoginResponse(success.AccessToken, success.RefreshToken, success.ExpiresIn)),
 
-            LoginResult.InvalidCredentials =>
+            LoginUserCommandHandler.Result.InvalidCredentials =>
                 Results.Unauthorized(),
 
-            LoginResult.EmailNotConfirmed =>
+            LoginUserCommandHandler.Result.EmailNotConfirmed =>
                 Results.Forbid(),
 
-            LoginResult.AccountLocked locked =>
+            LoginUserCommandHandler.Result.AccountLocked =>
                 Results.StatusCode(StatusCodes.Status423Locked),
 
             _ => Results.StatusCode(StatusCodes.Status500InternalServerError),

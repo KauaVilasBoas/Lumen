@@ -1,5 +1,7 @@
 using AegisIdentity.Application.Auth.Register;
+using AegisIdentity.CommandHandlers.Auth.Register;
 using FluentValidation;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AegisIdentity.Api.Endpoints.Auth;
@@ -27,7 +29,7 @@ public static class RegisterEndpoint
 
     private static async Task<IResult> HandleAsync(
         [FromBody] RegisterRequest request,
-        [FromServices] IRegisterUserUseCase useCase,
+        [FromServices] IMediator mediator,
         [FromServices] IValidator<RegisterRequest> validator,
         CancellationToken cancellationToken)
     {
@@ -35,23 +37,26 @@ public static class RegisterEndpoint
         if (!validation.IsValid)
             return Results.ValidationProblem(validation.ToDictionary());
 
-        var result = await useCase.ExecuteAsync(request, cancellationToken);
+        var command = new RegisterUserCommandHandler.Command(request.Email, request.Username, request.Password);
+        var result = await mediator.Send(command, cancellationToken);
 
         return result switch
         {
-            RegisterResult.Success success =>
-                Results.Created($"/api/users/{success.Response.Id}", success.Response),
+            RegisterUserCommandHandler.Result.Success success =>
+                Results.Created(
+                    $"/api/users/{success.Id}",
+                    new RegisterResponse(success.Id, success.Email, success.Username)),
 
-            RegisterResult.WeakPassword weak =>
+            RegisterUserCommandHandler.Result.WeakPassword weak =>
                 Results.ValidationProblem(new Dictionary<string, string[]>
                 {
                     ["password"] = [..weak.Errors],
                 }),
 
-            RegisterResult.DuplicateEmail =>
+            RegisterUserCommandHandler.Result.DuplicateEmail =>
                 Results.Conflict(new { error = "Este email já está em uso." }),
 
-            RegisterResult.DuplicateUsername =>
+            RegisterUserCommandHandler.Result.DuplicateUsername =>
                 Results.Conflict(new { error = "Este username já está em uso." }),
 
             _ => Results.StatusCode(StatusCodes.Status500InternalServerError),

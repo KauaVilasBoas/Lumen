@@ -7,13 +7,15 @@ namespace AegisIdentity.Application.Auth;
 
 public static class AuthServiceExtensions
 {
-    public static IServiceCollection AddAuthUseCases(this IServiceCollection services)
+    /// <summary>
+    /// Registers FluentValidation validators for the auth request DTOs.
+    /// Use-case implementations are no longer registered here — requests are
+    /// dispatched through MediatR (<c>services.AddMediatR</c> in the Api root).
+    /// </summary>
+    public static IServiceCollection AddAuthValidators(this IServiceCollection services)
     {
         services.AddScoped<IValidator<RegisterRequest>, RegisterRequestValidator>();
-        services.AddScoped<IRegisterUserUseCase, RegisterUserUseCase>();
-
         services.AddScoped<IValidator<LoginRequest>, LoginRequestValidator>();
-        services.AddScoped<ILoginUserUseCase, LoginUserUseCase>();
 
         return services;
     }
