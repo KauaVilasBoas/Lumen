@@ -2,7 +2,9 @@ using AegisIdentity.Domain.Configuration;
 using AegisIdentity.Domain.Security;
 using AegisIdentity.Domain.Tokens;
 using AegisIdentity.Domain.Users;
+using AegisIdentity.SharedKernel.Constants;
 using AegisIdentity.SharedKernel.Util;
+using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -22,6 +24,22 @@ public sealed class LoginUserCommandHandler
     /// the presence of '@' is used to discriminate between the two at the handler level.
     /// </summary>
     public sealed record Command(string Identifier, string Password, string ClientIp) : IRequest<Result>;
+
+    /// <summary>
+    /// Structural (non-I/O) validator for the login command.
+    /// Executed by <see cref="Behaviors.ValidationBehavior{TRequest,TResponse}"/> before Handle.
+    /// </summary>
+    public sealed class Validator : AbstractValidator<Command>
+    {
+        public Validator()
+        {
+            RuleFor(x => x.Identifier)
+                .NotEmpty().WithMessage("O campo identificador é obrigatório.");
+
+            RuleFor(x => x.Password)
+                .NotEmpty().WithMessage("O campo senha é obrigatório.");
+        }
+    }
 
     /// <summary>Discriminated union result — one subtype per outcome.</summary>
     public abstract class Result

@@ -6,6 +6,7 @@ using AegisIdentity.Domain.Tokens;
 using AegisIdentity.Domain.Users;
 using AegisIdentity.SharedKernel.Constants;
 using AegisIdentity.SharedKernel.Util;
+using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
@@ -22,6 +23,34 @@ public sealed class RegisterUserCommandHandler
 
     /// <summary>Registration input. Validated at the API boundary before dispatch.</summary>
     public sealed record Command(string Email, string Username, string Password) : IRequest<Result>;
+
+    /// <summary>
+    /// Structural (non-I/O) validator for the registration command.
+    /// Executed by <see cref="Behaviors.ValidationBehavior{TRequest,TResponse}"/> before Handle.
+    /// Rules that require I/O (uniqueness check, HIBP) remain inside Handle().
+    /// </summary>
+    public sealed class Validator : AbstractValidator<Command>
+    {
+        public Validator()
+        {
+            RuleFor(x => x.Email)
+                .NotEmpty().WithMessage(AuthErrorMessages.EmailRequired)
+                .EmailAddress().WithMessage(AuthErrorMessages.EmailInvalid)
+                .MaximumLength(ValidationLimits.EmailMaxLength).WithMessage(AuthErrorMessages.EmailTooLong);
+
+            RuleFor(x => x.Username)
+                .NotEmpty().WithMessage(AuthErrorMessages.UsernameRequired)
+                .MinimumLength(ValidationLimits.UsernameMinLength)
+                    .WithMessage(string.Format(AuthErrorMessages.UsernameTooShort, ValidationLimits.UsernameMinLength))
+                .MaximumLength(ValidationLimits.UsernameMaxLength)
+                    .WithMessage(string.Format(AuthErrorMessages.UsernameTooLong, ValidationLimits.UsernameMaxLength))
+                .Matches("^[a-zA-Z0-9_-]+$")
+                    .WithMessage(AuthErrorMessages.UsernameInvalidChars);
+
+            RuleFor(x => x.Password)
+                .NotEmpty().WithMessage(AuthErrorMessages.PasswordRequired);
+        }
+    }
 
     /// <summary>Discriminated union result — one subtype per outcome.</summary>
     public abstract class Result
