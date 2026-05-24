@@ -8,6 +8,7 @@
     <ProjectReference Include="..\AegisIdentity.Application\AegisIdentity.Application.csproj" />
     <ProjectReference Include="..\AegisIdentity.Infrastructure\AegisIdentity.Infrastructure.csproj" />
     <ProjectReference Include="..\Infrastructure\AegisIdentity.DataAccess\AegisIdentity.DataAccess.csproj" />
+    <ProjectReference Include="..\Infrastructure\AegisIdentity.Integration\AegisIdentity.Integration.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -6,7 +6,8 @@ using AegisIdentity.Application.Security;
 using AegisIdentity.Infrastructure.Configuration;
 using AegisIdentity.DataAccess.HealthChecks;
 using AegisIdentity.DataAccess.Persistence;
-using AegisIdentity.Infrastructure.Notifications;
+using AegisIdentity.Integration.Notifications;
+using AegisIdentity.Integration.Security;
 using AegisIdentity.Infrastructure.Security;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
@@ -33,6 +34,7 @@ try
     builder.Services.AddInfrastructureOptions(builder.Configuration);
     builder.Services.AddMongoDb(builder.Configuration);
     builder.Services.AddSecurity();
+    builder.Services.AddHibpClient();
     builder.Services.AddNotifications();
     builder.Services.AddApplicationSecurity();
     builder.Services.AddAuthUseCases();

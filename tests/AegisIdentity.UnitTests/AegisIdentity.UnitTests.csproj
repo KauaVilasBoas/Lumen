@@ -22,6 +22,7 @@
     <ProjectReference Include="..\..\src\AegisIdentity.Domain\AegisIdentity.Domain.csproj" />
     <ProjectReference Include="..\..\src\AegisIdentity.Application\AegisIdentity.Application.csproj" />
     <ProjectReference Include="..\..\src\AegisIdentity.Infrastructure\AegisIdentity.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Infrastructure\AegisIdentity.Integration\AegisIdentity.Integration.csproj" />
     <ProjectReference Include="..\..\src\AegisIdentity.Api\AegisIdentity.Api.csproj" />
   </ItemGroup>
 

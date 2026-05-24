@@ -1,4 +1,4 @@
-using AegisIdentity.Infrastructure.Notifications;
+using AegisIdentity.Integration.Notifications;
 using MimeKit;
 
 namespace AegisIdentity.UnitTests.Infrastructure.Notifications;

@@ -1,4 +1,4 @@
-using AegisIdentity.Infrastructure.Notifications;
+using AegisIdentity.Integration.Notifications;
 using FluentAssertions;
 
 namespace AegisIdentity.UnitTests.Infrastructure.Notifications;
