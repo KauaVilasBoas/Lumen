@@ -9,6 +9,7 @@ public static class SecurityServiceExtensions
     {
         services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
         services.AddSingleton<IJwtService, JwtService>();
+        services.AddScoped<IPasswordValidator, PasswordValidator>();
 
         return services;
     }
