@@ -16,6 +16,16 @@
     <PackageVersion Include="BCrypt.Net-Next" Version="4.0.3" />
   </ItemGroup>
 
+  <!-- ─── Mediator / CQRS ─────────────────────────────────────────── -->
+  <ItemGroup>
+    <!--
+      MediatR 12.x — BSL 1.1, permitted for internal use.
+      CommandHandlers and QueryHandlers implement IRequestHandler<TRequest, TResponse>.
+      The dispatcher (IMediator) is registered in the Api DI root.
+    -->
+    <PackageVersion Include="MediatR" Version="12.4.1" />
+  </ItemGroup>
+
   <!-- ─── Validation ───────────────────────────────────────────────── -->
   <ItemGroup>
     <PackageVersion Include="FluentValidation" Version="11.11.0" />
