@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <RootNamespace>AegisIdentity.Backoffice</RootNamespace>
+    <AssemblyName>AegisIdentity.Backoffice</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\SharedKernel\AegisIdentity.SharedKernel\AegisIdentity.SharedKernel.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Microsoft.AspNetCore.Authentication.Cookies is part of the Microsoft.AspNetCore.App
+      shared framework — no PackageReference required for Sdk="Microsoft.NET.Sdk.Web".
+
+      System.IdentityModel.Tokens.Jwt is used to decode the JWT returned by the Api
+      and extract claims before signing the Backoffice cookie.
+    -->
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
+  </ItemGroup>
+
+</Project>
