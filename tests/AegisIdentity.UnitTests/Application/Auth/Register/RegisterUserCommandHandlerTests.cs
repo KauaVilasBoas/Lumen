@@ -1,4 +1,4 @@
-using AegisIdentity.Application.Auth.Register;
+using AegisIdentity.CommandHandlers.Auth.Register;
 using AegisIdentity.Domain.Configuration;
 using AegisIdentity.Domain.Notifications;
 using AegisIdentity.Domain.Security;
@@ -11,7 +11,7 @@ using NSubstitute.ExceptionExtensions;
 
 namespace AegisIdentity.UnitTests.Application.Auth.Register;
 
-public sealed class RegisterUserUseCaseTests
+public sealed class RegisterUserCommandHandlerTests
 {
     private const string ValidEmail = "alice@example.com";
     private const string ValidUsername = "alice";
@@ -27,7 +27,7 @@ public sealed class RegisterUserUseCaseTests
     private readonly IEmailTemplateRenderer _templateRenderer = Substitute.For<IEmailTemplateRenderer>();
     private readonly IAppSettings _appSettings = Substitute.For<IAppSettings>();
 
-    public RegisterUserUseCaseTests()
+    public RegisterUserCommandHandlerTests()
     {
         _passwordHasher.Hash(Arg.Any<string>()).Returns(FakeHash);
         _passwordValidator.ValidatePasswordAsync(Arg.Any<PasswordValidationContext>(), Arg.Any<CancellationToken>())
@@ -40,25 +40,25 @@ public sealed class RegisterUserUseCaseTests
     // ── Password validation ────────────────────────────────────────────────
 
     [Fact]
-    public async Task ExecuteAsync_WhenPasswordIsWeak_ReturnsWeakPasswordResult()
+    public async Task Handle_WhenPasswordIsWeak_ReturnsWeakPasswordResult()
     {
         var errors = new[] { "A senha deve ter no mínimo 12 caracteres." };
         _passwordValidator.ValidatePasswordAsync(Arg.Any<PasswordValidationContext>(), Arg.Any<CancellationToken>())
             .Returns(PasswordValidationResult.Failure(errors));
 
-        var result = await CreateUseCase().ExecuteAsync(ValidRequest());
+        var result = await CreateHandler().Handle(ValidCommand(), CancellationToken.None);
 
-        result.Should().BeOfType<RegisterResult.WeakPassword>();
-        ((RegisterResult.WeakPassword)result).Errors.Should().BeEquivalentTo(errors);
+        result.Should().BeOfType<RegisterUserCommandHandler.Result.WeakPassword>();
+        ((RegisterUserCommandHandler.Result.WeakPassword)result).Errors.Should().BeEquivalentTo(errors);
     }
 
     [Fact]
-    public async Task ExecuteAsync_WhenPasswordIsWeak_DoesNotInsertUser()
+    public async Task Handle_WhenPasswordIsWeak_DoesNotInsertUser()
     {
         _passwordValidator.ValidatePasswordAsync(Arg.Any<PasswordValidationContext>(), Arg.Any<CancellationToken>())
             .Returns(PasswordValidationResult.Failure(["too short"]));
 
-        await CreateUseCase().ExecuteAsync(ValidRequest());
+        await CreateHandler().Handle(ValidCommand(), CancellationToken.None);
 
         await _userRepository.DidNotReceive().InsertAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
     }
@@ -66,44 +66,44 @@ public sealed class RegisterUserUseCaseTests
     // ── Duplicate conflicts ────────────────────────────────────────────────
 
     [Fact]
-    public async Task ExecuteAsync_WhenEmailIsDuplicate_ReturnsDuplicateEmailResult()
+    public async Task Handle_WhenEmailIsDuplicate_ReturnsDuplicateEmailResult()
     {
         _userRepository.InsertAsync(Arg.Any<User>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new DuplicateEmailException(ValidEmail));
 
-        var result = await CreateUseCase().ExecuteAsync(ValidRequest());
+        var result = await CreateHandler().Handle(ValidCommand(), CancellationToken.None);
 
-        result.Should().BeOfType<RegisterResult.DuplicateEmail>();
+        result.Should().BeOfType<RegisterUserCommandHandler.Result.DuplicateEmail>();
     }
 
     [Fact]
-    public async Task ExecuteAsync_WhenUsernameIsDuplicate_ReturnsDuplicateUsernameResult()
+    public async Task Handle_WhenUsernameIsDuplicate_ReturnsDuplicateUsernameResult()
     {
         _userRepository.InsertAsync(Arg.Any<User>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new DuplicateUsernameException(ValidUsername));
 
-        var result = await CreateUseCase().ExecuteAsync(ValidRequest());
+        var result = await CreateHandler().Handle(ValidCommand(), CancellationToken.None);
 
-        result.Should().BeOfType<RegisterResult.DuplicateUsername>();
+        result.Should().BeOfType<RegisterUserCommandHandler.Result.DuplicateUsername>();
     }
 
     // ── Happy path ────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task ExecuteAsync_WhenRequestIsValid_ReturnsSuccessWithUserData()
+    public async Task Handle_WhenCommandIsValid_ReturnsSuccessWithUserData()
     {
-        var result = await CreateUseCase().ExecuteAsync(ValidRequest());
+        var result = await CreateHandler().Handle(ValidCommand(), CancellationToken.None);
 
-        var success = result.Should().BeOfType<RegisterResult.Success>().Subject;
-        success.Response.Email.Should().Be(User.NormalizeEmail(ValidEmail));
-        success.Response.Username.Should().Be(ValidUsername);
-        success.Response.Id.Should().NotBeNullOrEmpty();
+        var success = result.Should().BeOfType<RegisterUserCommandHandler.Result.Success>().Subject;
+        success.Email.Should().Be(User.NormalizeEmail(ValidEmail));
+        success.Username.Should().Be(ValidUsername);
+        success.Id.Should().NotBeNullOrEmpty();
     }
 
     [Fact]
-    public async Task ExecuteAsync_WhenRequestIsValid_HashesPasswordBeforeInserting()
+    public async Task Handle_WhenCommandIsValid_HashesPasswordBeforeInserting()
     {
-        await CreateUseCase().ExecuteAsync(ValidRequest());
+        await CreateHandler().Handle(ValidCommand(), CancellationToken.None);
 
         _passwordHasher.Received(1).Hash(ValidPassword);
         await _userRepository.Received(1).InsertAsync(
@@ -112,9 +112,9 @@ public sealed class RegisterUserUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_WhenRequestIsValid_CreatesUserWithIsActiveFalse()
+    public async Task Handle_WhenCommandIsValid_CreatesUserWithIsActiveFalse()
     {
-        await CreateUseCase().ExecuteAsync(ValidRequest());
+        await CreateHandler().Handle(ValidCommand(), CancellationToken.None);
 
         await _userRepository.Received(1).InsertAsync(
             Arg.Is<User>(u => u.IsActive == false),
@@ -122,9 +122,9 @@ public sealed class RegisterUserUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_WhenRequestIsValid_InsertsEmailConfirmationToken()
+    public async Task Handle_WhenCommandIsValid_InsertsEmailConfirmationToken()
     {
-        await CreateUseCase().ExecuteAsync(ValidRequest());
+        await CreateHandler().Handle(ValidCommand(), CancellationToken.None);
 
         await _tokenRepository.Received(1).InsertAsync(
             Arg.Any<EmailConfirmationToken>(),
@@ -132,9 +132,9 @@ public sealed class RegisterUserUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_WhenRequestIsValid_SendsConfirmationEmail()
+    public async Task Handle_WhenCommandIsValid_SendsConfirmationEmail()
     {
-        await CreateUseCase().ExecuteAsync(ValidRequest());
+        await CreateHandler().Handle(ValidCommand(), CancellationToken.None);
 
         await _emailService.Received(1).SendAsync(
             Arg.Is<EmailMessage>(m => m.To == User.NormalizeEmail(ValidEmail)),
@@ -142,9 +142,9 @@ public sealed class RegisterUserUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_WhenRequestIsValid_ConfirmationUrlContainsBaseUrl()
+    public async Task Handle_WhenCommandIsValid_ConfirmationUrlContainsBaseUrl()
     {
-        await CreateUseCase().ExecuteAsync(ValidRequest());
+        await CreateHandler().Handle(ValidCommand(), CancellationToken.None);
 
         _templateRenderer.Received(1).Render(
             "EmailConfirmation",
@@ -154,22 +154,9 @@ public sealed class RegisterUserUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_WhenEmailServiceFails_StillReturnsSuccess()
+    public async Task Handle_WhenCommandIsValid_PassesEmailAndUsernameToPasswordValidator()
     {
-        // IEmailService is fail-open; exceptions propagated from SendAsync would be a
-        // contract violation, but we guard against it here for defensive completeness.
-        _emailService.SendAsync(Arg.Any<EmailMessage>(), Arg.Any<CancellationToken>())
-            .Returns(Task.CompletedTask); // confirm it doesn't throw
-
-        var result = await CreateUseCase().ExecuteAsync(ValidRequest());
-
-        result.Should().BeOfType<RegisterResult.Success>();
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_WhenRequestIsValid_PassesEmailAndUsernameToPasswordValidator()
-    {
-        await CreateUseCase().ExecuteAsync(ValidRequest());
+        await CreateHandler().Handle(ValidCommand(), CancellationToken.None);
 
         await _passwordValidator.Received(1).ValidatePasswordAsync(
             Arg.Is<PasswordValidationContext>(ctx =>
@@ -179,7 +166,7 @@ public sealed class RegisterUserUseCaseTests
 
     // ── Helpers ───────────────────────────────────────────────────────────
 
-    private RegisterUserUseCase CreateUseCase() =>
+    private RegisterUserCommandHandler CreateHandler() =>
         new(
             _userRepository,
             _tokenRepository,
@@ -188,8 +175,8 @@ public sealed class RegisterUserUseCaseTests
             _emailService,
             _templateRenderer,
             _appSettings,
-            NullLogger<RegisterUserUseCase>.Instance);
+            NullLogger<RegisterUserCommandHandler>.Instance);
 
-    private static RegisterRequest ValidRequest() =>
+    private static RegisterUserCommandHandler.Command ValidCommand() =>
         new(ValidEmail, ValidUsername, ValidPassword);
 }
