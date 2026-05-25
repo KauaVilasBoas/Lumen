@@ -3,15 +3,6 @@ using MediatR;
 
 namespace AegisIdentity.CommandHandlers.Behaviors;
 
-/// <summary>
-/// MediatR pipeline behavior that runs all registered <see cref="IValidator{T}"/> instances
-/// for a request before the handler is invoked (fail-fast input validation).
-/// <para>
-/// Validators resolved here are responsible only for structural, non-I/O rules.
-/// Business-rule validations that require I/O (repository lookups, external calls)
-/// remain inside the handler's <c>Handle</c> method.
-/// </para>
-/// </summary>
 public sealed class ValidationBehavior<TRequest, TResponse>
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>

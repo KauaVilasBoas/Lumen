@@ -4,11 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AegisIdentity.Api.ExceptionHandlers;
 
-/// <summary>
-/// Converts a <see cref="FluentValidation.ValidationException"/> thrown by the
-/// MediatR <c>ValidationBehavior</c> pipeline into a structured
-/// <see cref="ValidationProblemDetails"/> (RFC 7807) response with HTTP 400.
-/// </summary>
 public sealed class ValidationExceptionHandler : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(

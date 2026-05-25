@@ -38,9 +38,9 @@ try
     // ── Infrastructure ────────────────────────────────────────────────────────
     builder.Services.AddInfrastructureOptions(builder.Configuration);
     builder.Services.AddMongoDb(builder.Configuration);
-    builder.Services.AddSecurity();       // BCryptPasswordHasher, JwtService, PasswordValidator
-    builder.Services.AddHibpClient();     // IPwnedPasswordsClient
-    builder.Services.AddNotifications(); // IEmailService, IEmailTemplateRenderer
+    builder.Services.AddSecurity();
+    builder.Services.AddHibpClient();
+    builder.Services.AddNotifications();
 
     // ── Background Jobs (Hangfire + Mongo storage) ───────────────────────────
     // AddInfrastructureOptions is called earlier — MongoOptions is already
@@ -52,11 +52,9 @@ try
     builder.Services.AddMediatR(cfg =>
     {
         cfg.RegisterServicesFromAssemblyContaining<RegisterUserCommandHandler>();
-        // ValidationBehavior runs all IValidator<TRequest> before each handler.
         cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
     });
 
-    // Register all AbstractValidator<T> nested in the CommandHandlers assembly.
     builder.Services.AddValidatorsFromAssemblyContaining<RegisterUserCommandHandler>();
 
     // ── Presentation ──────────────────────────────────────────────────────────
@@ -132,13 +130,6 @@ try
     });
 
     app.MapControllers();
-
-    if (app.Environment.IsDevelopment())
-    {
-        // Dev-only endpoints (e.g. DevController) are part of MapControllers above.
-        // The guard is enforced by DevController's own ApiExplorerSettings and the
-        // conditional Swagger registration below (when added in a future iteration).
-    }
 
     app.Run();
 }

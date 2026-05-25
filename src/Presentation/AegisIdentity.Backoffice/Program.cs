@@ -49,8 +49,6 @@ builder.Services
 builder.Services.AddAuthorization();
 
 // ── HttpClient — Api ──────────────────────────────────────────────────────────
-// AuthApiClient is a typed HttpClient that talks to the AegisIdentity Api.
-// BaseAddress is injected from appsettings.json (Api:BaseUrl).
 builder.Services.AddHttpClient<AuthApiClient>(client =>
 {
     var baseUrl = builder.Configuration["Api:BaseUrl"]
