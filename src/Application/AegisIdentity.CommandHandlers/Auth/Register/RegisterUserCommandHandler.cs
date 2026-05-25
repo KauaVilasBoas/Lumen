@@ -5,6 +5,7 @@ using AegisIdentity.Domain.Security;
 using AegisIdentity.Domain.Tokens;
 using AegisIdentity.Domain.Users;
 using AegisIdentity.SharedKernel.Constants;
+using AegisIdentity.SharedKernel.Exceptions;
 using AegisIdentity.SharedKernel.Util;
 using FluentValidation;
 using MediatR;
@@ -12,23 +13,11 @@ using Microsoft.Extensions.Logging;
 
 namespace AegisIdentity.CommandHandlers.Auth.Register;
 
-/// <summary>
-/// Handles user registration: validates the password, creates the user, persists an
-/// email-confirmation token, and dispatches the confirmation email (fail-open).
-/// </summary>
 public sealed class RegisterUserCommandHandler
     : IRequestHandler<RegisterUserCommandHandler.Command, RegisterUserCommandHandler.Result>
 {
-    // ── Nested types ─────────────────────────────────────────────────────────
-
-    /// <summary>Registration input. Validated at the API boundary before dispatch.</summary>
     public sealed record Command(string Email, string Username, string Password) : IRequest<Result>;
 
-    /// <summary>
-    /// Structural (non-I/O) validator for the registration command.
-    /// Executed by <see cref="Behaviors.ValidationBehavior{TRequest,TResponse}"/> before Handle.
-    /// Rules that require I/O (uniqueness check, HIBP) remain inside Handle().
-    /// </summary>
     public sealed class Validator : AbstractValidator<Command>
     {
         public Validator()
@@ -52,44 +41,9 @@ public sealed class RegisterUserCommandHandler
         }
     }
 
-    /// <summary>Discriminated union result — one subtype per outcome.</summary>
-    public abstract class Result
-    {
-        private Result() { }
+    public sealed record Result(string Id, string Email, string Username);
 
-        public sealed class Success : Result
-        {
-            public string Id { get; }
-            public string Email { get; }
-            public string Username { get; }
-
-            public Success(string id, string email, string username)
-            {
-                Id = id;
-                Email = email;
-                Username = username;
-            }
-        }
-
-        public sealed class WeakPassword : Result
-        {
-            public IReadOnlyList<string> Errors { get; }
-
-            public WeakPassword(IReadOnlyList<string> errors) => Errors = errors;
-        }
-
-        public sealed class DuplicateEmail : Result { }
-
-        public sealed class DuplicateUsername : Result { }
-    }
-
-    // ── Constants ─────────────────────────────────────────────────────────────
-
-    // Token is valid for 24 hours — long enough to be user-friendly, short
-    // enough to limit the exposure window of a compromised confirmation link.
     private static readonly TimeSpan TokenLifetime = TimeSpan.FromHours(24);
-
-    // ── Dependencies ──────────────────────────────────────────────────────────
 
     private readonly IUserRepository _userRepository;
     private readonly IEmailConfirmationTokenRepository _tokenRepository;
@@ -120,15 +74,13 @@ public sealed class RegisterUserCommandHandler
         _logger = logger;
     }
 
-    // ── Handler ───────────────────────────────────────────────────────────────
-
     public async Task<Result> Handle(Command cmd, CancellationToken ct)
     {
         var passwordValidation = await _passwordValidator.ValidatePasswordAsync(
             new(cmd.Password, cmd.Email, cmd.Username), ct);
 
         if (!passwordValidation.IsValid)
-            return new Result.WeakPassword(passwordValidation.Errors);
+            throw new SharedKernel.Exceptions.ValidationException("password", passwordValidation.Errors);
 
         var passwordHash = _passwordHasher.Hash(cmd.Password);
         var user = User.Create(cmd.Email, cmd.Username, passwordHash);
@@ -139,22 +91,19 @@ public sealed class RegisterUserCommandHandler
         }
         catch (DuplicateEmailException)
         {
-            return new Result.DuplicateEmail();
+            throw new ConflictException(AuthErrorMessages.EmailAlreadyInUse);
         }
         catch (DuplicateUsernameException)
         {
-            return new Result.DuplicateUsername();
+            throw new ConflictException(AuthErrorMessages.UsernameAlreadyInUse);
         }
 
-        _logger.LogInformation(
-            "User {UserId} registered with email {Email}", user.Id, user.Email);
+        _logger.LogInformation("User {UserId} registered with email {Email}", user.Id, user.Email);
 
         await SendConfirmationEmailAsync(user, ct);
 
-        return new Result.Success(user.Id, user.Email, user.Username);
+        return new Result(user.Id, user.Email, user.Username);
     }
-
-    // ── Private helpers ───────────────────────────────────────────────────────
 
     private async Task SendConfirmationEmailAsync(User user, CancellationToken ct)
     {
@@ -185,16 +134,11 @@ public sealed class RegisterUserCommandHandler
             HtmlBody: htmlBody,
             TextBody: textBody);
 
-        // IEmailService is fail-open: transport errors are logged and swallowed.
-        // The registration is already committed — a confirmation-email failure
-        // must not roll it back.
         await _emailService.SendAsync(message, ct);
     }
 
     private static string GenerateRawToken()
     {
-        // 32 bytes of entropy ≈ 256-bit token — no practical brute-force risk
-        // for a single-use, expiring value stored hashed in the database.
         var bytes = RandomNumberGenerator.GetBytes(TokenSizes.RawTokenBytes);
         return Base64UrlEncoder.Encode(bytes);
     }
