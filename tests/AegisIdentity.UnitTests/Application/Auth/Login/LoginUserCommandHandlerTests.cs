@@ -3,6 +3,7 @@ using AegisIdentity.Domain.Configuration;
 using AegisIdentity.Domain.Security;
 using AegisIdentity.Domain.Tokens;
 using AegisIdentity.Domain.Users;
+using AegisIdentity.SharedKernel.Exceptions;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -40,25 +41,25 @@ public sealed class LoginUserCommandHandlerTests
     // ── User not found ────────────────────────────────────────────────────
 
     [Fact]
-    public async Task Handle_WhenEmailNotFound_ReturnsInvalidCredentials()
+    public async Task Handle_WhenEmailNotFound_ThrowsUnauthorizedException()
     {
         _userRepository.FindByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .ReturnsNull();
 
-        var result = await CreateHandler().Handle(EmailCommand(), CancellationToken.None);
+        var act = () => CreateHandler().Handle(EmailCommand(), CancellationToken.None);
 
-        result.Should().BeOfType<LoginUserCommandHandler.Result.InvalidCredentials>();
+        await act.Should().ThrowAsync<UnauthorizedException>();
     }
 
     [Fact]
-    public async Task Handle_WhenUsernameNotFound_ReturnsInvalidCredentials()
+    public async Task Handle_WhenUsernameNotFound_ThrowsUnauthorizedException()
     {
         _userRepository.FindByUsernameAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .ReturnsNull();
 
-        var result = await CreateHandler().Handle(UsernameCommand(), CancellationToken.None);
+        var act = () => CreateHandler().Handle(UsernameCommand(), CancellationToken.None);
 
-        result.Should().BeOfType<LoginUserCommandHandler.Result.InvalidCredentials>();
+        await act.Should().ThrowAsync<UnauthorizedException>();
     }
 
     // ── Email vs username discrimination ──────────────────────────────────
@@ -69,7 +70,8 @@ public sealed class LoginUserCommandHandlerTests
         _userRepository.FindByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .ReturnsNull();
 
-        await CreateHandler().Handle(EmailCommand(), CancellationToken.None);
+        await Assert.ThrowsAsync<UnauthorizedException>(
+            () => CreateHandler().Handle(EmailCommand(), CancellationToken.None));
 
         await _userRepository.Received(1).FindByEmailAsync(
             User.NormalizeEmail(ValidEmail), Arg.Any<CancellationToken>());
@@ -83,7 +85,8 @@ public sealed class LoginUserCommandHandlerTests
         _userRepository.FindByUsernameAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .ReturnsNull();
 
-        await CreateHandler().Handle(UsernameCommand(), CancellationToken.None);
+        await Assert.ThrowsAsync<UnauthorizedException>(
+            () => CreateHandler().Handle(UsernameCommand(), CancellationToken.None));
 
         await _userRepository.Received(1).FindByUsernameAsync(
             ValidUsername, Arg.Any<CancellationToken>());
@@ -94,15 +97,15 @@ public sealed class LoginUserCommandHandlerTests
     // ── Wrong password ────────────────────────────────────────────────────
 
     [Fact]
-    public async Task Handle_WhenPasswordIsWrong_ReturnsInvalidCredentials()
+    public async Task Handle_WhenPasswordIsWrong_ThrowsUnauthorizedException()
     {
         var user = ActiveUser();
         _userRepository.FindByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(user);
         _passwordHasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(false);
 
-        var result = await CreateHandler().Handle(EmailCommand(), CancellationToken.None);
+        var act = () => CreateHandler().Handle(EmailCommand(), CancellationToken.None);
 
-        result.Should().BeOfType<LoginUserCommandHandler.Result.InvalidCredentials>();
+        await act.Should().ThrowAsync<UnauthorizedException>();
     }
 
     [Fact]
@@ -112,7 +115,8 @@ public sealed class LoginUserCommandHandlerTests
         _userRepository.FindByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(user);
         _passwordHasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(false);
 
-        await CreateHandler().Handle(EmailCommand(), CancellationToken.None);
+        await Assert.ThrowsAsync<UnauthorizedException>(
+            () => CreateHandler().Handle(EmailCommand(), CancellationToken.None));
 
         await _userRepository.Received(1).UpdateAsync(
             Arg.Is<User>(u => u.FailedLoginAttempts == 1), Arg.Any<CancellationToken>());
@@ -121,16 +125,16 @@ public sealed class LoginUserCommandHandlerTests
     // ── Account locked ────────────────────────────────────────────────────
 
     [Fact]
-    public async Task Handle_WhenAccountIsLocked_ReturnsAccountLockedWithExpiry()
+    public async Task Handle_WhenAccountIsLocked_ThrowsAccountLockedExceptionWithExpiry()
     {
         var lockedUntil = DateTime.UtcNow.AddMinutes(10);
         var user = LockedUser(lockedUntil);
         _userRepository.FindByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(user);
 
-        var result = await CreateHandler().Handle(EmailCommand(), CancellationToken.None);
+        var act = () => CreateHandler().Handle(EmailCommand(), CancellationToken.None);
 
-        var locked = result.Should().BeOfType<LoginUserCommandHandler.Result.AccountLocked>().Subject;
-        locked.LockedUntil.Should().BeCloseTo(lockedUntil, TimeSpan.FromSeconds(1));
+        var exception = await act.Should().ThrowAsync<AccountLockedException>();
+        exception.Which.LockedUntil.Should().BeCloseTo(lockedUntil, TimeSpan.FromSeconds(1));
     }
 
     [Fact]
@@ -139,7 +143,8 @@ public sealed class LoginUserCommandHandlerTests
         var user = LockedUser(DateTime.UtcNow.AddMinutes(10));
         _userRepository.FindByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(user);
 
-        await CreateHandler().Handle(EmailCommand(), CancellationToken.None);
+        await Assert.ThrowsAsync<AccountLockedException>(
+            () => CreateHandler().Handle(EmailCommand(), CancellationToken.None));
 
         _passwordHasher.DidNotReceive().Verify(Arg.Any<string>(), Arg.Any<string>());
     }
@@ -147,15 +152,15 @@ public sealed class LoginUserCommandHandlerTests
     // ── Email not confirmed ───────────────────────────────────────────────
 
     [Fact]
-    public async Task Handle_WhenEmailNotConfirmed_ReturnsEmailNotConfirmed()
+    public async Task Handle_WhenEmailNotConfirmed_ThrowsForbiddenException()
     {
         var user = InactiveUser();
         _userRepository.FindByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(user);
         _passwordHasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(true);
 
-        var result = await CreateHandler().Handle(EmailCommand(), CancellationToken.None);
+        var act = () => CreateHandler().Handle(EmailCommand(), CancellationToken.None);
 
-        result.Should().BeOfType<LoginUserCommandHandler.Result.EmailNotConfirmed>();
+        await act.Should().ThrowAsync<ForbiddenException>();
     }
 
     // ── Happy path ────────────────────────────────────────────────────────
@@ -169,9 +174,8 @@ public sealed class LoginUserCommandHandlerTests
 
         var result = await CreateHandler().Handle(EmailCommand(), CancellationToken.None);
 
-        var success = result.Should().BeOfType<LoginUserCommandHandler.Result.Success>().Subject;
-        success.AccessToken.Should().Be(FakeAccessToken);
-        success.RefreshToken.Should().Be(FakeRefreshTokenValue);
+        result.AccessToken.Should().Be(FakeAccessToken);
+        result.RefreshToken.Should().Be(FakeRefreshTokenValue);
     }
 
     [Fact]
@@ -205,7 +209,6 @@ public sealed class LoginUserCommandHandlerTests
     public async Task Handle_WhenUserHadPreviousFailures_ResetsFailedAttemptsOnSuccess()
     {
         var user = ActiveUser();
-        // Simulate one failed attempt (threshold of 10 means it won't lock yet).
         user.RecordFailedLogin(10, TimeSpan.FromMinutes(15));
         _userRepository.FindByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(user);
         _passwordHasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(true);
@@ -246,7 +249,6 @@ public sealed class LoginUserCommandHandlerTests
     private static User LockedUser(DateTime lockedUntil)
     {
         var user = ActiveUser();
-        // Threshold of 1 guarantees the account locks on the first failed attempt.
         user.RecordFailedLogin(1, lockedUntil - DateTime.UtcNow);
         return user;
     }

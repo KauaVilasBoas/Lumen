@@ -4,6 +4,7 @@ using AegisIdentity.Domain.Notifications;
 using AegisIdentity.Domain.Security;
 using AegisIdentity.Domain.Tokens;
 using AegisIdentity.Domain.Users;
+using AegisIdentity.SharedKernel.Exceptions;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -40,16 +41,17 @@ public sealed class RegisterUserCommandHandlerTests
     // ── Password validation ────────────────────────────────────────────────
 
     [Fact]
-    public async Task Handle_WhenPasswordIsWeak_ReturnsWeakPasswordResult()
+    public async Task Handle_WhenPasswordIsWeak_ThrowsValidationException()
     {
         var errors = new[] { "A senha deve ter no mínimo 12 caracteres." };
         _passwordValidator.ValidatePasswordAsync(Arg.Any<PasswordValidationContext>(), Arg.Any<CancellationToken>())
             .Returns(PasswordValidationResult.Failure(errors));
 
-        var result = await CreateHandler().Handle(ValidCommand(), CancellationToken.None);
+        var act = () => CreateHandler().Handle(ValidCommand(), CancellationToken.None);
 
-        result.Should().BeOfType<RegisterUserCommandHandler.Result.WeakPassword>();
-        ((RegisterUserCommandHandler.Result.WeakPassword)result).Errors.Should().BeEquivalentTo(errors);
+        await act.Should().ThrowAsync<ValidationException>()
+            .Where(ex => ex.Errors.ContainsKey("password") &&
+                         ex.Errors["password"].SequenceEqual(errors));
     }
 
     [Fact]
@@ -58,7 +60,8 @@ public sealed class RegisterUserCommandHandlerTests
         _passwordValidator.ValidatePasswordAsync(Arg.Any<PasswordValidationContext>(), Arg.Any<CancellationToken>())
             .Returns(PasswordValidationResult.Failure(["too short"]));
 
-        await CreateHandler().Handle(ValidCommand(), CancellationToken.None);
+        await Assert.ThrowsAsync<ValidationException>(
+            () => CreateHandler().Handle(ValidCommand(), CancellationToken.None));
 
         await _userRepository.DidNotReceive().InsertAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
     }
@@ -66,25 +69,25 @@ public sealed class RegisterUserCommandHandlerTests
     // ── Duplicate conflicts ────────────────────────────────────────────────
 
     [Fact]
-    public async Task Handle_WhenEmailIsDuplicate_ReturnsDuplicateEmailResult()
+    public async Task Handle_WhenEmailIsDuplicate_ThrowsConflictException()
     {
         _userRepository.InsertAsync(Arg.Any<User>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new DuplicateEmailException(ValidEmail));
 
-        var result = await CreateHandler().Handle(ValidCommand(), CancellationToken.None);
+        var act = () => CreateHandler().Handle(ValidCommand(), CancellationToken.None);
 
-        result.Should().BeOfType<RegisterUserCommandHandler.Result.DuplicateEmail>();
+        await act.Should().ThrowAsync<ConflictException>();
     }
 
     [Fact]
-    public async Task Handle_WhenUsernameIsDuplicate_ReturnsDuplicateUsernameResult()
+    public async Task Handle_WhenUsernameIsDuplicate_ThrowsConflictException()
     {
         _userRepository.InsertAsync(Arg.Any<User>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new DuplicateUsernameException(ValidUsername));
 
-        var result = await CreateHandler().Handle(ValidCommand(), CancellationToken.None);
+        var act = () => CreateHandler().Handle(ValidCommand(), CancellationToken.None);
 
-        result.Should().BeOfType<RegisterUserCommandHandler.Result.DuplicateUsername>();
+        await act.Should().ThrowAsync<ConflictException>();
     }
 
     // ── Happy path ────────────────────────────────────────────────────────
@@ -94,10 +97,9 @@ public sealed class RegisterUserCommandHandlerTests
     {
         var result = await CreateHandler().Handle(ValidCommand(), CancellationToken.None);
 
-        var success = result.Should().BeOfType<RegisterUserCommandHandler.Result.Success>().Subject;
-        success.Email.Should().Be(User.NormalizeEmail(ValidEmail));
-        success.Username.Should().Be(ValidUsername);
-        success.Id.Should().NotBeNullOrEmpty();
+        result.Email.Should().Be(User.NormalizeEmail(ValidEmail));
+        result.Username.Should().Be(ValidUsername);
+        result.Id.Should().NotBeNullOrEmpty();
     }
 
     [Fact]
