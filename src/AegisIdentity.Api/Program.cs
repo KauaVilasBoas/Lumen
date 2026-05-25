@@ -62,7 +62,7 @@ try
     // ── Presentation ──────────────────────────────────────────────────────────
     builder.Services.AddControllers();
 
-    // ValidationExceptionHandler maps FluentValidation.ValidationException → 400 ProblemDetails.
+    builder.Services.AddExceptionHandler<BusinessExceptionHandler>();
     builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
     builder.Services.AddProblemDetails();
 
