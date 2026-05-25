@@ -2,7 +2,7 @@ using AegisIdentity.Domain.Configuration;
 using AegisIdentity.Domain.Security;
 using AegisIdentity.Domain.Tokens;
 using AegisIdentity.Domain.Users;
-using AegisIdentity.SharedKernel.Constants;
+using AegisIdentity.SharedKernel.Exceptions;
 using AegisIdentity.SharedKernel.Util;
 using FluentValidation;
 using MediatR;
@@ -10,25 +10,11 @@ using Microsoft.Extensions.Logging;
 
 namespace AegisIdentity.CommandHandlers.Auth.Login;
 
-/// <summary>
-/// Handles user authentication: validates credentials, enforces lockout, and returns
-/// a short-lived JWT access token plus a long-lived opaque refresh token.
-/// </summary>
 public sealed class LoginUserCommandHandler
     : IRequestHandler<LoginUserCommandHandler.Command, LoginUserCommandHandler.Result>
 {
-    // ── Nested types ─────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Login input. <see cref="Identifier"/> accepts either an email address or a username;
-    /// the presence of '@' is used to discriminate between the two at the handler level.
-    /// </summary>
     public sealed record Command(string Identifier, string Password, string ClientIp) : IRequest<Result>;
 
-    /// <summary>
-    /// Structural (non-I/O) validator for the login command.
-    /// Executed by <see cref="Behaviors.ValidationBehavior{TRequest,TResponse}"/> before Handle.
-    /// </summary>
     public sealed class Validator : AbstractValidator<Command>
     {
         public Validator()
@@ -41,44 +27,7 @@ public sealed class LoginUserCommandHandler
         }
     }
 
-    /// <summary>Discriminated union result — one subtype per outcome.</summary>
-    public abstract class Result
-    {
-        private Result() { }
-
-        public sealed class Success : Result
-        {
-            public string AccessToken { get; }
-            public string RefreshToken { get; }
-            public int ExpiresIn { get; }
-
-            public Success(string accessToken, string refreshToken, int expiresIn)
-            {
-                AccessToken = accessToken;
-                RefreshToken = refreshToken;
-                ExpiresIn = expiresIn;
-            }
-        }
-
-        /// <summary>
-        /// Credential is wrong or the user does not exist.
-        /// Intentionally opaque — do not reveal whether the identifier was found.
-        /// </summary>
-        public sealed class InvalidCredentials : Result { }
-
-        /// <summary>The account has not yet confirmed its email address.</summary>
-        public sealed class EmailNotConfirmed : Result { }
-
-        /// <summary>The account is temporarily locked due to repeated failed attempts.</summary>
-        public sealed class AccountLocked : Result
-        {
-            public DateTime LockedUntil { get; }
-
-            public AccountLocked(DateTime lockedUntil) => LockedUntil = lockedUntil;
-        }
-    }
-
-    // ── Dependencies ──────────────────────────────────────────────────────────
+    public sealed record Result(string AccessToken, string RefreshToken, int ExpiresIn);
 
     private readonly IUserRepository _userRepository;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
@@ -103,18 +52,14 @@ public sealed class LoginUserCommandHandler
         _logger = logger;
     }
 
-    // ── Handler ───────────────────────────────────────────────────────────────
-
     public async Task<Result> Handle(Command cmd, CancellationToken ct)
     {
         var user = await ResolveUserAsync(cmd.Identifier, ct);
 
-        // Return the same result for "user not found" and "wrong password"
-        // to prevent user enumeration via timing differences.
         if (user is null)
         {
             _logger.LogWarning("Login failed — identifier not found: {Identifier}", cmd.Identifier);
-            return new Result.InvalidCredentials();
+            throw new UnauthorizedException("Invalid credentials.");
         }
 
         if (user.IsLockedOut())
@@ -122,7 +67,7 @@ public sealed class LoginUserCommandHandler
             _logger.LogWarning(
                 "Login rejected — account {UserId} is locked until {LockedUntil}",
                 user.Id, user.LockedUntil);
-            return new Result.AccountLocked(user.LockedUntil!.Value);
+            throw new AccountLockedException(user.LockedUntil!.Value);
         }
 
         if (!_passwordHasher.Verify(cmd.Password, user.PasswordHash))
@@ -134,17 +79,16 @@ public sealed class LoginUserCommandHandler
                 "Login failed — wrong password for user {UserId} (attempts: {Attempts})",
                 user.Id, user.FailedLoginAttempts);
 
-            return new Result.InvalidCredentials();
+            throw new UnauthorizedException("Invalid credentials.");
         }
 
         if (!user.IsActive)
         {
             _logger.LogWarning(
                 "Login rejected — email not confirmed for user {UserId}", user.Id);
-            return new Result.EmailNotConfirmed();
+            throw new ForbiddenException("Email address not yet confirmed.");
         }
 
-        // Reset failed attempts on successful authentication.
         if (user.FailedLoginAttempts > 0)
             user.Unlock();
 
@@ -166,18 +110,12 @@ public sealed class LoginUserCommandHandler
 
         _logger.LogInformation("User {UserId} logged in successfully", user.Id);
 
-        return new Result.Success(
+        return new Result(
             accessToken,
             refreshTokenValue,
             _jwtService.AccessTokenExpiresIn);
     }
 
-    // ── Private helpers ───────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Resolves a user by email (if the identifier contains '@') or by username.
-    /// Email lookup normalises the address before querying.
-    /// </summary>
     private async Task<User?> ResolveUserAsync(string identifier, CancellationToken ct)
     {
         if (identifier.Contains('@'))
