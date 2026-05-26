@@ -10,6 +10,7 @@ using AegisIdentity.Integration.Notifications;
 using AegisIdentity.Integration.Security;
 using AegisIdentity.Jobs.Configuration;
 using AegisIdentity.Jobs.Jobs;
+using AegisIdentity.Migrations;
 using FluentValidation;
 using Hangfire;
 using MediatR;
@@ -41,6 +42,13 @@ try
     builder.Services.AddSecurity();
     builder.Services.AddHibpClient();
     builder.Services.AddNotifications();
+
+    // ── Database migrations (Mongo) ──────────────────────────────────────────
+    // Replaces the old MongoIndexInitializer: indexes (and any future schema
+    // tweaks) are now versioned migrations under AegisIdentity.Migrations and
+    // applied automatically on startup via MongoMigrationsHostedService.
+    builder.Services.AddMongoMigrations();
+    builder.Services.AddMongoMigrationsHostedService();
 
     // ── Background Jobs (Hangfire + Mongo storage) ───────────────────────────
     // AddInfrastructureOptions is called earlier — MongoOptions is already

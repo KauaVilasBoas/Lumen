@@ -10,6 +10,7 @@
     <ProjectReference Include="..\Infrastructure\AegisIdentity.DataAccess\AegisIdentity.DataAccess.csproj" />
     <ProjectReference Include="..\Infrastructure\AegisIdentity.Integration\AegisIdentity.Integration.csproj" />
     <ProjectReference Include="..\Jobs\AegisIdentity.Jobs\AegisIdentity.Jobs.csproj" />
+    <ProjectReference Include="..\Migrations\AegisIdentity.Migrations\AegisIdentity.Migrations.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,4 +1,3 @@
-using AegisIdentity.DataAccess.Persistence.Indexes;
 using AegisIdentity.DataAccess.Persistence.Repositories;
 using AegisIdentity.Domain.Tokens;
 using AegisIdentity.Domain.Users;
@@ -36,7 +35,8 @@ public static class MongoDbServiceExtensions
         services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
         services.AddScoped<IEmailConfirmationTokenRepository, EmailConfirmationTokenRepository>();
 
-        services.AddHostedService<MongoIndexInitializer>();
+        // Index creation moved to AegisIdentity.Migrations
+        // (M_20260526_0001_CreateInitialIndexes), wired in Api/Program.cs.
 
         return services;
     }
