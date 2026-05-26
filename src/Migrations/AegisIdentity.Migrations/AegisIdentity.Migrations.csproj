@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>AegisIdentity.Migrations</RootNamespace>
+    <AssemblyName>AegisIdentity.Migrations</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      MongoDB.Driver: the migration runner targets IMongoCollection<BsonDocument> on
+      purpose, so migrations stay decoupled from domain entities and survive future
+      schema renames in DataAccess.
+      Hosting.Abstractions: brings IHostedService so the library can run migrations
+      automatically on Api startup.
+    -->
+    <PackageReference Include="MongoDB.Driver" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+  </ItemGroup>
+
+</Project>
