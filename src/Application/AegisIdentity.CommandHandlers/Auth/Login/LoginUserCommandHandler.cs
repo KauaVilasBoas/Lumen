@@ -34,7 +34,7 @@ public sealed class LoginUserCommandHandler
         }
     }
 
-    public sealed record Result(string AccessToken, string RefreshToken, int ExpiresIn);
+    public sealed record Result(string AccessToken, string RefreshToken, int ExpiresIn, string TokenType = "Bearer");
 
     private readonly IUserRepository _userRepository;
     private readonly IRefreshTokenRepository _refreshTokenRepository;

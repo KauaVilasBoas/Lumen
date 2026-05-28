@@ -195,6 +195,18 @@ public sealed class LoginUserCommandHandlerTests
     }
 
     [Fact]
+    public async Task Handle_WithValidCredentials_ReturnsTokenTypeBearer()
+    {
+        var user = ActiveUser();
+        _userRepository.FindByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(user);
+        _passwordHasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(true);
+
+        var result = await CreateHandler().Handle(EmailCommand(), CancellationToken.None);
+
+        result.TokenType.Should().Be("Bearer");
+    }
+
+    [Fact]
     public async Task Handle_WithValidCredentials_InsertsRefreshToken()
     {
         var user = ActiveUser();
