@@ -1,4 +1,6 @@
 using AegisIdentity.Infrastructure.Configuration;
+using AegisIdentity.Jobs.Contracts;
+using AegisIdentity.Jobs.Dashboard;
 using Hangfire;
 using Hangfire.Mongo;
 using Hangfire.Mongo.Migration.Strategies;
@@ -84,6 +86,61 @@ public static class HangfireServiceCollectionExtensions
         Action<BackgroundJobServerOptions>? configure = null)
     {
         services.AddHangfireServer(options => configure?.Invoke(options));
+        return services;
+    }
+
+    /// <summary>
+    /// Binds <see cref="HangfireDashboardOptions"/> from
+    /// <c>Hangfire:Dashboard</c> and registers the
+    /// <see cref="HangfireDashboardAuthorizationFilter"/> in the DI container.
+    ///
+    /// Call this in any host that mounts the Hangfire dashboard (currently
+    /// the Backoffice).  Real credentials must come from
+    /// <c>dotnet user-secrets</c> in development or environment variables in
+    /// production — the appsettings entry is a placeholder only.
+    /// </summary>
+    public static IServiceCollection AddAegisDashboard(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.Configure<HangfireDashboardOptions>(
+            configuration.GetSection(HangfireDashboardOptions.SectionName));
+
+        services.AddTransient<HangfireDashboardAuthorizationFilter>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Scans <c>AegisIdentity.Jobs</c> for every concrete
+    /// <see cref="IJobDefinition"/> implementation and registers each one
+    /// twice in the DI container:
+    /// <list type="bullet">
+    ///   <item>as its concrete type (so Hangfire can activate it via DI); and</item>
+    ///   <item>as <see cref="IJobDefinition"/> (so
+    ///         <c>IEnumerable&lt;IJobDefinition&gt;</c> resolves all of them).</item>
+    /// </list>
+    ///
+    /// Jobs are registered as <c>Transient</c> because Hangfire creates a new
+    /// scope per execution — a long-lived singleton would hold repository
+    /// references across requests and leak DbContext-equivalent state.
+    ///
+    /// To add a new recurring job: implement <see cref="IJobDefinition"/> and
+    /// nothing else is required.  No Program.cs edits needed.
+    /// </summary>
+    public static IServiceCollection RegisterJobs(this IServiceCollection services)
+    {
+        var jobTypes = typeof(IJobDefinition).Assembly
+            .GetTypes()
+            .Where(t => typeof(IJobDefinition).IsAssignableFrom(t)
+                        && t is { IsAbstract: false, IsInterface: false });
+
+        foreach (var type in jobTypes)
+        {
+            services.AddTransient(type);
+            services.AddTransient(typeof(IJobDefinition), type);
+        }
+
         return services;
     }
 }
