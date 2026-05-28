@@ -5,11 +5,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AegisIdentity.Application\AegisIdentity.Application.csproj" />
+    <ProjectReference Include="..\Application\AegisIdentity.CommandHandlers\AegisIdentity.CommandHandlers.csproj" />
     <ProjectReference Include="..\AegisIdentity.Infrastructure\AegisIdentity.Infrastructure.csproj" />
+    <ProjectReference Include="..\Infrastructure\AegisIdentity.DataAccess\AegisIdentity.DataAccess.csproj" />
+    <ProjectReference Include="..\Infrastructure\AegisIdentity.Integration\AegisIdentity.Integration.csproj" />
+    <ProjectReference Include="..\Jobs\AegisIdentity.Jobs\AegisIdentity.Jobs.csproj" />
+    <ProjectReference Include="..\Migrations\AegisIdentity.Migrations\AegisIdentity.Migrations.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="MediatR" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="FluentValidation.AspNetCore" />
     <PackageReference Include="Swashbuckle.AspNetCore" />

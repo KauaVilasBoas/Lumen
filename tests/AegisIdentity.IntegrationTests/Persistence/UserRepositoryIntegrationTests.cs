@@ -1,7 +1,7 @@
 using AegisIdentity.Domain.Users;
+using AegisIdentity.DataAccess.Persistence;
+using AegisIdentity.DataAccess.Persistence.Repositories;
 using AegisIdentity.Infrastructure.Configuration;
-using AegisIdentity.Infrastructure.Persistence;
-using AegisIdentity.Infrastructure.Persistence.Repositories;
 using FluentAssertions;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;

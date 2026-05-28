@@ -23,6 +23,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\AegisIdentity.Api\AegisIdentity.Api.csproj" />
     <ProjectReference Include="..\..\src\AegisIdentity.Infrastructure\AegisIdentity.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Infrastructure\AegisIdentity.DataAccess\AegisIdentity.DataAccess.csproj" />
+    <ProjectReference Include="..\..\src\Infrastructure\AegisIdentity.Integration\AegisIdentity.Integration.csproj" />
   </ItemGroup>
 
 </Project>

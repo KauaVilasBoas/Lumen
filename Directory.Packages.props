@@ -16,6 +16,16 @@
     <PackageVersion Include="BCrypt.Net-Next" Version="4.0.3" />
   </ItemGroup>
 
+  <!-- ─── Mediator / CQRS ─────────────────────────────────────────── -->
+  <ItemGroup>
+    <!--
+      MediatR 12.x — BSL 1.1, permitted for internal use.
+      CommandHandlers and QueryHandlers implement IRequestHandler<TRequest, TResponse>.
+      The dispatcher (IMediator) is registered in the Api DI root.
+    -->
+    <PackageVersion Include="MediatR" Version="12.4.1" />
+  </ItemGroup>
+
   <!-- ─── Validation ───────────────────────────────────────────────── -->
   <ItemGroup>
     <PackageVersion Include="FluentValidation" Version="11.11.0" />
@@ -26,6 +36,12 @@
   <ItemGroup>
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.3" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
+  </ItemGroup>
+
+  <!-- ─── Generic Host (full) — used by the Migrations CLI tool ──────── -->
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
   </ItemGroup>
 
   <!-- ─── Messaging / Email ────────────────────────────────────────── -->
@@ -70,6 +86,19 @@
     external dependencies.  Revisit in SEC-01 if the native middleware proves
     insufficient.
   -->
+
+  <!-- ─── Background Jobs ─────────────────────────────────────────── -->
+  <ItemGroup>
+    <!--
+      Hangfire.Mongo 1.10.7 — last release targeting MongoDB.Driver 2.x.
+      The project pins MongoDB.Driver at 2.30.0 (higher than Hangfire.Mongo's
+      minimum of 2.26.0); NuGet resolves to 2.30.0 via highest-version wins.
+      Upgrade to Hangfire.Mongo 1.11+ only after the project migrates to
+      MongoDB.Driver 3.x.
+    -->
+    <PackageVersion Include="Hangfire.AspNetCore" Version="1.8.14" />
+    <PackageVersion Include="Hangfire.Mongo" Version="1.10.7" />
+  </ItemGroup>
 
   <!-- ─── Testing ──────────────────────────────────────────────────── -->
   <ItemGroup>

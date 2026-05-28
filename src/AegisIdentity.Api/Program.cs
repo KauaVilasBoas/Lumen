@@ -1,13 +1,18 @@
-using AegisIdentity.Api.Endpoints.Auth;
-using AegisIdentity.Api.Endpoints.Dev;
+using AegisIdentity.Api.ExceptionHandlers;
 using AegisIdentity.Api.Middleware;
-using AegisIdentity.Application.Auth;
-using AegisIdentity.Application.Security;
+using AegisIdentity.CommandHandlers.Auth.Register;
+using AegisIdentity.CommandHandlers.Behaviors;
+using AegisIdentity.DataAccess.HealthChecks;
+using AegisIdentity.DataAccess.Persistence;
 using AegisIdentity.Infrastructure.Configuration;
-using AegisIdentity.Infrastructure.HealthChecks;
-using AegisIdentity.Infrastructure.Notifications;
-using AegisIdentity.Infrastructure.Persistence;
 using AegisIdentity.Infrastructure.Security;
+using AegisIdentity.Integration.Notifications;
+using AegisIdentity.Integration.Security;
+using AegisIdentity.Jobs.Configuration;
+using AegisIdentity.Jobs.Scheduling;
+using AegisIdentity.Migrations;
+using FluentValidation;
+using MediatR;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Serilog;
@@ -30,13 +35,46 @@ try
            .ReadFrom.Services(services)
            .Enrich.FromLogContext());
 
+    // ── Infrastructure ────────────────────────────────────────────────────────
     builder.Services.AddInfrastructureOptions(builder.Configuration);
     builder.Services.AddMongoDb(builder.Configuration);
     builder.Services.AddSecurity();
+    builder.Services.AddHibpClient();
     builder.Services.AddNotifications();
-    builder.Services.AddApplicationSecurity();
-    builder.Services.AddAuthUseCases();
 
+    // ── Database migrations (Mongo) ──────────────────────────────────────────
+    // Replaces the old MongoIndexInitializer: indexes (and any future schema
+    // tweaks) are now versioned migrations under AegisIdentity.Migrations and
+    // applied automatically on startup via MongoMigrationsHostedService.
+    builder.Services.AddMongoMigrations();
+    builder.Services.AddMongoMigrationsHostedService();
+
+    // ── Background Jobs (Hangfire + Mongo storage) ───────────────────────────
+    // AddInfrastructureOptions is called earlier — MongoOptions is already
+    // registered in the DI container and available to AddAegisHangfire.
+    // RegisterJobs scans AegisIdentity.Jobs for IJobDefinition implementations
+    // and registers them in DI — no manual per-job wiring needed.
+    builder.Services.AddAegisHangfire(builder.Configuration);
+    builder.Services.AddAegisHangfireServer();
+    builder.Services.RegisterJobs();
+
+    // ── Application (MediatR + FluentValidation) ──────────────────────────────
+    builder.Services.AddMediatR(cfg =>
+    {
+        cfg.RegisterServicesFromAssemblyContaining<RegisterUserCommandHandler>();
+        cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+    });
+
+    builder.Services.AddValidatorsFromAssemblyContaining<RegisterUserCommandHandler>();
+
+    // ── Presentation ──────────────────────────────────────────────────────────
+    builder.Services.AddControllers();
+
+    builder.Services.AddExceptionHandler<BusinessExceptionHandler>();
+    builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
+    builder.Services.AddProblemDetails();
+
+    // ── Health checks ─────────────────────────────────────────────────────────
     builder.Services
         .AddHealthChecks()
         .AddCheck<MongoDbHealthCheck>("mongodb");
@@ -44,6 +82,12 @@ try
     builder.Services.AddRazorPages();
 
     var app = builder.Build();
+
+    // ── Recurring jobs ────────────────────────────────────────────────────────
+    // ScheduleRecurringJobs resolves all IJobDefinition implementations from DI
+    // and registers each via RecurringJob.AddOrUpdate — idempotent on restart.
+    // To add a new job: implement IJobDefinition.  No changes here required.
+    app.ScheduleRecurringJobs();
 
     // Reject loopback SMTP in Production — would silently discard all outbound emails.
     if (app.Environment.IsProduction())
@@ -60,9 +104,13 @@ try
         }
     }
 
+    // ── Middleware pipeline ───────────────────────────────────────────────────
+
+    // Global exception handler must be first so it catches exceptions from all middleware.
+    app.UseExceptionHandler();
+
     if (!app.Environment.IsDevelopment())
     {
-        app.UseExceptionHandler("/Error");
         app.UseHsts();
     }
 
@@ -81,6 +129,7 @@ try
                 : LogEventLevel.Information;
     });
 
+    // ── Endpoints ─────────────────────────────────────────────────────────────
     app.MapRazorPages();
 
     app.MapHealthChecks("/health/db", new HealthCheckOptions
@@ -88,13 +137,7 @@ try
         Predicate = registration => registration.Name == "mongodb",
     });
 
-    RegisterEndpoint.Map(app);
-    LoginEndpoint.Map(app);
-
-    if (app.Environment.IsDevelopment())
-    {
-        EmailTestEndpoint.Map(app);
-    }
+    app.MapControllers();
 
     app.Run();
 }

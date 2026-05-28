@@ -1,4 +1,4 @@
-using AegisIdentity.Application.Security;
+using AegisIdentity.Infrastructure.Security;
 using AegisIdentity.Domain.Security;
 using FluentAssertions;
 using NSubstitute;

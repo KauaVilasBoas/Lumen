@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>AegisIdentity.Jobs</RootNamespace>
+    <AssemblyName>AegisIdentity.Jobs</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Domain: IRefreshTokenRepository is consumed by CleanupExpiredRefreshTokensJob.
+      Infrastructure: MongoOptions POCO is used to resolve the Hangfire storage
+      connection string from the same IConfiguration section the app already uses.
+    -->
+    <ProjectReference Include="..\..\AegisIdentity.Domain\AegisIdentity.Domain.csproj" />
+    <ProjectReference Include="..\..\AegisIdentity.Infrastructure\AegisIdentity.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      Hangfire.AspNetCore: brings IDashboardAuthorizationFilter and
+      IApplicationBuilder extension methods used in Dashboard/.
+      Hangfire.Mongo: only needed here for the MongoStorageOptions /
+      MongoMigrationOptions types in HangfireServiceCollectionExtensions.
+      NOT pinning MongoDB.Driver here — the Api's direct dependency on
+      DataAccess (which pins 2.30.0) unifies the transitive graph at runtime.
+    -->
+    <PackageReference Include="Hangfire.AspNetCore" />
+    <PackageReference Include="Hangfire.Mongo" />
+  </ItemGroup>
+
+</Project>

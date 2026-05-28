@@ -2,7 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using AegisIdentity.Application.Security;
+using AegisIdentity.Domain.Security;
 using AegisIdentity.Domain.Users;
 using AegisIdentity.Infrastructure.Configuration;
 using Microsoft.Extensions.Options;

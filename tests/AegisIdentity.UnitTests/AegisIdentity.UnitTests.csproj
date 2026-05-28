@@ -11,6 +11,7 @@
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="FluentValidation" />
     <PackageReference Include="NSubstitute" />
   </ItemGroup>
 
@@ -20,9 +21,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\AegisIdentity.Domain\AegisIdentity.Domain.csproj" />
-    <ProjectReference Include="..\..\src\AegisIdentity.Application\AegisIdentity.Application.csproj" />
+    <ProjectReference Include="..\..\src\Application\AegisIdentity.CommandHandlers\AegisIdentity.CommandHandlers.csproj" />
     <ProjectReference Include="..\..\src\AegisIdentity.Infrastructure\AegisIdentity.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Infrastructure\AegisIdentity.Integration\AegisIdentity.Integration.csproj" />
     <ProjectReference Include="..\..\src\AegisIdentity.Api\AegisIdentity.Api.csproj" />
+    <ProjectReference Include="..\..\src\Jobs\AegisIdentity.Jobs\AegisIdentity.Jobs.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\AegisIdentity.Infrastructure\AegisIdentity.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\AegisIdentity.Domain\AegisIdentity.Domain.csproj" />
+    <ProjectReference Include="..\..\SharedKernel\AegisIdentity.SharedKernel\AegisIdentity.SharedKernel.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Expose MongoDbContext and repositories to the test project. -->
+    <InternalsVisibleTo Include="AegisIdentity.UnitTests" />
+    <InternalsVisibleTo Include="AegisIdentity.IntegrationTests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MongoDB.Driver" />
+  </ItemGroup>
+
+</Project>

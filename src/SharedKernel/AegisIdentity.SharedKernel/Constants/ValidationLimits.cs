@@ -1,0 +1,10 @@
+namespace AegisIdentity.SharedKernel.Constants;
+
+public static class ValidationLimits
+{
+    public const int UsernameMinLength = 3;
+    public const int UsernameMaxLength = 32;
+    public const int EmailMaxLength = 256;
+    public const int PasswordMinLength = 12;
+    public const string PasswordSpecialCharacters = "!@#$%^&*()-_=+[]{};:'\",.<>/?\\|`~";
+}

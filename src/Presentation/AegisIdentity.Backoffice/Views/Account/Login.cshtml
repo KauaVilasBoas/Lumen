@@ -1,0 +1,52 @@
+@model AegisIdentity.Backoffice.Controllers.AccountController.LoginFormModel
+@{
+    ViewData["Title"] = "Entrar";
+    Layout = "_Layout";
+}
+
+<div class="row justify-content-center mt-4">
+    <div class="col-md-5 col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-dark text-white text-center py-3">
+                <h4 class="mb-0">AegisIdentity Backoffice</h4>
+                <small class="text-secondary">Painel Administrativo</small>
+            </div>
+            <div class="card-body p-4">
+                <form asp-action="Login" asp-controller="Account" method="post">
+                    <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+                    @Html.AntiForgeryToken()
+
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div class="alert alert-danger py-2" role="alert">
+                            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                            {
+                                <div>@error.ErrorMessage</div>
+                            }
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label asp-for="Identifier" class="form-label">Email ou Username</label>
+                        <input asp-for="Identifier"
+                               class="form-control"
+                               autocomplete="username"
+                               placeholder="seu@email.com ou username"
+                               required />
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Password" class="form-label">Senha</label>
+                        <input asp-for="Password"
+                               type="password"
+                               class="form-control"
+                               autocomplete="current-password"
+                               required />
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">Entrar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

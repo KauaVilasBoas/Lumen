@@ -1,5 +1,5 @@
 using System.Net;
-using AegisIdentity.Infrastructure.Security;
+using AegisIdentity.Integration.Security;
 using FluentAssertions;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;

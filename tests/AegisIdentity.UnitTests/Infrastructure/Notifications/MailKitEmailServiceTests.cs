@@ -1,6 +1,6 @@
 using AegisIdentity.Domain.Notifications;
 using AegisIdentity.Infrastructure.Configuration;
-using AegisIdentity.Infrastructure.Notifications;
+using AegisIdentity.Integration.Notifications;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;

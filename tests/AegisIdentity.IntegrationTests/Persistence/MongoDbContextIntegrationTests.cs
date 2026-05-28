@@ -1,6 +1,6 @@
+using AegisIdentity.DataAccess.HealthChecks;
+using AegisIdentity.DataAccess.Persistence;
 using AegisIdentity.Infrastructure.Configuration;
-using AegisIdentity.Infrastructure.HealthChecks;
-using AegisIdentity.Infrastructure.Persistence;
 using FluentAssertions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
