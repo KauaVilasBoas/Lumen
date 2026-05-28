@@ -9,10 +9,9 @@ using AegisIdentity.Infrastructure.Security;
 using AegisIdentity.Integration.Notifications;
 using AegisIdentity.Integration.Security;
 using AegisIdentity.Jobs.Configuration;
-using AegisIdentity.Jobs.Jobs;
+using AegisIdentity.Jobs.Scheduling;
 using AegisIdentity.Migrations;
 using FluentValidation;
-using Hangfire;
 using MediatR;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
@@ -53,8 +52,11 @@ try
     // ── Background Jobs (Hangfire + Mongo storage) ───────────────────────────
     // AddInfrastructureOptions is called earlier — MongoOptions is already
     // registered in the DI container and available to AddAegisHangfire.
+    // RegisterJobs scans AegisIdentity.Jobs for IJobDefinition implementations
+    // and registers them in DI — no manual per-job wiring needed.
     builder.Services.AddAegisHangfire(builder.Configuration);
     builder.Services.AddAegisHangfireServer();
+    builder.Services.RegisterJobs();
 
     // ── Application (MediatR + FluentValidation) ──────────────────────────────
     builder.Services.AddMediatR(cfg =>
@@ -82,12 +84,10 @@ try
     var app = builder.Build();
 
     // ── Recurring jobs ────────────────────────────────────────────────────────
-    // Registered after Build() so the DI container is fully constructed.
-    // Cron "0 3 * * *" = daily at 03:00 UTC — low-traffic window for cleanup.
-    RecurringJob.AddOrUpdate<CleanupExpiredRefreshTokensJob>(
-        recurringJobId: "cleanup-expired-refresh-tokens",
-        methodCall:     job => job.ExecuteAsync(CancellationToken.None),
-        cronExpression: "0 3 * * *");
+    // ScheduleRecurringJobs resolves all IJobDefinition implementations from DI
+    // and registers each via RecurringJob.AddOrUpdate — idempotent on restart.
+    // To add a new job: implement IJobDefinition.  No changes here required.
+    app.ScheduleRecurringJobs();
 
     // Reject loopback SMTP in Production — would silently discard all outbound emails.
     if (app.Environment.IsProduction())

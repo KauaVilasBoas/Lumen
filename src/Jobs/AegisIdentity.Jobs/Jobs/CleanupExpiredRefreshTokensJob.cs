@@ -1,4 +1,5 @@
 using AegisIdentity.Domain.Tokens;
+using AegisIdentity.Jobs.Contracts;
 using Microsoft.Extensions.Logging;
 
 namespace AegisIdentity.Jobs.Jobs;
@@ -7,9 +8,9 @@ namespace AegisIdentity.Jobs.Jobs;
 /// Recurring Hangfire job that bulk-deletes refresh tokens whose
 /// <see cref="RefreshToken.ExpiresAt"/> has already passed.
 ///
-/// Scheduling: registered in the Api startup via
-/// <c>RecurringJob.AddOrUpdate&lt;CleanupExpiredRefreshTokensJob&gt;(...)</c>
-/// using the cron expression "0 3 * * *" (daily at 03:00 UTC).
+/// Scheduling: auto-registered via <see cref="IJobDefinition"/> — no manual
+/// wiring in Program.cs is required.  The cron expression "0 3 * * *" runs
+/// the cleanup daily at 03:00 UTC, a low-traffic window.
 ///
 /// Why: expired tokens are never reusable (the login flow always checks
 /// <see cref="RefreshToken.IsActive()"/> before accepting a token), so
@@ -17,10 +18,13 @@ namespace AegisIdentity.Jobs.Jobs;
 /// slower.  Revoking a token is an explicit operation; this job only
 /// touches tokens that are already past their <see cref="RefreshToken.ExpiresAt"/>.
 /// </summary>
-public sealed class CleanupExpiredRefreshTokensJob
+public sealed class CleanupExpiredRefreshTokensJob : IJobDefinition
 {
     private readonly IRefreshTokenRepository _repository;
     private readonly ILogger<CleanupExpiredRefreshTokensJob> _logger;
+
+    public string Name => "cleanup-expired-refresh-tokens";
+    public string Cron => "0 3 * * *";
 
     public CleanupExpiredRefreshTokensJob(
         IRefreshTokenRepository repository,
