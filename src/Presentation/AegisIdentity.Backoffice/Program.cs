@@ -2,7 +2,6 @@ using AegisIdentity.Backoffice.Services;
 using AegisIdentity.Infrastructure.Configuration;
 using AegisIdentity.Jobs.Configuration;
 using AegisIdentity.Jobs.Dashboard;
-using Hangfire;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,8 +13,14 @@ builder.Services.AddControllersWithViews();
 // The Backoffice reads from the same Hangfire Mongo database as the Api so
 // the dashboard reflects live job state.  AddAegisHangfireServer is NOT called
 // here; only the Api runs jobs to avoid competing consumers.
+//
+// AddAegisDashboard binds HangfireDashboardOptions (path + Basic Auth
+// credentials) from configuration.  Real credentials must be set via
+// dotnet user-secrets in dev or environment variables in production — the
+// appsettings entry is a placeholder only.
 builder.Services.AddInfrastructureOptions(builder.Configuration);
 builder.Services.AddAegisHangfire(builder.Configuration);
+builder.Services.AddAegisDashboard(builder.Configuration);
 
 // ── Authentication ────────────────────────────────────────────────────────────
 // Strategy: Cookie authentication backed by claims extracted from the Api JWT.
@@ -75,16 +80,10 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // ── Hangfire Dashboard ────────────────────────────────────────────────────────
-// Protected by HangfireDashboardAuthorizationFilter (requires authenticated
-// Backoffice session cookie).  Unauthenticated requests receive 401/403 which
-// the cookie auth middleware converts to a redirect to /Account/Login.
-app.UseHangfireDashboard("/hangfire", new DashboardOptions
-{
-    Authorization = [new HangfireDashboardAuthorizationFilter()],
-    // Dashboard is read-only from the Backoffice perspective — job execution
-    // is handled exclusively by the Api's Hangfire server.
-    IsReadOnlyFunc = _ => false,
-});
+// Mounts the dashboard at the path defined in Hangfire:Dashboard:Path
+// (default: /internal/jobs-admin).  Protected by Basic Auth via
+// HangfireDashboardAuthorizationFilter — credentials come from configuration.
+app.UseAegisDashboard();
 
 app.MapControllerRoute(
     name: "default",
