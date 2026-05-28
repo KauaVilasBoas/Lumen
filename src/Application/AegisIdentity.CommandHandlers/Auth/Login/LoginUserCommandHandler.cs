@@ -13,6 +13,13 @@ namespace AegisIdentity.CommandHandlers.Auth.Login;
 public sealed class LoginUserCommandHandler
     : IRequestHandler<LoginUserCommandHandler.Command, LoginUserCommandHandler.Result>
 {
+    // Pre-computed BCrypt hash (cost factor 12) used exclusively for constant-time
+    // verification when the requested user does not exist. This prevents timing-based
+    // user enumeration: without this call, an unknown-user path returns in ~1 ms while
+    // a wrong-password path costs ~250 ms (BCrypt work factor 12).
+    private const string DummyPasswordHash =
+        "$2a$12$eImiTXuWVxfM37uY4JANjQu8bkE5KNn3M6GZjTZJfqMV/kI0KZjUe";
+
     public sealed record Command(string Identifier, string Password, string ClientIp) : IRequest<Result>;
 
     public sealed class Validator : AbstractValidator<Command>
@@ -58,6 +65,9 @@ public sealed class LoginUserCommandHandler
 
         if (user is null)
         {
+            // Consume the same BCrypt cost as a real Verify call so that response time
+            // is indistinguishable from a wrong-password attempt against an existing user.
+            _passwordHasher.Verify(cmd.Password, DummyPasswordHash);
             _logger.LogWarning("Login failed — identifier not found: {Identifier}", cmd.Identifier);
             throw new UnauthorizedException("Invalid credentials.");
         }

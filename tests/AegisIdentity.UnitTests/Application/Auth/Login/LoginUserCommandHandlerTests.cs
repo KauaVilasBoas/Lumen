@@ -62,6 +62,22 @@ public sealed class LoginUserCommandHandlerTests
         await act.Should().ThrowAsync<UnauthorizedException>();
     }
 
+    [Fact]
+    public async Task Handle_WhenUserNotFound_StillCallsPasswordVerifyToPreventTimingAttack()
+    {
+        // Arrange — user does not exist; Verify must still be called once so that
+        // response time is indistinguishable from a wrong-password attempt.
+        _userRepository.FindByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .ReturnsNull();
+
+        // Act
+        await Assert.ThrowsAsync<UnauthorizedException>(
+            () => CreateHandler().Handle(EmailCommand(), CancellationToken.None));
+
+        // Assert — dummy-hash Verify was invoked exactly once
+        _passwordHasher.Received(1).Verify(ValidPassword, Arg.Any<string>());
+    }
+
     // ── Email vs username discrimination ──────────────────────────────────
 
     [Fact]
