@@ -3,6 +3,7 @@ using AegisIdentity.Domain.Configuration;
 using AegisIdentity.Domain.Security;
 using AegisIdentity.Domain.Tokens;
 using AegisIdentity.Domain.Users;
+using AegisIdentity.SharedKernel.Constants;
 using AegisIdentity.SharedKernel.Exceptions;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -203,7 +204,7 @@ public sealed class LoginUserCommandHandlerTests
 
         var result = await CreateHandler().Handle(EmailCommand(), CancellationToken.None);
 
-        result.TokenType.Should().Be("Bearer");
+        result.TokenType.Should().Be(TokenTypes.Bearer);
     }
 
     [Fact]

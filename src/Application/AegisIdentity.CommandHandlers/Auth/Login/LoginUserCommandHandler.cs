@@ -2,6 +2,7 @@ using AegisIdentity.Domain.Configuration;
 using AegisIdentity.Domain.Security;
 using AegisIdentity.Domain.Tokens;
 using AegisIdentity.Domain.Users;
+using AegisIdentity.SharedKernel.Constants;
 using AegisIdentity.SharedKernel.Exceptions;
 using AegisIdentity.SharedKernel.Util;
 using FluentValidation;
@@ -13,13 +14,6 @@ namespace AegisIdentity.CommandHandlers.Auth.Login;
 public sealed class LoginUserCommandHandler
     : IRequestHandler<LoginUserCommandHandler.Command, LoginUserCommandHandler.Result>
 {
-    // Pre-computed BCrypt hash (cost factor 12) used exclusively for constant-time
-    // verification when the requested user does not exist. This prevents timing-based
-    // user enumeration: without this call, an unknown-user path returns in ~1 ms while
-    // a wrong-password path costs ~250 ms (BCrypt work factor 12).
-    private const string DummyPasswordHash =
-        "$2a$12$eImiTXuWVxfM37uY4JANjQu8bkE5KNn3M6GZjTZJfqMV/kI0KZjUe";
-
     public sealed record Command(string Identifier, string Password, string ClientIp) : IRequest<Result>;
 
     public sealed class Validator : AbstractValidator<Command>
@@ -34,7 +28,7 @@ public sealed class LoginUserCommandHandler
         }
     }
 
-    public sealed record Result(string AccessToken, string RefreshToken, int ExpiresIn, string TokenType = "Bearer");
+    public sealed record Result(string AccessToken, string RefreshToken, int ExpiresIn, string TokenType = TokenTypes.Bearer);
 
     private readonly IUserRepository _userRepository;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
@@ -67,7 +61,7 @@ public sealed class LoginUserCommandHandler
         {
             // Consume the same BCrypt cost as a real Verify call so that response time
             // is indistinguishable from a wrong-password attempt against an existing user.
-            _passwordHasher.Verify(cmd.Password, DummyPasswordHash);
+            _passwordHasher.Verify(cmd.Password, PasswordHashing.DummyBcryptHash);
             _logger.LogWarning("Login failed — identifier not found: {Identifier}", cmd.Identifier);
             throw new UnauthorizedException("Invalid credentials.");
         }
