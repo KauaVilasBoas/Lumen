@@ -3,6 +3,7 @@ using AegisIdentity.Domain.Configuration;
 using AegisIdentity.Domain.Security;
 using AegisIdentity.Domain.Tokens;
 using AegisIdentity.Domain.Users;
+using AegisIdentity.SharedKernel.Constants;
 using AegisIdentity.SharedKernel.Exceptions;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -60,6 +61,22 @@ public sealed class LoginUserCommandHandlerTests
         var act = () => CreateHandler().Handle(UsernameCommand(), CancellationToken.None);
 
         await act.Should().ThrowAsync<UnauthorizedException>();
+    }
+
+    [Fact]
+    public async Task Handle_WhenUserNotFound_StillCallsPasswordVerifyToPreventTimingAttack()
+    {
+        // Arrange — user does not exist; Verify must still be called once so that
+        // response time is indistinguishable from a wrong-password attempt.
+        _userRepository.FindByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .ReturnsNull();
+
+        // Act
+        await Assert.ThrowsAsync<UnauthorizedException>(
+            () => CreateHandler().Handle(EmailCommand(), CancellationToken.None));
+
+        // Assert — dummy-hash Verify was invoked exactly once
+        _passwordHasher.Received(1).Verify(ValidPassword, Arg.Any<string>());
     }
 
     // ── Email vs username discrimination ──────────────────────────────────
@@ -176,6 +193,18 @@ public sealed class LoginUserCommandHandlerTests
 
         result.AccessToken.Should().Be(FakeAccessToken);
         result.RefreshToken.Should().Be(FakeRefreshTokenValue);
+    }
+
+    [Fact]
+    public async Task Handle_WithValidCredentials_ReturnsTokenTypeBearer()
+    {
+        var user = ActiveUser();
+        _userRepository.FindByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(user);
+        _passwordHasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(true);
+
+        var result = await CreateHandler().Handle(EmailCommand(), CancellationToken.None);
+
+        result.TokenType.Should().Be(TokenTypes.Bearer);
     }
 
     [Fact]

@@ -2,6 +2,7 @@ using AegisIdentity.Domain.Configuration;
 using AegisIdentity.Domain.Security;
 using AegisIdentity.Domain.Tokens;
 using AegisIdentity.Domain.Users;
+using AegisIdentity.SharedKernel.Constants;
 using AegisIdentity.SharedKernel.Exceptions;
 using AegisIdentity.SharedKernel.Util;
 using FluentValidation;
@@ -27,7 +28,7 @@ public sealed class LoginUserCommandHandler
         }
     }
 
-    public sealed record Result(string AccessToken, string RefreshToken, int ExpiresIn);
+    public sealed record Result(string AccessToken, string RefreshToken, int ExpiresIn, string TokenType = TokenTypes.Bearer);
 
     private readonly IUserRepository _userRepository;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
@@ -58,6 +59,9 @@ public sealed class LoginUserCommandHandler
 
         if (user is null)
         {
+            // Consume the same BCrypt cost as a real Verify call so that response time
+            // is indistinguishable from a wrong-password attempt against an existing user.
+            _passwordHasher.Verify(cmd.Password, PasswordHashing.DummyBcryptHash);
             _logger.LogWarning("Login failed — identifier not found: {Identifier}", cmd.Identifier);
             throw new UnauthorizedException("Invalid credentials.");
         }

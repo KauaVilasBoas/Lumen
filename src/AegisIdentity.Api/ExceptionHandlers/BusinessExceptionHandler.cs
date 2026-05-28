@@ -37,6 +37,14 @@ public sealed class BusinessExceptionHandler : IExceptionHandler
             };
         }
 
+        if (exception is AccountLockedException lockedEx)
+        {
+            // RFC 6585 §4: 423 Locked responses SHOULD include Retry-After so that
+            // clients know when they may retry without burning another failed attempt.
+            var retryAfterSeconds = Math.Max(1, (int)(lockedEx.LockedUntil - DateTime.UtcNow).TotalSeconds);
+            httpContext.Response.Headers.Append("Retry-After", retryAfterSeconds.ToString());
+        }
+
         return new ProblemDetails
         {
             Status = exception.StatusCode,
