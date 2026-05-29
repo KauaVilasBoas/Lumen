@@ -1,6 +1,8 @@
 using AegisIdentity.CommandHandlers.Auth.Login;
+using AegisIdentity.CommandHandlers.Auth.Refresh;
 using AegisIdentity.CommandHandlers.Auth.Register;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AegisIdentity.Api.Controllers;
@@ -15,6 +17,8 @@ public sealed class AuthController : ControllerBase
     public AuthController(IMediator mediator) => _mediator = mediator;
 
     public sealed record LoginRequest(string Identifier, string Password);
+
+    public sealed record RefreshRequest(string RefreshToken);
 
     [HttpPost("register")]
     [ProducesResponseType(typeof(RegisterUserCommandHandler.Result), StatusCodes.Status201Created)]
@@ -44,6 +48,23 @@ public sealed class AuthController : ControllerBase
     {
         var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
         var command = new LoginUserCommandHandler.Command(request.Identifier, request.Password, clientIp);
+
+        var result = await _mediator.Send(command, ct);
+
+        return Ok(result);
+    }
+
+    [HttpPost("refresh")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(RefreshTokenCommandHandler.Result), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Refresh(
+        [FromBody] RefreshRequest request,
+        CancellationToken ct)
+    {
+        var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        var command = new RefreshTokenCommandHandler.Command(request.RefreshToken, clientIp);
 
         var result = await _mediator.Send(command, ct);
 
