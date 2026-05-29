@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Application\AegisIdentity.CommandHandlers\AegisIdentity.CommandHandlers.csproj" />
+    <ProjectReference Include="..\Application\AegisIdentity.ReadModels\AegisIdentity.ReadModels.csproj" />
     <ProjectReference Include="..\AegisIdentity.Infrastructure\AegisIdentity.Infrastructure.csproj" />
     <ProjectReference Include="..\Infrastructure\AegisIdentity.DataAccess\AegisIdentity.DataAccess.csproj" />
     <ProjectReference Include="..\Infrastructure\AegisIdentity.Integration\AegisIdentity.Integration.csproj" />
