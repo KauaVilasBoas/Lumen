@@ -129,6 +129,12 @@ try
                 : LogEventLevel.Information;
     });
 
+    // Authentication and authorization must be placed after UseRouting and before
+    // MapControllers so the middleware can short-circuit unauthenticated requests
+    // before the endpoint handler is reached.
+    app.UseAuthentication();
+    app.UseAuthorization();
+
     // ── Endpoints ─────────────────────────────────────────────────────────────
     app.MapRazorPages();
 

@@ -1,5 +1,8 @@
 using AegisIdentity.Domain.Security;
+using AegisIdentity.Infrastructure.Configuration;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace AegisIdentity.Infrastructure.Security;
 
@@ -10,6 +13,23 @@ public static class SecurityServiceExtensions
         services.AddSingleton<IPasswordHasher, BCryptPasswordHasher>();
         services.AddSingleton<IJwtService, JwtService>();
         services.AddScoped<IPasswordValidator, PasswordValidator>();
+
+        // Resolve JwtOptions here so the JwtBearer middleware uses exactly the same
+        // validation parameters that JwtService.ValidateToken uses — single source of truth.
+        services
+            .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                // Build a temporary service provider scoped to this configuration lambda
+                // so we can resolve IOptions<JwtOptions> before the full DI root is built.
+                // Using BuildServiceProvider() during configuration is acceptable here
+                // because this is a one-time setup call, not a per-request resolution.
+                var sp = services.BuildServiceProvider();
+                var jwtOptions = sp.GetRequiredService<IOptions<JwtOptions>>().Value;
+                options.TokenValidationParameters = JwtService.BuildValidationParameters(jwtOptions);
+            });
+
+        services.AddAuthorization();
 
         return services;
     }
