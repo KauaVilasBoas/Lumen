@@ -142,6 +142,100 @@ public sealed class JwtServiceTests
         }
     }
 
+    // ── ValidateToken ─────────────────────────────────────────────────────
+
+    [Fact]
+    public void ValidateToken_ValidToken_ReturnsPrincipalWithExpectedClaims()
+    {
+        var user = ActiveUser();
+        var token = _service.GenerateAccessToken(user);
+
+        var principal = _service.ValidateToken(token);
+
+        principal.Should().NotBeNull();
+        // JwtSecurityTokenHandler maps "sub" → ClaimTypes.NameIdentifier during validation.
+        principal!.FindFirstValue(ClaimTypes.NameIdentifier).Should().Be(user.Id);
+        principal.FindFirstValue(ClaimTypes.Email).Should().Be(user.Email);
+        principal.FindFirstValue("username").Should().Be(user.Username);
+        principal.FindAll(ClaimTypes.Role).Select(c => c.Value).Should().Contain("user");
+        principal.FindFirstValue(JwtRegisteredClaimNames.Jti).Should().NotBeNullOrWhiteSpace();
+    }
+
+    [Fact]
+    public void ValidateToken_WrongSignatureSecret_ReturnsNull()
+    {
+        // Issue a token with a different secret — validation must reject it.
+        var otherService = new JwtService(Options.Create(new JwtOptions
+        {
+            Secret = "other-secret-key-that-is-at-least-32-chars!!",
+            Issuer = Issuer,
+            Audience = Audience,
+            ExpirationMinutes = ExpirationMinutes,
+            RefreshExpirationDays = 7,
+        }));
+
+        var token = otherService.GenerateAccessToken(ActiveUser());
+
+        var principal = _service.ValidateToken(token);
+
+        principal.Should().BeNull();
+    }
+
+    [Fact]
+    public void ValidateToken_ExpiredToken_ReturnsNull()
+    {
+        // Build a token that expired one minute ago directly via the handler
+        // so we do not need to alter the clock or options on the service under test.
+        var keyBytes = Encoding.UTF8.GetBytes(Secret);
+        var signingKey = new SymmetricSecurityKey(keyBytes);
+        var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
+
+        var descriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity([new Claim(JwtRegisteredClaimNames.Sub, "u1")]),
+            NotBefore = DateTime.UtcNow.AddMinutes(-10),
+            Expires = DateTime.UtcNow.AddMinutes(-1),
+            Issuer = Issuer,
+            Audience = Audience,
+            SigningCredentials = credentials,
+        };
+
+        var handler = new JwtSecurityTokenHandler();
+        var expiredToken = handler.WriteToken(handler.CreateToken(descriptor));
+
+        var principal = _service.ValidateToken(expiredToken);
+
+        principal.Should().BeNull();
+    }
+
+    [Fact]
+    public void ValidateToken_InvalidIssuer_ReturnsNull()
+    {
+        var tokenWithWrongIssuer = BuildTokenWith(issuer: "rogue-issuer", audience: Audience);
+
+        var principal = _service.ValidateToken(tokenWithWrongIssuer);
+
+        principal.Should().BeNull();
+    }
+
+    [Fact]
+    public void ValidateToken_InvalidAudience_ReturnsNull()
+    {
+        var tokenWithWrongAudience = BuildTokenWith(issuer: Issuer, audience: "rogue-audience");
+
+        var principal = _service.ValidateToken(tokenWithWrongAudience);
+
+        principal.Should().BeNull();
+    }
+
+    [Fact]
+    public void ValidateToken_MalformedToken_ReturnsNull()
+    {
+        var principal = _service.ValidateToken("this.is.not.a.valid.jwt");
+
+        principal.Should().BeNull();
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────
 
     private static User ActiveUser()
@@ -149,6 +243,30 @@ public sealed class JwtServiceTests
         var user = User.Create("alice@example.com", "alice", "$2a$12$fakehash");
         user.IsActive = true;
         return user;
+    }
+
+    /// <summary>
+    /// Builds a token signed with the correct secret but with overridden issuer/audience,
+    /// allowing targeted tests for claim-level validation failures.
+    /// </summary>
+    private static string BuildTokenWith(string issuer, string audience)
+    {
+        var keyBytes = Encoding.UTF8.GetBytes(Secret);
+        var credentials = new SigningCredentials(
+            new SymmetricSecurityKey(keyBytes),
+            SecurityAlgorithms.HmacSha256);
+
+        var descriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity([new Claim(JwtRegisteredClaimNames.Sub, "u1")]),
+            Expires = DateTime.UtcNow.AddMinutes(15),
+            Issuer = issuer,
+            Audience = audience,
+            SigningCredentials = credentials,
+        };
+
+        var handler = new JwtSecurityTokenHandler();
+        return handler.WriteToken(handler.CreateToken(descriptor));
     }
 
     private ClaimsPrincipal? ValidateToken(string token)
