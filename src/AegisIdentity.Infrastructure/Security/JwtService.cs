@@ -104,7 +104,7 @@ public sealed class JwtService : IJwtService
 
     private static IEnumerable<Claim> BuildClaims(User user)
     {
-        yield return new Claim(JwtRegisteredClaimNames.Sub, user.Id);
+        yield return new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString());
         yield return new Claim(JwtRegisteredClaimNames.Email, user.Email);
         yield return new Claim("username", user.Username);
         yield return new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString());

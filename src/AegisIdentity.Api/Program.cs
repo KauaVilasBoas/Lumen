@@ -38,18 +38,17 @@ try
 
     // ── Infrastructure ────────────────────────────────────────────────────────
     builder.Services.AddInfrastructureOptions(builder.Configuration);
-    builder.Services.AddMongoDb(builder.Configuration);
     builder.Services.AddRelationalDataAccess();
     builder.Services.AddSecurity();
     builder.Services.AddHibpClient();
     builder.Services.AddNotifications();
 
     // ── Database migrations (Mongo) ──────────────────────────────────────────
-    // Replaces the old MongoIndexInitializer: indexes (and any future schema
-    // tweaks) are now versioned migrations under AegisIdentity.Migrations and
-    // applied automatically on startup via MongoMigrationsHostedService.
+    // INFRA-04 will replace this with EF Core Database.Migrate() on startup.
+    // Until then, types are registered but MongoMigrationsHostedService is NOT
+    // started — it depends on IMongoDatabase which is no longer registered
+    // after removing AddMongoDb() from this host.
     builder.Services.AddMongoMigrations();
-    builder.Services.AddMongoMigrationsHostedService();
 
     // ── Background Jobs (Hangfire + Mongo storage) ───────────────────────────
     // AddInfrastructureOptions is called earlier — MongoOptions is already
@@ -80,7 +79,6 @@ try
     // ── Health checks ─────────────────────────────────────────────────────────
     builder.Services
         .AddHealthChecks()
-        .AddCheck<MongoDbHealthCheck>("mongodb")
         .AddCheck<SqlServerHealthCheck>("sqlserver");
 
     builder.Services.AddRazorPages();
@@ -144,7 +142,7 @@ try
 
     app.MapHealthChecks("/health/db", new HealthCheckOptions
     {
-        Predicate = registration => registration.Name == "mongodb",
+        Predicate = registration => registration.Name == "sqlserver",
     });
 
     app.MapControllers();

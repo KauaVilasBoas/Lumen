@@ -1,53 +1,44 @@
 using AegisIdentity.Domain.Users;
-using MongoDB.Bson;
-using MongoDB.Driver;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 
 namespace AegisIdentity.DataAccess.Persistence.Repositories;
 
-public sealed class UserRepository : IUserRepository
+internal sealed class UserRepository : IUserRepository
 {
-    // MongoDB duplicate-key error code as defined by the BSON spec.
-    private const int MongoDuplicateKeyCode = 11000;
+    private const int SqlServerUniqueConstraintViolation = 2627;
+    private const int SqlServerUniqueIndexViolation = 2601;
 
-    private readonly IMongoCollection<User> _collection;
+    private readonly AegisIdentityDbContext _dbContext;
 
-    public UserRepository(MongoDbContext context)
+    public UserRepository(AegisIdentityDbContext dbContext)
     {
-        _collection = context.GetCollection<User>(CollectionNames.Users);
+        _dbContext = dbContext;
     }
 
-    public async Task<User?> FindByEmailAsync(string email, CancellationToken ct = default)
-    {
-        var filter = Builders<User>.Filter.Eq(u => u.Email, email);
-        return await _collection.Find(filter).FirstOrDefaultAsync(ct);
-    }
+    public Task<User?> FindByEmailAsync(string email, CancellationToken ct = default)
+        => _dbContext.Users
+                     .FirstOrDefaultAsync(u => u.Email == email, ct);
 
-    public async Task<User?> FindByIdAsync(string id, CancellationToken ct = default)
-    {
-        if (!ObjectId.TryParse(id, out _))
-            return null;
+    public Task<User?> FindByIdAsync(Guid id, CancellationToken ct = default)
+        => _dbContext.Users
+                     .FirstOrDefaultAsync(u => u.Id == id, ct);
 
-        var filter = Builders<User>.Filter.Eq(u => u.Id, id);
-        return await _collection.Find(filter).FirstOrDefaultAsync(ct);
-    }
-
-    public async Task<User?> FindByUsernameAsync(string username, CancellationToken ct = default)
-    {
-        var filter = Builders<User>.Filter.Eq(u => u.Username, username);
-        return await _collection.Find(filter).FirstOrDefaultAsync(ct);
-    }
+    public Task<User?> FindByUsernameAsync(string username, CancellationToken ct = default)
+        => _dbContext.Users
+                     .FirstOrDefaultAsync(u => u.Username == username, ct);
 
     public async Task InsertAsync(User user, CancellationToken ct = default)
     {
+        _dbContext.Users.Add(user);
+
         try
         {
-            await _collection.InsertOneAsync(user, options: null, ct);
+            await _dbContext.SaveChangesAsync(ct);
         }
-        catch (MongoWriteException ex) when (ex.WriteError.Code == MongoDuplicateKeyCode)
+        catch (DbUpdateException ex) when (IsSqlUniqueViolation(ex, out var message))
         {
-            // Translate the storage-level constraint to a domain exception so the
-            // Application layer can handle conflicts without a MongoDB dependency.
-            if (IsEmailIndex(ex.WriteError.Message))
+            if (IsEmailIndex(message))
                 throw new DuplicateEmailException(user.Email);
 
             throw new DuplicateUsernameException(user.Username);
@@ -56,14 +47,23 @@ public sealed class UserRepository : IUserRepository
 
     public async Task UpdateAsync(User user, CancellationToken ct = default)
     {
-        var filter = Builders<User>.Filter.Eq(u => u.Id, user.Id);
-        await _collection.ReplaceOneAsync(filter, user, cancellationToken: ct);
+        _dbContext.Users.Update(user);
+        await _dbContext.SaveChangesAsync(ct);
     }
 
-    // The error message includes the index name ("ix_email_unique" or "ix_username_unique").
-    // Falling back to username conflict when the message doesn't contain the email index
-    // name is intentional — it handles both expected cases without needing reflection.
+    private static bool IsSqlUniqueViolation(DbUpdateException ex, out string message)
+    {
+        if (ex.InnerException is SqlException { Number: SqlServerUniqueConstraintViolation or SqlServerUniqueIndexViolation } sqlEx)
+        {
+            message = sqlEx.Message;
+            return true;
+        }
+
+        message = string.Empty;
+        return false;
+    }
+
     private static bool IsEmailIndex(string errorMessage)
-        => errorMessage.Contains("ix_email_unique", StringComparison.OrdinalIgnoreCase)
+        => errorMessage.Contains("ix_users_email_unique", StringComparison.OrdinalIgnoreCase)
         || errorMessage.Contains("\"email\"", StringComparison.OrdinalIgnoreCase);
 }

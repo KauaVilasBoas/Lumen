@@ -1,3 +1,6 @@
+using AegisIdentity.DataAccess.Persistence.Repositories;
+using AegisIdentity.Domain.Tokens;
+using AegisIdentity.Domain.Users;
 using AegisIdentity.Infrastructure.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,6 +20,11 @@ public static class SqlServerServiceExtensions
 
             options.UseSqlServer(sqlServerOptions.ConnectionString);
         });
+
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
+        services.AddScoped<IEmailConfirmationTokenRepository, EmailConfirmationTokenRepository>();
 
         return services;
     }

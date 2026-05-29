@@ -60,7 +60,7 @@ public sealed class JwtServiceTests
 
         // JwtSecurityTokenHandler maps "sub" → ClaimTypes.NameIdentifier during validation.
         var principal = ValidateToken(token)!;
-        principal.FindFirstValue(ClaimTypes.NameIdentifier).Should().Be(user.Id);
+        principal.FindFirstValue(ClaimTypes.NameIdentifier).Should().Be(user.Id.ToString());
     }
 
     [Fact]
@@ -154,7 +154,7 @@ public sealed class JwtServiceTests
 
         principal.Should().NotBeNull();
         // JwtSecurityTokenHandler maps "sub" → ClaimTypes.NameIdentifier during validation.
-        principal!.FindFirstValue(ClaimTypes.NameIdentifier).Should().Be(user.Id);
+        principal!.FindFirstValue(ClaimTypes.NameIdentifier).Should().Be(user.Id.ToString());
         principal.FindFirstValue(ClaimTypes.Email).Should().Be(user.Email);
         principal.FindFirstValue("username").Should().Be(user.Username);
         principal.FindAll(ClaimTypes.Role).Select(c => c.Value).Should().Contain("user");

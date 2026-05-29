@@ -102,7 +102,7 @@ public sealed class RegisterUserCommandHandler
 
         await SendConfirmationEmailAsync(user, ct);
 
-        return new Result(user.Id, user.Email, user.Username);
+        return new Result(user.Id.ToString(), user.Email, user.Username);
     }
 
     private async Task SendConfirmationEmailAsync(User user, CancellationToken ct)

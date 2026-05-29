@@ -6,7 +6,7 @@ namespace AegisIdentity.ReadModels.Queries;
 public sealed class GetCurrentUserQueryHandler
     : IRequestHandler<GetCurrentUserQueryHandler.Query, GetCurrentUserQueryHandler.Result?>
 {
-    public sealed record Query(string UserId) : IRequest<Result?>;
+    public sealed record Query(Guid UserId) : IRequest<Result?>;
 
     public sealed record Result(
         string Id,
@@ -32,7 +32,7 @@ public sealed class GetCurrentUserQueryHandler
             return null;
 
         return new Result(
-            Id: user.Id,
+            Id: user.Id.ToString(),
             Email: user.Email,
             Username: user.Username,
             Roles: user.Roles.AsReadOnly(),

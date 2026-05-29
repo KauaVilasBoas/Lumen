@@ -1,10 +1,12 @@
+using AegisIdentity.SharedKernel.Persistence;
+
 namespace AegisIdentity.Domain.Tokens;
 
-public sealed class EmailConfirmationToken
+public sealed class EmailConfirmationToken : ISoftDeletable
 {
-    public string Id { get; init; } = string.Empty;
+    public Guid Id { get; init; } = Guid.NewGuid();
 
-    public string UserId { get; init; } = string.Empty;
+    public Guid UserId { get; init; }
 
     public string TokenHash { get; init; } = string.Empty;
 
@@ -14,12 +16,15 @@ public sealed class EmailConfirmationToken
 
     public DateTime? UsedAt { get; private set; }
 
+    public bool IsDeleted { get; private set; }
+
+    public DateTime? DeletedAt { get; private set; }
+
     public static EmailConfirmationToken Create(
-        string userId,
+        Guid userId,
         string tokenHash,
         DateTime expiresAt)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(userId);
         ArgumentException.ThrowIfNullOrWhiteSpace(tokenHash);
 
         if (expiresAt <= DateTime.UtcNow)
@@ -42,5 +47,11 @@ public sealed class EmailConfirmationToken
     public void MarkAsUsed()
     {
         UsedAt = DateTime.UtcNow;
+    }
+
+    public void SoftDelete()
+    {
+        IsDeleted = true;
+        DeletedAt = DateTime.UtcNow;
     }
 }

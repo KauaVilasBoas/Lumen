@@ -205,7 +205,7 @@ public sealed class RefreshTokenCommandHandlerTests
         _logger.Received(1).Log(
             LogLevel.Warning,
             Arg.Any<EventId>(),
-            Arg.Is<object>(v => v.ToString()!.Contains(user.Id) && v.ToString()!.Contains(ClientIp)),
+            Arg.Is<object>(v => v.ToString()!.Contains(user.Id.ToString()) && v.ToString()!.Contains(ClientIp)),
             Arg.Any<Exception?>(),
             Arg.Any<Func<object, Exception?, string>>());
     }
@@ -228,10 +228,11 @@ public sealed class RefreshTokenCommandHandlerTests
     [Fact]
     public async Task Handle_WhenUserNotFound_ThrowsUnauthorizedWithGenericMessage()
     {
-        var (incomingValue, orphanToken) = ActiveTokenForUser("orphan-user-id");
+        var orphanUserId = Guid.NewGuid();
+        var (incomingValue, orphanToken) = ActiveTokenForUser(orphanUserId);
 
         ArrangeFoundToken(incomingValue, orphanToken);
-        _userRepository.FindByIdAsync("orphan-user-id", Arg.Any<CancellationToken>())
+        _userRepository.FindByIdAsync(orphanUserId, Arg.Any<CancellationToken>())
             .ReturnsNull();
 
         var act = () => CreateHandler().Handle(CommandWith(incomingValue), CancellationToken.None);
@@ -264,7 +265,7 @@ public sealed class RefreshTokenCommandHandlerTests
     private static User InactiveUser() =>
         User.Create(ValidEmail, ValidUsername, FakePasswordHash);
 
-    private static (string TokenValue, RefreshToken Token) ActiveTokenForUser(string userId)
+    private static (string TokenValue, RefreshToken Token) ActiveTokenForUser(Guid userId)
     {
         var value = SomeIncomingTokenValue;
         var hash = Sha256Hasher.ComputeHex(value);
@@ -276,7 +277,7 @@ public sealed class RefreshTokenCommandHandlerTests
         return (value, token);
     }
 
-    private static RefreshToken ActiveTokenFor(string userId, string tokenHash, string? childHash)
+    private static RefreshToken ActiveTokenFor(Guid userId, string tokenHash, string? childHash)
     {
         if (childHash is not null)
             return TokenWithHashAndChild(userId, tokenHash, childHash);
@@ -288,12 +289,12 @@ public sealed class RefreshTokenCommandHandlerTests
             createdByIp: ClientIp);
     }
 
-    private static RefreshToken TokenWithHashAndChild(string userId, string tokenHash, string childHash)
+    private static RefreshToken TokenWithHashAndChild(Guid userId, string tokenHash, string childHash)
     {
         var token = (RefreshToken)System.Runtime.CompilerServices.RuntimeHelpers
             .GetUninitializedObject(typeof(RefreshToken));
 
-        SetInitProperty(token, nameof(RefreshToken.Id), Guid.NewGuid().ToString());
+        SetInitProperty(token, nameof(RefreshToken.Id), Guid.NewGuid());
         SetInitProperty(token, nameof(RefreshToken.UserId), userId);
         SetInitProperty(token, nameof(RefreshToken.TokenHash), tokenHash);
         SetInitProperty(token, nameof(RefreshToken.CreatedByIp), ClientIp);
@@ -305,7 +306,7 @@ public sealed class RefreshTokenCommandHandlerTests
         return token;
     }
 
-    private static (string TokenValue, RefreshToken Token) RevokedTokenWithChildFor(string userId, string? childHash)
+    private static (string TokenValue, RefreshToken Token) RevokedTokenWithChildFor(Guid userId, string? childHash)
     {
         var value = SomeIncomingTokenValue;
         var hash = Sha256Hasher.ComputeHex(value);
@@ -318,14 +319,14 @@ public sealed class RefreshTokenCommandHandlerTests
         return (value, token);
     }
 
-    private static RefreshToken ExpiredTokenFor(string userId)
+    private static RefreshToken ExpiredTokenFor(Guid userId)
     {
         var tokenHash = Sha256Hasher.ComputeHex(SomeIncomingTokenValue);
 
         var token = (RefreshToken)System.Runtime.CompilerServices.RuntimeHelpers
             .GetUninitializedObject(typeof(RefreshToken));
 
-        SetInitProperty(token, nameof(RefreshToken.Id), Guid.NewGuid().ToString());
+        SetInitProperty(token, nameof(RefreshToken.Id), Guid.NewGuid());
         SetInitProperty(token, nameof(RefreshToken.UserId), userId);
         SetInitProperty(token, nameof(RefreshToken.TokenHash), tokenHash);
         SetInitProperty(token, nameof(RefreshToken.CreatedByIp), ClientIp);

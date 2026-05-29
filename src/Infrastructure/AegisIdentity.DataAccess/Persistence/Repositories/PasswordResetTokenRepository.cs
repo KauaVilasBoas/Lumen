@@ -1,31 +1,30 @@
 using AegisIdentity.Domain.Tokens;
-using MongoDB.Driver;
+using Microsoft.EntityFrameworkCore;
 
 namespace AegisIdentity.DataAccess.Persistence.Repositories;
 
-public sealed class PasswordResetTokenRepository : IPasswordResetTokenRepository
+internal sealed class PasswordResetTokenRepository : IPasswordResetTokenRepository
 {
-    private readonly IMongoCollection<PasswordResetToken> _collection;
+    private readonly AegisIdentityDbContext _dbContext;
 
-    public PasswordResetTokenRepository(MongoDbContext context)
+    public PasswordResetTokenRepository(AegisIdentityDbContext dbContext)
     {
-        _collection = context.GetCollection<PasswordResetToken>(CollectionNames.PasswordResetTokens);
+        _dbContext = dbContext;
     }
 
-    public async Task<PasswordResetToken?> FindByTokenHashAsync(string tokenHash, CancellationToken ct = default)
-    {
-        var filter = Builders<PasswordResetToken>.Filter.Eq(t => t.TokenHash, tokenHash);
-        return await _collection.Find(filter).FirstOrDefaultAsync(ct);
-    }
+    public Task<PasswordResetToken?> FindByTokenHashAsync(string tokenHash, CancellationToken ct = default)
+        => _dbContext.PasswordResetTokens
+                     .FirstOrDefaultAsync(t => t.TokenHash == tokenHash, ct);
 
     public async Task InsertAsync(PasswordResetToken token, CancellationToken ct = default)
     {
-        await _collection.InsertOneAsync(token, options: null, ct);
+        _dbContext.PasswordResetTokens.Add(token);
+        await _dbContext.SaveChangesAsync(ct);
     }
 
     public async Task UpdateAsync(PasswordResetToken token, CancellationToken ct = default)
     {
-        var filter = Builders<PasswordResetToken>.Filter.Eq(t => t.Id, token.Id);
-        await _collection.ReplaceOneAsync(filter, token, cancellationToken: ct);
+        _dbContext.PasswordResetTokens.Update(token);
+        await _dbContext.SaveChangesAsync(ct);
     }
 }

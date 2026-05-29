@@ -86,11 +86,11 @@ public sealed class AuthController : ControllerBase
     {
         var sub = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        if (string.IsNullOrWhiteSpace(sub))
+        if (!Guid.TryParse(sub, out var userId))
             return Unauthorized();
 
         var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        var command = new LogoutUserCommandHandler.Command(request.RefreshToken, sub, clientIp);
+        var command = new LogoutUserCommandHandler.Command(request.RefreshToken, userId, clientIp);
 
         await _mediator.Send(command, ct);
 

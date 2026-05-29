@@ -8,7 +8,7 @@ namespace AegisIdentity.UnitTests.Application.ReadModels;
 
 public sealed class GetCurrentUserQueryHandlerTests
 {
-    private const string UserId = "aabbccddeeff00112233aabb";
+    private static readonly Guid UserId = Guid.Parse("aabbccdd-eeff-0011-2233-aabbccddeeff");
 
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
 
@@ -24,7 +24,7 @@ public sealed class GetCurrentUserQueryHandlerTests
         var result = await CreateHandler().Handle(new GetCurrentUserQueryHandler.Query(UserId), CancellationToken.None);
 
         result.Should().NotBeNull();
-        result!.Id.Should().Be(user.Id);
+        result!.Id.Should().Be(user.Id.ToString());
         result.Email.Should().Be(user.Email);
         result.Username.Should().Be(user.Username);
         result.Roles.Should().BeEquivalentTo(user.Roles);

@@ -1,10 +1,12 @@
+using AegisIdentity.SharedKernel.Persistence;
+
 namespace AegisIdentity.Domain.Tokens;
 
-public sealed class RefreshToken
+public sealed class RefreshToken : ISoftDeletable
 {
-    public string Id { get; init; } = string.Empty;
+    public Guid Id { get; init; } = Guid.NewGuid();
 
-    public string UserId { get; init; } = string.Empty;
+    public Guid UserId { get; init; }
 
     public string TokenHash { get; init; } = string.Empty;
 
@@ -18,13 +20,16 @@ public sealed class RefreshToken
 
     public DateTime? RevokedAt { get; private set; }
 
+    public bool IsDeleted { get; private set; }
+
+    public DateTime? DeletedAt { get; private set; }
+
     public static RefreshToken Create(
-        string userId,
+        Guid userId,
         string tokenHash,
         DateTime expiresAt,
         string createdByIp)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(userId);
         ArgumentException.ThrowIfNullOrWhiteSpace(tokenHash);
         ArgumentException.ThrowIfNullOrWhiteSpace(createdByIp);
 
@@ -50,5 +55,11 @@ public sealed class RefreshToken
     {
         RevokedAt = DateTime.UtcNow;
         ReplacedByTokenHash = replacedByTokenHash;
+    }
+
+    public void SoftDelete()
+    {
+        IsDeleted = true;
+        DeletedAt = DateTime.UtcNow;
     }
 }
