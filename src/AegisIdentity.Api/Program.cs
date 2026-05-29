@@ -39,6 +39,7 @@ try
     // ── Infrastructure ────────────────────────────────────────────────────────
     builder.Services.AddInfrastructureOptions(builder.Configuration);
     builder.Services.AddMongoDb(builder.Configuration);
+    builder.Services.AddRelationalDataAccess();
     builder.Services.AddSecurity();
     builder.Services.AddHibpClient();
     builder.Services.AddNotifications();
@@ -79,7 +80,8 @@ try
     // ── Health checks ─────────────────────────────────────────────────────────
     builder.Services
         .AddHealthChecks()
-        .AddCheck<MongoDbHealthCheck>("mongodb");
+        .AddCheck<MongoDbHealthCheck>("mongodb")
+        .AddCheck<SqlServerHealthCheck>("sqlserver");
 
     builder.Services.AddRazorPages();
 

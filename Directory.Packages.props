@@ -7,6 +7,8 @@
   <!-- ─── Persistence ───────────────────────────────────────────────── -->
   <ItemGroup>
     <PackageVersion Include="MongoDB.Driver" Version="2.30.0" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.15" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.15" />
   </ItemGroup>
 
   <!-- ─── Security / Auth ──────────────────────────────────────────── -->
