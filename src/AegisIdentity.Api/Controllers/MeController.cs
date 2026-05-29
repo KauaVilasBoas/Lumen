@@ -1,5 +1,6 @@
 using System.Security.Claims;
-using AegisIdentity.SharedKernel.Constants;
+using AegisIdentity.ReadModels.Queries;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,29 +12,29 @@ namespace AegisIdentity.Api.Controllers;
 [Produces("application/json")]
 public sealed class MeController : ControllerBase
 {
-    /// <summary>
-    /// Returns the identity claims of the currently authenticated user.
-    /// Requires a valid Bearer token; returns 401 when the token is absent or invalid.
-    /// </summary>
-    [HttpGet]
-    [ProducesResponseType(typeof(MeResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    public IActionResult Get()
+    private readonly IMediator _mediator;
+
+    public MeController(IMediator mediator)
     {
-        var principal = User;
-
-        var sub = principal.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
-        var email = principal.FindFirstValue(ClaimTypes.Email) ?? string.Empty;
-        var username = principal.FindFirstValue(JwtClaimTypes.Username) ?? string.Empty;
-        var roles = principal.FindAll(ClaimTypes.Role).Select(c => c.Value).ToArray();
-
-        return Ok(new MeResponse(sub, email, username, roles));
+        _mediator = mediator;
     }
 
-    /// <summary>Projection of the authenticated user's identity claims.</summary>
-    public sealed record MeResponse(
-        string Sub,
-        string Email,
-        string Username,
-        string[] Roles);
+    [HttpGet]
+    [ProducesResponseType(typeof(GetCurrentUserQueryHandler.Result), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Get(CancellationToken ct)
+    {
+        var sub = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrWhiteSpace(sub))
+            return Unauthorized();
+
+        var result = await _mediator.Send(new GetCurrentUserQueryHandler.Query(sub), ct);
+
+        if (result is null)
+            return NotFound();
+
+        return Ok(result);
+    }
 }

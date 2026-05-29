@@ -1,6 +1,7 @@
 using AegisIdentity.Api.ExceptionHandlers;
 using AegisIdentity.Api.Middleware;
 using AegisIdentity.CommandHandlers.Auth.Register;
+using AegisIdentity.ReadModels.Queries;
 using AegisIdentity.CommandHandlers.Behaviors;
 using AegisIdentity.DataAccess.HealthChecks;
 using AegisIdentity.DataAccess.Persistence;
@@ -62,6 +63,7 @@ try
     builder.Services.AddMediatR(cfg =>
     {
         cfg.RegisterServicesFromAssemblyContaining<RegisterUserCommandHandler>();
+        cfg.RegisterServicesFromAssemblyContaining<GetCurrentUserQueryHandler>();
         cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
     });
 
