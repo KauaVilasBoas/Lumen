@@ -25,4 +25,6 @@ public static class AuthErrorMessages
     public const string PasswordPwned = "Esta senha aparece em vazamentos públicos conhecidos. Escolha outra.";
 
     public const string InvalidOrExpiredRefreshToken = "Invalid or expired refresh token.";
+
+    public const string RefreshTokenOwnershipViolation = "You do not own this refresh token.";
 }
