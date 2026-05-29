@@ -1,4 +1,5 @@
 using AegisIdentity.DataAccess.Persistence.Repositories;
+using AegisIdentity.Domain.Authorization;
 using AegisIdentity.Domain.Tokens;
 using AegisIdentity.Domain.Users;
 using AegisIdentity.Infrastructure.Configuration;
@@ -27,6 +28,8 @@ public static class SqlServerServiceExtensions
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
         services.AddScoped<IEmailConfirmationTokenRepository, EmailConfirmationTokenRepository>();
+        services.AddScoped<IPermissionRepository, PermissionRepository>();
+        services.AddScoped<IProfileRepository, ProfileRepository>();
 
         return services;
     }

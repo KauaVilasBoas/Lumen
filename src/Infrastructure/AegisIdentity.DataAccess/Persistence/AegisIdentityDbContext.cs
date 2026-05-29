@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using AegisIdentity.Domain.Authorization;
 using AegisIdentity.Domain.Tokens;
 using AegisIdentity.Domain.Users;
 using AegisIdentity.SharedKernel.Persistence;
@@ -21,6 +22,16 @@ public sealed class AegisIdentityDbContext : DbContext
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
 
     public DbSet<EmailConfirmationToken> EmailConfirmationTokens => Set<EmailConfirmationToken>();
+
+    public DbSet<Permission> Permissions => Set<Permission>();
+
+    public DbSet<Domain.Authorization.Profile> Profiles => Set<Domain.Authorization.Profile>();
+
+    public DbSet<GroupPermission> GroupPermissions => Set<GroupPermission>();
+
+    public DbSet<PermissionProfile> PermissionProfiles => Set<PermissionProfile>();
+
+    public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
