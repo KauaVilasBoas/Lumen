@@ -48,9 +48,7 @@ try
     // processing jobs, guaranteeing the schema is current before any job reads it.
     builder.Services.AddEfMigrationsHostedService();
 
-    // ── Background Jobs (Hangfire + Mongo storage) ───────────────────────────
-    // AddInfrastructureOptions is called earlier — MongoOptions is already
-    // registered in the DI container and available to AddAegisHangfire.
+    // ── Background Jobs (Hangfire + SQL Server storage) ──────────────────────
     // RegisterJobs scans AegisIdentity.Jobs for IJobDefinition implementations
     // and registers them in DI — no manual per-job wiring needed.
     builder.Services.AddAegisHangfire(builder.Configuration);

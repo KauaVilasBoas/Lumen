@@ -59,13 +59,13 @@ public sealed class CleanupExpiredRefreshTokensJobTests
     {
         // Arrange
         _repository.DeleteExpiredAsync(Arg.Any<DateTime>(), Arg.Any<CancellationToken>())
-                   .ThrowsAsync(new InvalidOperationException("Mongo unavailable"));
+                   .ThrowsAsync(new InvalidOperationException("storage unavailable"));
 
         // Act
         var act = async () => await _sut.ExecuteAsync(CancellationToken.None);
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()
-                 .WithMessage("Mongo unavailable");
+                 .WithMessage("storage unavailable");
     }
 }

@@ -10,14 +10,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 // ── Hangfire dashboard (storage only — no job server) ────────────────────────
-// The Backoffice reads from the same Hangfire Mongo database as the Api so
-// the dashboard reflects live job state.  AddAegisHangfireServer is NOT called
-// here; only the Api runs jobs to avoid competing consumers.
-//
-// AddAegisDashboard binds HangfireDashboardOptions (path + Basic Auth
-// credentials) from configuration.  Real credentials must be set via
-// dotnet user-secrets in dev or environment variables in production — the
-// appsettings entry is a placeholder only.
+// AddAegisHangfireServer is NOT called here; only the Api runs jobs to avoid
+// competing consumers.  AddAegisDashboard binds HangfireDashboardOptions
+// (path + Basic Auth credentials) from configuration.
 builder.Services.AddInfrastructureOptions(builder.Configuration);
 builder.Services.AddAegisHangfire(builder.Configuration);
 builder.Services.AddAegisDashboard(builder.Configuration);

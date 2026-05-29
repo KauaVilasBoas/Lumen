@@ -10,9 +10,7 @@
     <!--
       Jobs: provides HangfireDashboardAuthorizationFilter and AddAegisHangfire.
       The Backoffice acts as the dashboard UI host only — it calls AddAegisHangfire
-      to point at the same Mongo storage as the Api but does NOT call
-      AddAegisHangfireServer, so no competing job-processor is started.
-      Infrastructure: MongoOptions POCO required by AddAegisHangfire.
+      but does NOT call AddAegisHangfireServer to avoid a competing job-processor.
     -->
     <ProjectReference Include="..\..\Jobs\AegisIdentity.Jobs\AegisIdentity.Jobs.csproj" />
     <ProjectReference Include="..\..\AegisIdentity.Infrastructure\AegisIdentity.Infrastructure.csproj" />

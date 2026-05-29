@@ -13,7 +13,7 @@
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="NSubstitute" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
-    <PackageReference Include="Testcontainers.MongoDb" />
+    <PackageReference Include="Testcontainers.MsSql" />
   </ItemGroup>
 
   <ItemGroup>
@@ -25,6 +25,7 @@
     <ProjectReference Include="..\..\src\AegisIdentity.Infrastructure\AegisIdentity.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Infrastructure\AegisIdentity.DataAccess\AegisIdentity.DataAccess.csproj" />
     <ProjectReference Include="..\..\src\Infrastructure\AegisIdentity.Integration\AegisIdentity.Integration.csproj" />
+    <ProjectReference Include="..\..\src\Migrations\AegisIdentity.Migrations\AegisIdentity.Migrations.csproj" />
   </ItemGroup>
 
 </Project>

@@ -7,7 +7,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Expose MongoDbContext and repositories to the test project. -->
+    <!-- Expose internal repositories to test projects. -->
     <InternalsVisibleTo Include="AegisIdentity.UnitTests" />
     <InternalsVisibleTo Include="AegisIdentity.IntegrationTests" />
   </ItemGroup>

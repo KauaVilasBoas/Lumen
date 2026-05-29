@@ -13,21 +13,6 @@ services:
     #   - ./.mailpit-data:/data
     restart: unless-stopped
 
-  mongo:
-    image: mongo:7
-    container_name: aegis-mongo
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo-data:/data/db
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.runCommand({ ping: 1 })", "--quiet"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: aegis-sqlserver
@@ -47,5 +32,4 @@ services:
       start_period: 30s
 
 volumes:
-  mongo-data:
   sqlserver-data:
