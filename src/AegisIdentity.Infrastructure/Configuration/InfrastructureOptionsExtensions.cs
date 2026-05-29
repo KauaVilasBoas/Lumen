@@ -40,6 +40,12 @@ public static class InfrastructureOptionsExtensions
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
+        services
+            .AddOptions<SqlServerOptions>()
+            .Bind(configuration.GetSection(SqlServerOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
         // Adapter bridges AppOptions to the Application-layer abstraction.
         services.AddSingleton<IAppSettings, AppSettingsAdapter>();
 
