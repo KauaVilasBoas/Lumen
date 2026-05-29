@@ -46,6 +46,12 @@
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
   </ItemGroup>
 
+  <!-- ─── Configuration ────────────────────────────────────────────── -->
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="8.0.0" />
+  </ItemGroup>
+
   <!-- ─── Messaging / Email ────────────────────────────────────────── -->
   <ItemGroup>
     <!-- MailKit ships MimeKit as a transitive dependency — no separate entry needed. -->

@@ -18,7 +18,9 @@ public static class SqlServerServiceExtensions
                 .GetRequiredService<IOptions<SqlServerOptions>>()
                 .Value;
 
-            options.UseSqlServer(sqlServerOptions.ConnectionString);
+            options.UseSqlServer(
+                sqlServerOptions.ConnectionString,
+                sql => sql.MigrationsAssembly("AegisIdentity.Migrations"));
         });
 
         services.AddScoped<IUserRepository, UserRepository>();

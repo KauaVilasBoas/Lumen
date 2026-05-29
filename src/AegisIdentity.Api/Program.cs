@@ -43,12 +43,10 @@ try
     builder.Services.AddHibpClient();
     builder.Services.AddNotifications();
 
-    // ── Database migrations (Mongo) ──────────────────────────────────────────
-    // INFRA-04 will replace this with EF Core Database.Migrate() on startup.
-    // Until then, types are registered but MongoMigrationsHostedService is NOT
-    // started — it depends on IMongoDatabase which is no longer registered
-    // after removing AddMongoDb() from this host.
-    builder.Services.AddMongoMigrations();
+    // ── EF Core migrations applied on startup ────────────────────────────────
+    // EfMigrationsHostedService runs Database.Migrate() before Hangfire starts
+    // processing jobs, guaranteeing the schema is current before any job reads it.
+    builder.Services.AddEfMigrationsHostedService();
 
     // ── Background Jobs (Hangfire + Mongo storage) ───────────────────────────
     // AddInfrastructureOptions is called earlier — MongoOptions is already

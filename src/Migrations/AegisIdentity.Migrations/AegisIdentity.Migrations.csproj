@@ -6,17 +6,24 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!--
-      MongoDB.Driver: the migration runner targets IMongoCollection<BsonDocument> on
-      purpose, so migrations stay decoupled from domain entities and survive future
-      schema renames in DataAccess.
-      Hosting.Abstractions: brings IHostedService so the library can run migrations
-      automatically on Api startup.
-    -->
-    <PackageReference Include="MongoDB.Driver" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <ProjectReference Include="..\..\Infrastructure\AegisIdentity.DataAccess\AegisIdentity.DataAccess.csproj" />
+    <ProjectReference Include="..\..\AegisIdentity.Infrastructure\AegisIdentity.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
