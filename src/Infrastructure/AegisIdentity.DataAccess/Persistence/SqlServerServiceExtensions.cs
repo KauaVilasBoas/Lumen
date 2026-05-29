@@ -29,6 +29,7 @@ public static class SqlServerServiceExtensions
         services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
         services.AddScoped<IEmailConfirmationTokenRepository, EmailConfirmationTokenRepository>();
         services.AddScoped<IPermissionRepository, PermissionRepository>();
+        services.AddScoped<IGroupPermissionRepository, GroupPermissionRepository>();
         services.AddScoped<IProfileRepository, ProfileRepository>();
 
         return services;

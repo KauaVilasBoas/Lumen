@@ -16,6 +16,10 @@ public sealed class Permission : ISoftDeletable
 
     public Guid? GroupPermissionId { get; private set; }
 
+    public bool IsOrphan { get; private set; }
+
+    public DateTime? OrphanedAt { get; private set; }
+
     public bool IsDeleted { get; private set; }
 
     public DateTime? DeletedAt { get; private set; }
@@ -42,6 +46,30 @@ public sealed class Permission : ISoftDeletable
             DisplayName = displayName,
             GroupPermissionId = groupPermissionId,
         };
+    }
+
+    public void Update(string controller, string action, string displayName, Guid? groupPermissionId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(controller);
+        ArgumentException.ThrowIfNullOrWhiteSpace(action);
+        ArgumentException.ThrowIfNullOrWhiteSpace(displayName);
+
+        Controller = controller;
+        Action = action;
+        DisplayName = displayName;
+        GroupPermissionId = groupPermissionId;
+    }
+
+    public void MarkAsOrphan()
+    {
+        IsOrphan = true;
+        OrphanedAt = DateTime.UtcNow;
+    }
+
+    public void ClearOrphan()
+    {
+        IsOrphan = false;
+        OrphanedAt = null;
     }
 
     public void SoftDelete()

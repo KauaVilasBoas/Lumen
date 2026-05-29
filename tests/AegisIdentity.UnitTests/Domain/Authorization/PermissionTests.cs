@@ -89,4 +89,58 @@ public sealed class PermissionTests
         permission.IsDeleted.Should().BeTrue();
         permission.DeletedAt.Should().NotBeNull().And.BeOnOrAfter(before);
     }
+
+    [Fact]
+    public void MarkAsOrphan_SetsIsOrphanAndOrphanedAt()
+    {
+        var permission = Permission.Create("Users", "Create", "Create User");
+        var before = DateTime.UtcNow;
+
+        permission.MarkAsOrphan();
+
+        permission.IsOrphan.Should().BeTrue();
+        permission.OrphanedAt.Should().NotBeNull().And.BeOnOrAfter(before);
+    }
+
+    [Fact]
+    public void ClearOrphan_ResetsIsOrphanAndOrphanedAt()
+    {
+        var permission = Permission.Create("Users", "Create", "Create User");
+        permission.MarkAsOrphan();
+
+        permission.ClearOrphan();
+
+        permission.IsOrphan.Should().BeFalse();
+        permission.OrphanedAt.Should().BeNull();
+    }
+
+    [Fact]
+    public void Update_ChangesControllerActionDisplayNameAndGroup()
+    {
+        var permission = Permission.Create("OldController", "OldAction", "Old Display");
+        var groupId = Guid.NewGuid();
+
+        permission.Update("NewController", "NewAction", "New Display", groupId);
+
+        permission.Controller.Should().Be("NewController");
+        permission.Action.Should().Be("NewAction");
+        permission.DisplayName.Should().Be("New Display");
+        permission.GroupPermissionId.Should().Be(groupId);
+    }
+
+    [Theory]
+    [InlineData("", "Action", "DisplayName")]
+    [InlineData("   ", "Action", "DisplayName")]
+    [InlineData("Controller", "", "DisplayName")]
+    [InlineData("Controller", "   ", "DisplayName")]
+    [InlineData("Controller", "Action", "")]
+    [InlineData("Controller", "Action", "   ")]
+    public void Update_WithBlankRequiredField_ThrowsArgumentException(string controller, string action, string displayName)
+    {
+        var permission = Permission.Create("Users", "Delete", "Delete User");
+
+        var act = () => permission.Update(controller, action, displayName, null);
+
+        act.Should().Throw<ArgumentException>();
+    }
 }

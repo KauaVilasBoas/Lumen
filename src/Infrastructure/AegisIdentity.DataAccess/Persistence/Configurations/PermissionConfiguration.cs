@@ -38,6 +38,12 @@ internal sealed class PermissionConfiguration : IEntityTypeConfiguration<Permiss
         builder.Property(p => p.GroupPermissionId)
                .UsePropertyAccessMode(PropertyAccessMode.Field);
 
+        builder.Property(p => p.IsOrphan)
+               .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.Property(p => p.OrphanedAt)
+               .UsePropertyAccessMode(PropertyAccessMode.Field);
+
         builder.Property(p => p.IsDeleted)
                .UsePropertyAccessMode(PropertyAccessMode.Field);
 

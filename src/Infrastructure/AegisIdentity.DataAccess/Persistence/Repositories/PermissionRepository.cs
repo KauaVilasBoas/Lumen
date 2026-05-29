@@ -34,4 +34,12 @@ internal sealed class PermissionRepository : IPermissionRepository
         _dbContext.Permissions.Update(permission);
         await _dbContext.SaveChangesAsync(ct);
     }
+
+    public async Task SaveAllAsync(IEnumerable<Permission> permissions, CancellationToken ct = default)
+    {
+        foreach (var permission in permissions)
+            _dbContext.Permissions.Update(permission);
+
+        await _dbContext.SaveChangesAsync(ct);
+    }
 }

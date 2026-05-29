@@ -1,3 +1,4 @@
+using AegisIdentity.Api.Authorization;
 using AegisIdentity.Api.ExceptionHandlers;
 using AegisIdentity.Api.Middleware;
 using AegisIdentity.CommandHandlers.Auth.Register;
@@ -46,7 +47,10 @@ try
     // ── EF Core migrations applied on startup ────────────────────────────────
     // EfMigrationsHostedService runs Database.Migrate() before Hangfire starts
     // processing jobs, guaranteeing the schema is current before any job reads it.
+    // PermissionDiscoveryHostedService is registered immediately after so that
+    // IHostedService execution order guarantees migrations run before discovery.
     builder.Services.AddEfMigrationsHostedService();
+    builder.Services.AddPermissionDiscovery();
 
     // ── Background Jobs (Hangfire + SQL Server storage) ──────────────────────
     // RegisterJobs scans AegisIdentity.Jobs for IJobDefinition implementations
