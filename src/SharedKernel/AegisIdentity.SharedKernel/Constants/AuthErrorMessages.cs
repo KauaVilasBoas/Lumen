@@ -23,4 +23,6 @@ public static class AuthErrorMessages
     public const string PasswordMissingSpecial = "A senha deve conter pelo menos um caractere especial.";
     public const string PasswordEqualsIdentity = "A senha não pode ser igual ao seu email/username.";
     public const string PasswordPwned = "Esta senha aparece em vazamentos públicos conhecidos. Escolha outra.";
+
+    public const string InvalidOrExpiredRefreshToken = "Invalid or expired refresh token.";
 }
