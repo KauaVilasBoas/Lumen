@@ -13,6 +13,7 @@
     -->
     <ProjectReference Include="..\..\AegisIdentity.Domain\AegisIdentity.Domain.csproj" />
     <ProjectReference Include="..\..\AegisIdentity.Infrastructure\AegisIdentity.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\SharedKernel\AegisIdentity.SharedKernel\AegisIdentity.SharedKernel.csproj" />
   </ItemGroup>
 
   <ItemGroup>
