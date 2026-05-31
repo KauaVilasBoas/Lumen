@@ -31,8 +31,7 @@ public sealed class UserDetailViewComponent : ViewComponent
     public sealed record ViewModel(
         string UserId,
         string Email,
-        string Username,
-        IReadOnlyList<string> Roles);
+        string Username);
 
     // ── Invoke ────────────────────────────────────────────────────────────────
 
@@ -47,13 +46,7 @@ public sealed class UserDetailViewComponent : ViewComponent
         var username = UserClaimsPrincipal.FindFirstValue(ClaimTypes.Name)
                        ?? UserClaimsPrincipal.FindFirstValue(JwtClaimTypes.Username)
                        ?? "unknown";
-        var roles = UserClaimsPrincipal
-            .FindAll(ClaimTypes.Role)
-            .Select(c => c.Value)
-            .ToList()
-            .AsReadOnly();
 
-        var vm = new ViewModel(userId, email, username, roles);
-        return View(vm);
+        return View(new ViewModel(userId, email, username));
     }
 }

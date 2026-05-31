@@ -14,21 +14,6 @@
 
             <dt class="col-sm-3">Username</dt>
             <dd class="col-sm-9">@Model.Username</dd>
-
-            <dt class="col-sm-3">Perfis</dt>
-            <dd class="col-sm-9">
-                @if (Model.Roles.Count == 0)
-                {
-                    <span class="text-muted">Nenhum perfil atribuído</span>
-                }
-                else
-                {
-                    foreach (var role in Model.Roles)
-                    {
-                        <span class="badge bg-secondary me-1">@role</span>
-                    }
-                }
-            </dd>
         </dl>
     </div>
 </div>
