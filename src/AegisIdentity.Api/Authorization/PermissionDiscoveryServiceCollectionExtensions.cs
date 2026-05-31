@@ -10,6 +10,9 @@ public static class PermissionDiscoveryServiceCollectionExtensions
         services.AddScoped<PermissionSyncService>();
         services.AddHostedService<PermissionDiscoveryHostedService>();
 
+        services.AddScoped<AdministratorPermissionReconciliationService>();
+        services.AddHostedService<AdministratorPermissionReconciliationHostedService>();
+
         return services;
     }
 }
