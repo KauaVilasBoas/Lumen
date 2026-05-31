@@ -12,7 +12,6 @@ public sealed class GetCurrentUserQueryHandler
         string Id,
         string Email,
         string Username,
-        IReadOnlyList<string> Roles,
         DateTime CreatedAt,
         DateTime? LastLoginAt,
         DateTime? EmailConfirmedAt);
@@ -35,7 +34,6 @@ public sealed class GetCurrentUserQueryHandler
             Id: user.Id.ToString(),
             Email: user.Email,
             Username: user.Username,
-            Roles: user.Roles.AsReadOnly(),
             CreatedAt: user.CreatedAt,
             LastLoginAt: user.LastLoginAt,
             EmailConfirmedAt: user.EmailConfirmedAt);
