@@ -53,4 +53,19 @@ internal sealed class ProfileRepository : IProfileRepository
 
         return [.. codes];
     }
+
+    public async Task<IReadOnlyList<PermissionProfile>> GetPermissionProfilesByProfileIdAsync(
+        Guid profileId,
+        CancellationToken ct = default)
+        => await _dbContext.PermissionProfiles
+                           .Where(pp => pp.ProfileId == profileId && !pp.IsDeleted)
+                           .ToListAsync(ct);
+
+    public async Task InsertPermissionProfilesAsync(
+        IReadOnlyList<PermissionProfile> permissionProfiles,
+        CancellationToken ct = default)
+    {
+        _dbContext.PermissionProfiles.AddRange(permissionProfiles);
+        await _dbContext.SaveChangesAsync(ct);
+    }
 }
