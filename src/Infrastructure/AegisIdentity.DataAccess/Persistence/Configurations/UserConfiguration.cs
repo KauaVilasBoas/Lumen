@@ -50,13 +50,6 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.DeletedAt)
                .UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        builder.Property(u => u.Roles)
-               .HasConversion(
-                   roles => string.Join(',', roles),
-                   raw => raw.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList())
-               .HasMaxLength(512)
-               .UsePropertyAccessMode(PropertyAccessMode.Field);
-
         builder.HasIndex(u => u.Email)
                .IsUnique()
                .HasFilter("[IsDeleted] = 0")
