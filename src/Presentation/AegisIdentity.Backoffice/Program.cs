@@ -3,6 +3,7 @@ using AegisIdentity.Infrastructure.Configuration;
 using AegisIdentity.Jobs.Configuration;
 using AegisIdentity.Jobs.Dashboard;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,7 +47,12 @@ builder.Services
         options.SlidingExpiration = true;
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+});
 
 // ── HttpClient — Api ──────────────────────────────────────────────────────────
 builder.Services.AddHttpClient<AuthApiClient>(client =>
