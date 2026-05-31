@@ -1,14 +1,12 @@
 using System.Security.Claims;
 using AegisIdentity.ReadModels.Queries;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AegisIdentity.Api.Controllers;
 
 [ApiController]
 [Route("api/me")]
-[Authorize]
 [Produces("application/json")]
 public sealed class MeController : ControllerBase
 {
@@ -27,10 +25,10 @@ public sealed class MeController : ControllerBase
     {
         var sub = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        if (string.IsNullOrWhiteSpace(sub))
+        if (!Guid.TryParse(sub, out var userId))
             return Unauthorized();
 
-        var result = await _mediator.Send(new GetCurrentUserQueryHandler.Query(sub), ct);
+        var result = await _mediator.Send(new GetCurrentUserQueryHandler.Query(userId), ct);
 
         if (result is null)
             return NotFound();

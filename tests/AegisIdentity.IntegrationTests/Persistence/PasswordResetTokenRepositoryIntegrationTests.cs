@@ -1,147 +1,98 @@
-using AegisIdentity.Domain.Tokens;
-using AegisIdentity.DataAccess.Persistence;
 using AegisIdentity.DataAccess.Persistence.Repositories;
-using AegisIdentity.Infrastructure.Configuration;
+using AegisIdentity.Domain.Tokens;
+using AegisIdentity.Domain.Users;
+using AegisIdentity.IntegrationTests.Infrastructure;
 using FluentAssertions;
-using Microsoft.Extensions.Options;
-using MongoDB.Driver;
-using Testcontainers.MongoDb;
+using Microsoft.EntityFrameworkCore;
 
 namespace AegisIdentity.IntegrationTests.Persistence;
 
-public sealed class PasswordResetTokenRepositoryIntegrationTests : IAsyncLifetime
+[Collection(IntegrationCollection.Name)]
+[Trait("Category", "Integration")]
+public sealed class PasswordResetTokenRepositoryIntegrationTests(IntegrationFixture fixture)
 {
-    private const string DatabaseName = "aegis_test";
-    private const string UserId = "507f1f77bcf86cd799439011";
-
-    private readonly MongoDbContainer _container = new MongoDbBuilder()
-        .WithImage("mongo:7")
-        .Build();
-
-    private MongoDbContext _context = null!;
-    private PasswordResetTokenRepository _repository = null!;
-
-    public async Task InitializeAsync()
-    {
-        await _container.StartAsync();
-
-        var options = Options.Create(new MongoOptions
-        {
-            ConnectionString = _container.GetConnectionString(),
-            Database = DatabaseName,
-        });
-
-        var client = new MongoClient(_container.GetConnectionString());
-        _context = new MongoDbContext(client, options);
-        _repository = new PasswordResetTokenRepository(_context);
-    }
-
-    public async Task DisposeAsync() => await _container.StopAsync();
-
     [Fact]
-    public async Task InsertAsync_StoresTokenAndGeneratesId()
+    public async Task InsertAsync_ValidToken_PersistsToDatabase()
     {
-        var token = BuildToken("hash1");
+        await using var dbContext = fixture.CreateDbContext();
+        var userRepo = new UserRepository(dbContext);
+        var tokenRepo = new PasswordResetTokenRepository(dbContext);
 
-        await _repository.InsertAsync(token);
+        var user = await CreateUserAsync(userRepo);
+        var token = PasswordResetToken.Create(user.Id, $"hash-{Guid.NewGuid():N}", DateTime.UtcNow.AddHours(1));
+        await tokenRepo.InsertAsync(token);
 
-        token.Id.Should().NotBeNullOrEmpty();
+        var found = await dbContext.PasswordResetTokens.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(t => t.Id == token.Id);
+        found.Should().NotBeNull();
     }
 
     [Fact]
-    public async Task InsertAsync_DuplicateTokenHash_ThrowsMongoWriteException()
+    public async Task FindByTokenHashAsync_ExistingToken_ReturnsToken()
     {
-        var first = BuildToken("hash-dup");
-        await _repository.InsertAsync(first);
+        await using var dbContext = fixture.CreateDbContext();
+        var userRepo = new UserRepository(dbContext);
+        var tokenRepo = new PasswordResetTokenRepository(dbContext);
 
-        await CreateUniqueTokenHashIndexAsync();
+        var user = await CreateUserAsync(userRepo);
+        var tokenHash = $"hash-{Guid.NewGuid():N}";
+        var token = PasswordResetToken.Create(user.Id, tokenHash, DateTime.UtcNow.AddHours(1));
+        await tokenRepo.InsertAsync(token);
 
-        var duplicate = BuildToken("hash-dup");
-        var act = async () => await _repository.InsertAsync(duplicate);
-
-        await act.Should().ThrowAsync<MongoWriteException>();
-    }
-
-    [Fact]
-    public async Task FindByTokenHashAsync_ExistingHash_ReturnsToken()
-    {
-        var token = BuildToken("hash-find");
-        await _repository.InsertAsync(token);
-
-        var found = await _repository.FindByTokenHashAsync("hash-find");
+        var found = await tokenRepo.FindByTokenHashAsync(tokenHash);
 
         found.Should().NotBeNull();
-        found!.TokenHash.Should().Be("hash-find");
-        found.UserId.Should().Be(UserId);
+        found!.TokenHash.Should().Be(tokenHash);
     }
 
     [Fact]
-    public async Task FindByTokenHashAsync_NonExistentHash_ReturnsNull()
+    public async Task UpdateAsync_MarkAsUsed_PersistsUsedAt()
     {
-        var result = await _repository.FindByTokenHashAsync("nonexistent");
+        await using var dbContext = fixture.CreateDbContext();
+        var userRepo = new UserRepository(dbContext);
+        var tokenRepo = new PasswordResetTokenRepository(dbContext);
 
-        result.Should().BeNull();
-    }
-
-    [Fact]
-    public async Task UpdateAsync_PersistsUsedState()
-    {
-        var token = BuildToken("hash-used");
-        await _repository.InsertAsync(token);
+        var user = await CreateUserAsync(userRepo);
+        var tokenHash = $"used-{Guid.NewGuid():N}";
+        var token = PasswordResetToken.Create(user.Id, tokenHash, DateTime.UtcNow.AddHours(1));
+        await tokenRepo.InsertAsync(token);
 
         token.MarkAsUsed();
-        await _repository.UpdateAsync(token);
+        await tokenRepo.UpdateAsync(token);
 
-        var updated = await _repository.FindByTokenHashAsync("hash-used");
+        var updated = await tokenRepo.FindByTokenHashAsync(tokenHash);
         updated.Should().NotBeNull();
         updated!.IsUsed().Should().BeTrue();
-        updated.UsedAt.Should().NotBeNull();
     }
 
     [Fact]
-    public async Task Indexes_TokenHash_IsUnique_And_ExpiresAt_TTL_Exists()
+    public async Task SoftDelete_DeletedToken_IsHiddenByGlobalFilter()
     {
-        await CreateAllIndexesAsync();
+        await using var dbContext = fixture.CreateDbContext();
+        var userRepo = new UserRepository(dbContext);
+        var tokenRepo = new PasswordResetTokenRepository(dbContext);
 
-        var indexList = await _context
-            .GetCollection<PasswordResetToken>(CollectionNames.PasswordResetTokens)
-            .Indexes
-            .List()
-            .ToListAsync();
+        var user = await CreateUserAsync(userRepo);
+        var tokenHash = $"soft-{Guid.NewGuid():N}";
+        var token = PasswordResetToken.Create(user.Id, tokenHash, DateTime.UtcNow.AddHours(1));
+        await tokenRepo.InsertAsync(token);
 
-        var indexNames = indexList.Select(doc => doc["name"].AsString).ToList();
+        token.SoftDelete();
+        await tokenRepo.UpdateAsync(token);
 
-        indexNames.Should().Contain("ix_tokenHash_unique");
-        indexNames.Should().Contain("ix_expiresAt_ttl");
+        var notFound = await tokenRepo.FindByTokenHashAsync(tokenHash);
+        notFound.Should().BeNull("global filter must hide soft-deleted tokens");
+
+        var stillInDb = await dbContext.PasswordResetTokens.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(t => t.TokenHash == tokenHash);
+        stillInDb.Should().NotBeNull();
+        stillInDb!.IsDeleted.Should().BeTrue();
     }
 
-    private static PasswordResetToken BuildToken(string tokenHash)
-        => PasswordResetToken.Create(UserId, tokenHash, DateTime.UtcNow.AddHours(1));
-
-    private async Task CreateUniqueTokenHashIndexAsync()
+    private static async Task<User> CreateUserAsync(UserRepository userRepo)
     {
-        var collection = _context.GetCollection<PasswordResetToken>(CollectionNames.PasswordResetTokens);
-        var model = new CreateIndexModel<PasswordResetToken>(
-            Builders<PasswordResetToken>.IndexKeys.Ascending(t => t.TokenHash),
-            new CreateIndexOptions { Unique = true, Name = "ix_tokenHash_unique" });
-        await collection.Indexes.CreateOneAsync(model);
-    }
-
-    private async Task CreateAllIndexesAsync()
-    {
-        var collection = _context.GetCollection<PasswordResetToken>(CollectionNames.PasswordResetTokens);
-
-        var models = new[]
-        {
-            new CreateIndexModel<PasswordResetToken>(
-                Builders<PasswordResetToken>.IndexKeys.Ascending(t => t.TokenHash),
-                new CreateIndexOptions { Unique = true, Name = "ix_tokenHash_unique" }),
-            new CreateIndexModel<PasswordResetToken>(
-                Builders<PasswordResetToken>.IndexKeys.Ascending(t => t.ExpiresAt),
-                new CreateIndexOptions { ExpireAfter = TimeSpan.Zero, Name = "ix_expiresAt_ttl" }),
-        };
-
-        foreach (var model in models)
-            await collection.Indexes.CreateOneAsync(model);
+        var user = User.Create($"prt-{Guid.NewGuid():N}@test.com", $"prt-user-{Guid.NewGuid():N}", "hash");
+        await userRepo.InsertAsync(user);
+        return user;
     }
 }

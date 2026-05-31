@@ -13,8 +13,8 @@ namespace AegisIdentity.UnitTests.Application.Auth.Logout;
 
 public sealed class LogoutUserCommandHandlerTests
 {
-    private const string OwnerUserId = "owner-user-id";
-    private const string OtherUserId = "other-user-id";
+    private static readonly Guid OwnerUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+    private static readonly Guid OtherUserId = Guid.Parse("22222222-2222-2222-2222-222222222222");
     private const string ClientIp = "192.168.0.1";
     private const string SomeTokenValue = "some-opaque-refresh-token";
 
@@ -111,8 +111,8 @@ public sealed class LogoutUserCommandHandlerTests
             LogLevel.Warning,
             Arg.Any<EventId>(),
             Arg.Is<object>(v =>
-                v.ToString()!.Contains(OwnerUserId) &&
-                v.ToString()!.Contains(OtherUserId) &&
+                v.ToString()!.Contains(OwnerUserId.ToString()) &&
+                v.ToString()!.Contains(OtherUserId.ToString()) &&
                 v.ToString()!.Contains(ClientIp)),
             Arg.Any<Exception?>(),
             Arg.Any<Func<object, Exception?, string>>());
@@ -156,7 +156,7 @@ public sealed class LogoutUserCommandHandlerTests
             LogLevel.Information,
             Arg.Any<EventId>(),
             Arg.Is<object>(v =>
-                v.ToString()!.Contains(OwnerUserId) &&
+                v.ToString()!.Contains(OwnerUserId.ToString()) &&
                 v.ToString()!.Contains(ClientIp)),
             Arg.Any<Exception?>(),
             Arg.Any<Func<object, Exception?, string>>());
@@ -168,7 +168,7 @@ public sealed class LogoutUserCommandHandlerTests
     private static LogoutUserCommandHandler.Command ValidCommand() =>
         new(RefreshToken: SomeTokenValue, UserId: OwnerUserId, ClientIp: ClientIp);
 
-    private static RefreshToken ActiveTokenForUser(string userId)
+    private static RefreshToken ActiveTokenForUser(Guid userId)
     {
         var hash = Sha256Hasher.ComputeHex(SomeTokenValue);
         return RefreshToken.Create(
@@ -190,7 +190,7 @@ public sealed class LogoutUserCommandHandlerTests
         var token = (RefreshToken)System.Runtime.CompilerServices.RuntimeHelpers
             .GetUninitializedObject(typeof(RefreshToken));
 
-        SetInitProperty(token, nameof(RefreshToken.Id), Guid.NewGuid().ToString());
+        SetInitProperty(token, nameof(RefreshToken.Id), Guid.NewGuid());
         SetInitProperty(token, nameof(RefreshToken.UserId), OwnerUserId);
         SetInitProperty(token, nameof(RefreshToken.TokenHash), Sha256Hasher.ComputeHex(SomeTokenValue));
         SetInitProperty(token, nameof(RefreshToken.CreatedByIp), ClientIp);

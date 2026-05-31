@@ -11,9 +11,11 @@
   &nbsp;
   <img src="https://img.shields.io/badge/Mediator-MediatR-blue?style=flat-square" alt="MediatR"/>
   &nbsp;
-  <img src="https://img.shields.io/badge/Database-MongoDB-13AA52?style=flat-square&logo=mongodb&logoColor=white" alt="MongoDB"/>
+  <img src="https://img.shields.io/badge/Database-SQL%20Server-CC2927?style=flat-square&logo=microsoftsqlserver&logoColor=white" alt="SQL Server"/>
   &nbsp;
-  <img src="https://img.shields.io/badge/Auth-JWT-000000?style=flat-square&logo=jsonwebtokens&logoColor=white" alt="JWT"/>
+  <img src="https://img.shields.io/badge/Cache-Redis-DC382D?style=flat-square&logo=redis&logoColor=white" alt="Redis"/>
+  &nbsp;
+  <img src="https://img.shields.io/badge/Auth-JWT%20%2B%20Permission--based-000000?style=flat-square&logo=jsonwebtokens&logoColor=white" alt="JWT + Permission-based Auth"/>
   &nbsp;
   <img src="https://img.shields.io/badge/Jobs-Hangfire-EC4899?style=flat-square" alt="Hangfire"/>
   &nbsp;
@@ -58,16 +60,17 @@ flowchart TB
 
     subgraph INFRA["🔧 Infrastructure · adapters"]
         SEC["<b>Infrastructure</b><br/><sub>JWT · BCrypt · PasswordValidator · Options</sub>"]
-        DAL["<b>DataAccess</b><br/><sub>MongoDbContext · Repositories<br/>ClassMaps · Index initializer</sub>"]
+        DAL["<b>DataAccess</b><br/><sub>EF Core DbContext · Repositories<br/>Migrations · Redis permission cache</sub>"]
         INT["<b>Integration</b><br/><sub>MailKit · PwnedPasswordsClient (HIBP)</sub>"]
     end
 
-    subgraph JOB["⏰ Jobs · Hangfire + Hangfire.Mongo"]
+    subgraph JOB["⏰ Jobs · Hangfire + Hangfire.SqlServer"]
         HF["<b>AegisIdentity.Jobs</b><br/><sub>Recurring scheduler</sub>"]
         CLEAN["<b>CleanupExpiredRefreshTokensJob</b><br/><sub>cron · 03:00 UTC daily</sub>"]
     end
 
-    DB[("🗄️ <b>MongoDB</b><br/>AegisIdentity_db<br/>AegisIdentity_hangfire")]
+    DB[("🗄️ <b>SQL Server</b><br/>AegisIdentity (schema dbo)<br/>HangFire (schema HangFire)")]
+    CACHE[("⚡ <b>Redis</b><br/>user:permissions:{userId}")]
     SMTP[/"📧 SMTP server"/]
     HIBP[/"🛡️ HaveIBeenPwned API<br/><sub>k-anonymity range query</sub>"/]
 
@@ -85,7 +88,8 @@ flowchart TB
     DAL -. "implements" .-> PORT
     INT -. "implements" .-> PORT
 
-    DAL ==> |"BSON · async I/O"| DB
+    DAL ==> |"EF Core · async I/O"| DB
+    DAL ==> |"permissions cache"| CACHE
     INT -. "SendAsync" .-> SMTP
     INT -. "range API" .-> HIBP
 
@@ -99,7 +103,8 @@ flowchart TB
     classDef infra      fill:#0b1220,stroke:#f59e0b,color:#fde68a
     classDef jobs       fill:#0b1220,stroke:#ec4899,color:#fce7f3
     classDef external   fill:#020617,stroke:#64748b,color:#cbd5e1
-    classDef db         fill:#13aa52,stroke:#00ed64,color:#ffffff,stroke-width:3px
+    classDef db         fill:#CC2927,stroke:#ff6b6b,color:#ffffff,stroke-width:3px
+    classDef cache      fill:#DC382D,stroke:#ff8c8c,color:#ffffff,stroke-width:2px
 
     class ENT,PORT domain
     class API,BO pres
@@ -108,6 +113,7 @@ flowchart TB
     class HF,CLEAN jobs
     class CLIENT,BROWSER,SMTP,HIBP external
     class DB db
+    class CACHE cache
 
     linkStyle 0  stroke:#3b82f6,stroke-width:2px
     linkStyle 1  stroke:#3b82f6,stroke-width:2px
@@ -140,13 +146,17 @@ flowchart TB
 | **CQRS via MediatR with nested types** | `Command`, `Result`, `Validator` are `sealed record`s nested inside the handler. One file = one use case, fully self-contained. No anemic DTO layer between Controller and Handler. |
 | **`ValidationBehavior<TRequest,TResponse>` pipeline** | FluentValidation runs *before* the handler. Cheap input checks fail fast; I/O-bound rules (uniqueness, HIBP) stay inside `Handle()`. |
 | **Ports & Adapters (Dependency Inversion)** | All infrastructure contracts (`IUserRepository`, `IJwtService`, `IEmailService`, `IPasswordHasher`…) live in **Domain**. Adapters in Infrastructure are wired by DI — Domain has zero external references, verified by the compiler. |
+| **SQL Server + EF Core (relational authz)** | Migrated from MongoDB to SQL Server with EF Core 8. Enables foreign-key integrity between User, Profile, Permission and token entities. Migrations are version-controlled — no runtime seed, no ad-hoc schema changes. See [ADR-0001](docs/adr/0001-mongodb-to-relational-efcore.md). |
+| **Permission-based authorization** | `[RequirePermission]` attribute on API actions triggers discovery at startup, Redis-cached resolution at request time, and a dynamic `IAuthorizationPolicyProvider` for enforcement. See [Authorization model](docs/authz.md). |
+| **Redis distributed permission cache** | Permission sets are cached per user in Redis with event-driven invalidation (`UserPermissionsChanged`). When Redis is unavailable, the enforcement layer falls back to the database — authorization never fails open. |
+| **Soft-delete everywhere** | No entity is ever physically deleted. EF Core global query filters hide deleted records; a filtered unique index on `Email`/`Username` (`WHERE IsDeleted = 0`) allows re-registration after soft-delete. |
 | **Razor Backoffice consumes its own JWT** | The MVC backoffice authenticates against the public API via a typed `AuthApiClient`, stores the JWT inside an HttpOnly cookie session, and exposes the Hangfire dashboard guarded by cookie auth. |
-| **Hangfire + Hangfire.Mongo for recurring work** | The API hosts the Hangfire server; jobs are scheduled on startup. `CleanupExpiredRefreshTokensJob` removes expired refresh tokens daily at 03:00 UTC via the same `IRefreshTokenRepository` port. |
+| **Hangfire + Hangfire.SqlServer for recurring work** | The API hosts the Hangfire server; jobs are scheduled on startup. `CleanupExpiredRefreshTokensJob` removes expired refresh tokens daily at 03:00 UTC via the same `IRefreshTokenRepository` port. |
 | **Central Package Management** | `Directory.Packages.props` is the single source of truth for NuGet versions across all 13 projects. Zero orphans, zero drift. |
 | **`TreatWarningsAsErrors` + nullable enabled globally** | Quality bar enforced by the compiler from `Directory.Build.props`. No "we'll clean it up later". |
 | **Startup-time options validation** | `ValidateDataAnnotations().ValidateOnStart()` — misconfiguration crashes on boot, never silently in production. |
 | **Global `IExceptionHandler` → RFC 7807** | `ValidationException` → `ValidationProblemDetails 400`; `ConflictException` → `ProblemDetails 409`. Consistent, machine-readable errors. |
-| **xUnit + Testcontainers integration tests** | 222 unit tests; integration suite spins up a real MongoDB via Testcontainers. Tests are a first-class deliverable, not an afterthought. |
+| **xUnit + Testcontainers integration tests** | 360+ unit tests; integration suite spins up real SQL Server and Redis containers via Testcontainers. Tests are a first-class deliverable, not an afterthought. |
 
 ---
 
@@ -157,15 +167,17 @@ flowchart TB
 | Runtime | .NET 8 / ASP.NET Core 8 |
 | API | Controllers + MediatR (CQRS) |
 | Backoffice | ASP.NET Core MVC (Razor) |
-| Auth | `Microsoft.AspNetCore.Authentication.JwtBearer` + Cookie auth |
+| Auth | JWT Bearer + Cookie auth + Permission-based authorization |
 | Validation | FluentValidation 11 + MediatR pipeline behavior |
 | Crypto | BCrypt.Net-Next |
-| Background jobs | Hangfire + Hangfire.Mongo |
+| Background jobs | Hangfire + Hangfire.SqlServer |
 | Email | MailKit |
-| Database | MongoDB |
+| Database | SQL Server + EF Core 8 (migrations, soft-delete, FK integrity) |
+| Cache | Redis (distributed permission cache, event-driven invalidation) |
 | Logging | Serilog (structured, JSON in prod) |
-| Testing | xUnit + Testcontainers |
-| Local dev | Docker Compose (Mailpit + MongoDB) |
+| Testing | xUnit + Testcontainers (SQL Server + Redis) |
+| Local dev | Docker Compose (Mailpit + SQL Server + Redis) |
+| Deploy | Railway (API + Backoffice as long-running .NET containers) |
 
 ---
 
@@ -176,24 +188,33 @@ AegisIdentity/
 ├── src/
 │   ├── AegisIdentity.Api/                          Presentation — Controllers, Hangfire server host
 │   ├── AegisIdentity.Domain/                       Entities, value objects, ports (interfaces)
+│   │                                               ↳ Authorization: Permission, Profile, UserProfile, PermissionProfile, GroupPermission
 │   ├── AegisIdentity.Infrastructure/               Cross-cutting: JWT, BCrypt, PasswordValidator, Options, HealthChecks
 │   ├── Application/
-│   │   ├── AegisIdentity.CommandHandlers/          Register, Login + Validators + ValidationBehavior
-│   │   ├── AegisIdentity.EventHandlers/            Notification handlers (scaffold)
-│   │   └── AegisIdentity.ReadModels/               Query handlers (scaffold)
+│   │   ├── AegisIdentity.CommandHandlers/          Register, Login, Profile/UserProfile CRUD + Validators + ValidationBehavior
+│   │   ├── AegisIdentity.EventHandlers/            UserPermissionsChanged → cache invalidation
+│   │   └── AegisIdentity.ReadModels/               GetCurrentUserQuery (/me), ListProfiles, ListPermissions, ListUserProfiles
 │   ├── Infrastructure/
-│   │   ├── AegisIdentity.DataAccess/               MongoDbContext, repositories, ClassMaps, MongoDbHealthCheck
+│   │   ├── AegisIdentity.DataAccess/               EF Core DbContext, SQL Server repositories, Redis permission cache
 │   │   └── AegisIdentity.Integration/              MailKitEmailService, PwnedPasswordsClient, templates
+│   ├── Migrations/
+│   │   ├── AegisIdentity.Migrations/               EF Core migrations (schema + data migrations for admin/profiles)
+│   │   └── AegisIdentity.Migrations.Cli/           dotnet ef wrapper CLI
 │   ├── Presentation/
-│   │   └── AegisIdentity.Backoffice/               MVC backoffice (cookie auth → API JWT)
+│   │   └── AegisIdentity.Backoffice/               MVC backoffice (cookie auth → API JWT, RequirePermissionTagHelper, HasPermissionAsync)
 │   ├── Jobs/
-│   │   └── AegisIdentity.Jobs/                     Hangfire configuration + recurring jobs
+│   │   └── AegisIdentity.Jobs/                     Hangfire + Hangfire.SqlServer, recurring jobs
 │   └── SharedKernel/
-│       └── AegisIdentity.SharedKernel/             Constants, util helpers (Base64UrlEncoder, Sha256Hasher)
+│       └── AegisIdentity.SharedKernel/             RequirePermissionAttribute, ControllerNameNormalizer, Base64UrlEncoder, Sha256Hasher
 ├── tests/
-│   ├── AegisIdentity.UnitTests/                    Domain + Application (222 passing)
-│   └── AegisIdentity.IntegrationTests/             Api + Infrastructure (Testcontainers)
-├── docker-compose.yml                              Local dev stack (Mailpit + MongoDB)
+│   ├── AegisIdentity.UnitTests/                    Domain + Application (360+ passing)
+│   └── AegisIdentity.IntegrationTests/             Api + Infrastructure (Testcontainers: SQL Server + Redis)
+├── docs/
+│   ├── authz.md                                    Authorization model, soft-delete, /me contract, Backoffice helpers
+│   └── adr/
+│       ├── 0001-mongodb-to-relational-efcore.md    ADR: SQL Server migration, Railway deploy, Vercel exclusion
+│       └── 0002-admin-bootstrap-credential.md      ADR: admin bootstrap credential via data migration
+├── docker-compose.yml                              Local dev stack (Mailpit + SQL Server + Redis)
 ├── Directory.Build.props                           Global MSBuild settings
 ├── Directory.Packages.props                        Central Package Management
 └── AegisIdentity.sln                               Root aggregator (organizes projects into solution folders)
@@ -212,25 +233,46 @@ Each layer also ships its own `.sln` (`Domain.sln`, `Application.sln`, `Infrastr
 
 ### Local development with Docker
 
-The `docker-compose.yml` at the repository root brings up two services with a single command:
+The `docker-compose.yml` at the repository root brings up three services with a single command:
 
 | Service | Purpose | Endpoint |
 |---|---|---|
 | Mailpit | Local SMTP + Web UI to inspect outbound emails | SMTP `localhost:1025` / UI `http://localhost:8025` |
-| MongoDB | Local database | `mongodb://localhost:27017` |
+| SQL Server 2022 | Local database | `localhost:1433` (SA password in `docker-compose.yml`) |
+| Redis 7 | Distributed permission cache | `localhost:6379` |
 
 ```powershell
-# Start both services in the background
+# Start all services in the background
 docker compose up -d
 
-# Stop without removing Mongo data
+# Stop without removing SQL Server data
 docker compose down
 
-# Stop AND wipe the Mongo volume (full reset)
+# Stop AND wipe the SQL Server volume (full reset)
 docker compose down -v
 ```
 
 > **Mailpit does not persist messages.** Each `docker compose down` clears the inbox — a deliberate decision to avoid confusion between development sessions. Edit `docker-compose.yml` and uncomment the `.mailpit-data` volume to enable persistence.
+
+### Apply database migrations
+
+EF Core migrations must be applied before the first run. Migrations are applied automatically
+at startup via `Database.Migrate()`, but you can also apply them manually:
+
+```powershell
+dotnet run --project src/Migrations/AegisIdentity.Migrations.Cli
+```
+
+The initial data migrations insert:
+- The bootstrap admin user (`admin@aegisidentity.local`, id `10000000-0000-0000-0000-000000000001`).
+- The system profiles `Administrator` and `User`.
+- The `UserProfile` binding the admin user to the `Administrator` profile.
+
+See [ADR-0002](docs/adr/0002-admin-bootstrap-credential.md) for the bootstrap credential policy.
+
+> **There is no runtime seed command.** All initial business data arrives via EF Core data migrations.
+> The only runtime initialization is the additive permission reconciliation for the Administrator
+> profile, which runs automatically on startup after discovery.
 
 ### Run the application
 
@@ -264,8 +306,8 @@ Then open `http://localhost:8025` to confirm the message arrived.
 
 | Variable (env var format) | Section : Key | Description | Example |
 |---|---|---|---|
-| `Mongo__ConnectionString` | `Mongo:ConnectionString` | MongoDB connection URI | `mongodb://localhost:27017` |
-| `Mongo__Database` | `Mongo:Database` | Database name | `aegisidentity` |
+| `SqlServer__ConnectionString` | `SqlServer:ConnectionString` | SQL Server connection string | `Server=localhost,1433;Database=AegisIdentity;User Id=sa;Password=...;TrustServerCertificate=True` |
+| `Redis__ConnectionString` | `Redis:ConnectionString` | Redis connection string | `localhost:6379` |
 | `Jwt__Issuer` | `Jwt:Issuer` | JWT issuer | `AegisIdentity` |
 | `Jwt__Audience` | `Jwt:Audience` | JWT audience | `AegisIdentity.Clients` |
 | `Jwt__Secret` | `Jwt:Secret` | HMAC-SHA256 signing key (min 32 chars) | `<strong-random-key>` |
@@ -291,8 +333,8 @@ Use `dotnet user-secrets` to store local secrets without committing them:
 ```powershell
 cd src/AegisIdentity.Api
 
-dotnet user-secrets set "Mongo:ConnectionString" "mongodb://localhost:27017"
-dotnet user-secrets set "Mongo:Database" "aegisidentity_dev"
+dotnet user-secrets set "SqlServer:ConnectionString" "Server=localhost,1433;Database=AegisIdentity;User Id=sa;Password=Dev@AegisIdentity2024!;TrustServerCertificate=True"
+dotnet user-secrets set "Redis:ConnectionString" "localhost:6379"
 dotnet user-secrets set "Jwt:Secret" "<your-random-key-at-least-32-chars>"
 dotnet user-secrets set "Smtp:Host" "localhost"
 dotnet user-secrets set "Smtp:Port" "1025"
@@ -303,21 +345,25 @@ Secrets live in `%APPDATA%\Microsoft\UserSecrets\<UserSecretsId>\secrets.json` a
 
 ### Production configuration (env vars)
 
-In production, inject secrets via the hosting provider's environment variables (Fly.io, Railway, etc.). ASP.NET Core maps `Section__Key` to `Section:Key` automatically:
+In production, inject secrets via the Railway dashboard (or equivalent hosting provider).
+ASP.NET Core maps `Section__Key` to `Section:Key` automatically:
 
 ```bash
-# Fly.io
-fly secrets set Mongo__ConnectionString="mongodb+srv://user:pass@cluster/dbname"
-fly secrets set Jwt__Secret="your-strong-production-key-min-32-chars"
-fly secrets set Smtp__Host="smtp.sendgrid.net"
-fly secrets set Smtp__Pass="SG.xxxxxxxxxxxxxxxxxxxxx"
+# Railway — set via the service variables panel or CLI
+SqlServer__ConnectionString=Server=<railway-sqlserver-host>;Database=AegisIdentity;User Id=sa;Password=<secret>;TrustServerCertificate=True
+Redis__ConnectionString=<railway-redis-host>:6379,password=<secret>
+Jwt__Secret=your-strong-production-key-min-32-chars
+Smtp__Host=smtp.sendgrid.net
+Smtp__Pass=SG.xxxxxxxxxxxxxxxxxxxxx
 
-# Docker / docker-compose
-environment:
-  - Mongo__ConnectionString=mongodb://mongo:27017
-  - Jwt__Secret=your-strong-key
-  - Smtp__Host=mailserver
+# Alternative: Azure SQL Database (serverless/free tier)
+# The EF Core provider is the same — only the connection string changes.
+SqlServer__ConnectionString=Server=<azure-sql>.database.windows.net;Database=AegisIdentity;...
 ```
+
+> The API and Backoffice are deployed as long-running .NET container services on **Railway**.
+> Vercel is not used — it does not support long-running .NET runtimes, SQL Server, or Redis.
+> See [ADR-0001](docs/adr/0001-mongodb-to-relational-efcore.md) for the full rationale.
 
 > **Never** put real secrets in `appsettings.json` or `appsettings.Development.json`. See `src/AegisIdentity.Api/appsettings.example.json` for the full configuration shape.
 
@@ -385,6 +431,66 @@ dotnet test --filter "Category=ExternalApi"
 
 ---
 
+## Authorization
+
+AegisIdentity uses a **permission-based authorization model** — permissions are derived from
+API actions, grouped into profiles, and assigned to users at runtime.
+
+### Permission flow
+
+```
+Permission (Controller.Action)
+    └── PermissionProfile (join)
+            └── Profile ("Administrator", "User", custom…)
+                    └── UserProfile (join)
+                            └── User
+```
+
+### Protecting an endpoint
+
+Decorate any API action with `[RequirePermission]`:
+
+```csharp
+[HttpDelete("{id}")]
+[RequirePermission]
+public async Task<IActionResult> Delete(Guid id, CancellationToken ct) { ... }
+```
+
+The permission code `Controller.Action` is derived automatically. On the next startup,
+discovery registers the permission and the startup reconciler grants it to the Administrator
+profile. Assign it to other profiles via the Backoffice UI.
+
+- **401** — request is not authenticated (fallback policy requires authentication by default).
+- **403** — request is authenticated but the user lacks the permission.
+- Use `[AllowAnonymous]` to opt out of the fallback authentication requirement.
+
+### Backoffice Razor helpers
+
+```cshtml
+@* Conditional block *@
+@if (await Html.HasPermissionAsync("Profiles", "Delete"))
+{
+    <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+}
+
+@* TagHelper — suppresses the element entirely when permission is absent *@
+<div asp-require-permission-controller="Profiles"
+     asp-require-permission-action="Create">
+    <a asp-action="Create">New Profile</a>
+</div>
+```
+
+### Permission cache
+
+User permissions are cached in Redis under `user:permissions:{userId}`. Invalidation is
+event-driven (`UserPermissionsChanged`). When Redis is unavailable the enforcement layer
+falls back to the database — **authorization never fails open**.
+
+For the complete model reference (entities, soft-delete, `/me` contract, data model diagram,
+ADRs), see [docs/authz.md](docs/authz.md).
+
+---
+
 ## API surface
 
 | Method | Route | Description | Status |
@@ -392,7 +498,16 @@ dotnet test --filter "Category=ExternalApi"
 | `POST` | `/api/auth/register` | Register a new user and send a confirmation email | Available |
 | `GET`  | `/api/auth/confirm-email` | Confirm the email via token | Planned (AUTH-10) |
 | `POST` | `/api/auth/login` | Authenticate and return JWT + refresh token | Available |
-| `GET`  | `/health/db` | MongoDB health check | Available |
+| `GET`  | `/api/me` | Return the authenticated user's profile and profile memberships | Available |
+| `GET`  | `/api/profiles` | List all profiles | Available |
+| `POST` | `/api/profiles` | Create a profile | Available |
+| `PUT`  | `/api/profiles/{id}` | Update a profile | Available |
+| `DELETE` | `/api/profiles/{id}` | Soft-delete a profile | Available |
+| `GET`  | `/api/permissions` | List discovered permissions (grouped) | Available |
+| `GET`  | `/api/user-profiles` | List user-profile assignments | Available |
+| `POST` | `/api/user-profiles` | Assign a profile to a user | Available |
+| `DELETE` | `/api/user-profiles/{id}` | Soft-delete a user-profile assignment | Available |
+| `GET`  | `/health/db` | SQL Server + Redis health check | Available |
 | `GET`  | `/dev/email-test` | Email smoke test (Development only) | Available |
 
 ### Register a user
@@ -451,8 +566,18 @@ Possible response codes:
 | AUTH-02  | `POST /api/auth/login` | Done |
 | ARCH-01  | Multi-solution Clean Architecture + CQRS refactor | Done |
 | JOBS-01  | Hangfire recurring jobs (token cleanup) | Done |
+| INFRA-01 | ADR: SQL Server + EF Core migration | Done |
+| INFRA-02..06 | MongoDB → SQL Server + EF Core + Redis migration | Done |
+| AUTH-08  | Domain model: Permission, Profile, UserProfile, PermissionProfile | Done |
+| AUTH-09  | Permission discovery at startup (`[RequirePermission]` scanning) | Done |
 | AUTH-10  | `GET /api/auth/confirm-email` | Planned |
-| AUTH-11  | Refresh-token rotation | Planned |
+| AUTH-11  | Redis permission cache + event-driven invalidation | Done |
+| AUTH-12  | Default profiles and admin binding via data migration + startup reconciliation | Done |
+| AUTH-13  | Drop RBAC roles column; fallback authorization policy | Done |
+| AUTH-14  | Backoffice `HasPermissionAsync` helper + `RequirePermissionTagHelper` | Done |
+| AUTH-15  | Profile/permission/user-profile CRUD (API + Backoffice) | Done |
+| AUTH-16  | `/me` exposes profiles `{ id, name }` instead of roles | Done |
+| DOC-01   | Authz model documentation (`docs/authz.md` + README update + CHANGELOG) | Done |
 | OPS-01   | GitHub Actions CI (`dotnet build` + `dotnet test`) | Planned |
 
 See [`TASKS_TRELLO.md`](./TASKS_TRELLO.md) for the full backlog.
@@ -461,13 +586,15 @@ See [`TASKS_TRELLO.md`](./TASKS_TRELLO.md) for the full backlog.
 
 ## Known limitations
 
-- Email confirmation (`AUTH-10`) is not implemented yet — the link is generated at registration, but the endpoint does not exist.
+- Email confirmation (`AUTH-10`) is not implemented yet — the link is generated at registration, but the confirmation endpoint does not exist.
 - Refresh-token rotation is not yet implemented — refresh use case is on the roadmap.
 - No per-IP rate limiting on the registration endpoint (dedicated card pending).
 - No CI/CD pipeline configured (tracked as `OPS-01`).
 - No public deployment yet.
 - HTTPS is not configured in dev — defaults to local HTTP via `launchSettings`.
 - `/dev/email-test` depends on the Mailpit container being up (`docker compose up -d`). `IEmailService` is fail-open: the endpoint returns `200` even if SMTP is unreachable — open `http://localhost:8025` to confirm delivery. SMTP failures are logged as `Warning`.
+- The bootstrap admin password (`ADR-0002`) must be rotated before any non-development deployment — there is no forced password-change flow on first login yet.
+- Permission codes are derived from controller and action names at startup; renaming a controller without updating dependent code will mark the old permissions as orphans (visible via `GET /api/permissions`) until they are reassigned or the profile is updated.
 
 ---
 

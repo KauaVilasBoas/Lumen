@@ -25,6 +25,7 @@ public sealed class AuthController : ControllerBase
     public sealed record LogoutRequest(string? RefreshToken);
 
     [HttpPost("register")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(RegisterUserCommandHandler.Result), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
@@ -41,6 +42,7 @@ public sealed class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(LoginUserCommandHandler.Result), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -86,11 +88,11 @@ public sealed class AuthController : ControllerBase
     {
         var sub = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        if (string.IsNullOrWhiteSpace(sub))
+        if (!Guid.TryParse(sub, out var userId))
             return Unauthorized();
 
         var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        var command = new LogoutUserCommandHandler.Command(request.RefreshToken, sub, clientIp);
+        var command = new LogoutUserCommandHandler.Command(request.RefreshToken, userId, clientIp);
 
         await _mediator.Send(command, ct);
 

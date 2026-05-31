@@ -5,7 +5,7 @@ namespace AegisIdentity.UnitTests.Domain.Tokens;
 
 public sealed class PasswordResetTokenTests
 {
-    private const string UserId = "507f1f77bcf86cd799439011";
+    private static readonly Guid UserId = Guid.Parse("507f1f77-bcf8-6cd7-9943-9011aabbccdd");
     private const string Hash = "abc123hash";
 
     [Fact]
@@ -29,16 +29,6 @@ public sealed class PasswordResetTokenTests
         var after = DateTime.UtcNow;
 
         token.CreatedAt.Should().BeOnOrAfter(before).And.BeOnOrBefore(after);
-    }
-
-    [Theory]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void Create_WithBlankUserId_ThrowsArgumentException(string userId)
-    {
-        var act = () => PasswordResetToken.Create(userId, Hash, DateTime.UtcNow.AddHours(1));
-
-        act.Should().Throw<ArgumentException>();
     }
 
     [Theory]

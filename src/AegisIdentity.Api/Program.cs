@@ -1,8 +1,11 @@
+using AegisIdentity.Api.Authorization;
 using AegisIdentity.Api.ExceptionHandlers;
 using AegisIdentity.Api.Middleware;
 using AegisIdentity.CommandHandlers.Auth.Register;
+using AegisIdentity.EventHandlers.Authorization;
 using AegisIdentity.ReadModels.Queries;
 using AegisIdentity.CommandHandlers.Behaviors;
+using AegisIdentity.DataAccess.Cache;
 using AegisIdentity.DataAccess.HealthChecks;
 using AegisIdentity.DataAccess.Persistence;
 using AegisIdentity.Infrastructure.Configuration;
@@ -38,21 +41,22 @@ try
 
     // ── Infrastructure ────────────────────────────────────────────────────────
     builder.Services.AddInfrastructureOptions(builder.Configuration);
-    builder.Services.AddMongoDb(builder.Configuration);
+    builder.Services.AddRelationalDataAccess();
+    builder.Services.AddRedisCache(builder.Configuration);
     builder.Services.AddSecurity();
     builder.Services.AddHibpClient();
     builder.Services.AddNotifications();
 
-    // ── Database migrations (Mongo) ──────────────────────────────────────────
-    // Replaces the old MongoIndexInitializer: indexes (and any future schema
-    // tweaks) are now versioned migrations under AegisIdentity.Migrations and
-    // applied automatically on startup via MongoMigrationsHostedService.
-    builder.Services.AddMongoMigrations();
-    builder.Services.AddMongoMigrationsHostedService();
+    // ── EF Core migrations applied on startup ────────────────────────────────
+    // EfMigrationsHostedService runs Database.Migrate() before Hangfire starts
+    // processing jobs, guaranteeing the schema is current before any job reads it.
+    // PermissionDiscoveryHostedService is registered immediately after so that
+    // IHostedService execution order guarantees migrations run before discovery.
+    builder.Services.AddEfMigrationsHostedService();
+    builder.Services.AddPermissionDiscovery();
+    builder.Services.AddPermissionEnforcement();
 
-    // ── Background Jobs (Hangfire + Mongo storage) ───────────────────────────
-    // AddInfrastructureOptions is called earlier — MongoOptions is already
-    // registered in the DI container and available to AddAegisHangfire.
+    // ── Background Jobs (Hangfire + SQL Server storage) ──────────────────────
     // RegisterJobs scans AegisIdentity.Jobs for IJobDefinition implementations
     // and registers them in DI — no manual per-job wiring needed.
     builder.Services.AddAegisHangfire(builder.Configuration);
@@ -64,6 +68,7 @@ try
     {
         cfg.RegisterServicesFromAssemblyContaining<RegisterUserCommandHandler>();
         cfg.RegisterServicesFromAssemblyContaining<GetCurrentUserQueryHandler>();
+        cfg.RegisterServicesFromAssemblyContaining<UserPermissionsChangedHandler>();
         cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
     });
 
@@ -79,7 +84,8 @@ try
     // ── Health checks ─────────────────────────────────────────────────────────
     builder.Services
         .AddHealthChecks()
-        .AddCheck<MongoDbHealthCheck>("mongodb");
+        .AddCheck<SqlServerHealthCheck>("sqlserver")
+        .AddRedisHealthCheck();
 
     builder.Services.AddRazorPages();
 
@@ -89,7 +95,8 @@ try
     // ScheduleRecurringJobs resolves all IJobDefinition implementations from DI
     // and registers each via RecurringJob.AddOrUpdate — idempotent on restart.
     // To add a new job: implement IJobDefinition.  No changes here required.
-    app.ScheduleRecurringJobs();
+    if (!app.Environment.IsEnvironment("Testing"))
+        app.ScheduleRecurringJobs();
 
     // Reject loopback SMTP in Production — would silently discard all outbound emails.
     if (app.Environment.IsProduction())
@@ -142,8 +149,13 @@ try
 
     app.MapHealthChecks("/health/db", new HealthCheckOptions
     {
-        Predicate = registration => registration.Name == "mongodb",
-    });
+        Predicate = registration => registration.Name == "sqlserver",
+    }).AllowAnonymous();
+
+    app.MapHealthChecks("/health/cache", new HealthCheckOptions
+    {
+        Predicate = registration => registration.Name == "redis",
+    }).AllowAnonymous();
 
     app.MapControllers();
 
@@ -157,3 +169,5 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+public partial class Program { }

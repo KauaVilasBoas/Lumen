@@ -7,13 +7,18 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Expose MongoDbContext and repositories to the test project. -->
+    <!-- Expose internal repositories to test projects. -->
     <InternalsVisibleTo Include="AegisIdentity.UnitTests" />
     <InternalsVisibleTo Include="AegisIdentity.IntegrationTests" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MongoDB.Driver" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
 </Project>

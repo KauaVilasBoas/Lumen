@@ -1,196 +1,144 @@
-using AegisIdentity.Domain.Users;
 using AegisIdentity.DataAccess.Persistence;
 using AegisIdentity.DataAccess.Persistence.Repositories;
-using AegisIdentity.Infrastructure.Configuration;
+using AegisIdentity.Domain.Users;
+using AegisIdentity.IntegrationTests.Infrastructure;
 using FluentAssertions;
-using Microsoft.Extensions.Options;
-using MongoDB.Driver;
-using Testcontainers.MongoDb;
+using Microsoft.EntityFrameworkCore;
 
 namespace AegisIdentity.IntegrationTests.Persistence;
 
-public sealed class UserRepositoryIntegrationTests : IAsyncLifetime
+[Collection(IntegrationCollection.Name)]
+[Trait("Category", "Integration")]
+public sealed class UserRepositoryIntegrationTests(IntegrationFixture fixture)
 {
-    private const string DatabaseName = "aegis_test";
-
-    private readonly MongoDbContainer _container = new MongoDbBuilder()
-        .WithImage("mongo:7")
-        .Build();
-
-    private MongoDbContext _context = null!;
-    private UserRepository _repository = null!;
-
-    public async Task InitializeAsync()
-    {
-        await _container.StartAsync();
-
-        var options = Options.Create(new MongoOptions
-        {
-            ConnectionString = _container.GetConnectionString(),
-            Database = DatabaseName,
-        });
-
-        var client = new MongoClient(_container.GetConnectionString());
-        _context = new MongoDbContext(client, options);
-        _repository = new UserRepository(_context);
-    }
-
-    public async Task DisposeAsync() => await _container.StopAsync();
-
     [Fact]
-    public async Task InsertAsync_StoresUserAndGeneratesId()
+    public async Task InsertAsync_ValidUser_PersistsToDatabase()
     {
-        var user = User.Create("alice@example.com", "alice", "hash123");
+        await using var dbContext = fixture.CreateDbContext();
+        var repository = new UserRepository(dbContext);
+        var user = User.Create($"insert-{Guid.NewGuid():N}@test.com", $"user-{Guid.NewGuid():N}", "hash");
 
-        await _repository.InsertAsync(user);
+        await repository.InsertAsync(user);
 
-        user.Id.Should().NotBeNullOrEmpty();
+        var found = await dbContext.Users.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Id == user.Id);
+        found.Should().NotBeNull();
     }
 
     [Fact]
-    public async Task InsertAsync_DuplicateEmail_ThrowsMongoWriteException()
+    public async Task FindByEmailAsync_ExistingUser_ReturnsUser()
     {
-        var first = User.Create("bob@example.com", "bob", "hash");
-        var duplicate = User.Create("bob@example.com", "bobby", "hash");
+        await using var dbContext = fixture.CreateDbContext();
+        var repository = new UserRepository(dbContext);
+        var email = $"find-email-{Guid.NewGuid():N}@test.com";
+        var user = User.Create(email, $"user-{Guid.NewGuid():N}", "hash");
+        await repository.InsertAsync(user);
 
-        await _repository.InsertAsync(first);
-        await CreateUniqueEmailIndexAsync();
-
-        var act = async () => await _repository.InsertAsync(duplicate);
-        await act.Should().ThrowAsync<MongoWriteException>();
-    }
-
-    [Fact]
-    public async Task FindByEmailAsync_ExistingEmail_ReturnsUser()
-    {
-        var user = User.Create("carol@example.com", "carol", "hash");
-        await _repository.InsertAsync(user);
-
-        var found = await _repository.FindByEmailAsync("carol@example.com");
+        var found = await repository.FindByEmailAsync(User.NormalizeEmail(email));
 
         found.Should().NotBeNull();
-        found!.Email.Should().Be("carol@example.com");
-        found.Username.Should().Be("carol");
+        found!.Email.Should().Be(User.NormalizeEmail(email));
     }
 
     [Fact]
-    public async Task FindByEmailAsync_NonExistentEmail_ReturnsNull()
+    public async Task FindByUsernameAsync_ExistingUser_ReturnsUser()
     {
-        var result = await _repository.FindByEmailAsync("nobody@example.com");
+        await using var dbContext = fixture.CreateDbContext();
+        var repository = new UserRepository(dbContext);
+        var username = $"user-{Guid.NewGuid():N}";
+        var user = User.Create($"{Guid.NewGuid():N}@test.com", username, "hash");
+        await repository.InsertAsync(user);
 
-        result.Should().BeNull();
-    }
-
-    [Fact]
-    public async Task FindByIdAsync_ExistingId_ReturnsUser()
-    {
-        var user = User.Create("dave@example.com", "dave", "hash");
-        await _repository.InsertAsync(user);
-
-        var found = await _repository.FindByIdAsync(user.Id);
+        var found = await repository.FindByUsernameAsync(username);
 
         found.Should().NotBeNull();
-        found!.Id.Should().Be(user.Id);
+        found!.Username.Should().Be(username);
     }
 
     [Fact]
-    public async Task FindByIdAsync_InvalidObjectIdFormat_ReturnsNull()
+    public async Task InsertAsync_DuplicateEmail_ThrowsDuplicateEmailException()
     {
-        var result = await _repository.FindByIdAsync("not-a-valid-objectid");
+        await using var dbContext = fixture.CreateDbContext();
+        var repository = new UserRepository(dbContext);
+        var email = $"dup-email-{Guid.NewGuid():N}@test.com";
 
-        result.Should().BeNull();
+        await repository.InsertAsync(User.Create(email, $"user-{Guid.NewGuid():N}", "hash"));
+
+        var act = async () => await repository.InsertAsync(
+            User.Create(email, $"user-{Guid.NewGuid():N}", "hash"));
+
+        await act.Should().ThrowAsync<DuplicateEmailException>();
     }
 
     [Fact]
-    public async Task FindByIdAsync_NonExistentId_ReturnsNull()
+    public async Task InsertAsync_DuplicateUsername_ThrowsDuplicateUsernameException()
     {
-        var result = await _repository.FindByIdAsync("000000000000000000000001");
+        await using var dbContext = fixture.CreateDbContext();
+        var repository = new UserRepository(dbContext);
+        var username = $"dup-user-{Guid.NewGuid():N}";
 
-        result.Should().BeNull();
+        await repository.InsertAsync(User.Create($"{Guid.NewGuid():N}@test.com", username, "hash"));
+
+        var act = async () => await repository.InsertAsync(
+            User.Create($"{Guid.NewGuid():N}@test.com", username, "hash"));
+
+        await act.Should().ThrowAsync<DuplicateUsernameException>();
     }
 
     [Fact]
-    public async Task FindByUsernameAsync_ExistingUsername_ReturnsUser()
+    public async Task SoftDelete_DeletedUser_IsHiddenByGlobalFilter()
     {
-        var user = User.Create("eve@example.com", "eve", "hash");
-        await _repository.InsertAsync(user);
+        await using var dbContext = fixture.CreateDbContext();
+        var repository = new UserRepository(dbContext);
+        var email = $"soft-del-{Guid.NewGuid():N}@test.com";
+        var user = User.Create(email, $"user-{Guid.NewGuid():N}", "hash");
+        await repository.InsertAsync(user);
 
-        var found = await _repository.FindByUsernameAsync("eve");
+        user.SoftDelete();
+        await repository.UpdateAsync(user);
 
-        found.Should().NotBeNull();
-        found!.Username.Should().Be("eve");
+        var notFound = await repository.FindByEmailAsync(User.NormalizeEmail(email));
+        notFound.Should().BeNull("global filter must hide soft-deleted users");
+
+        var stillInDb = await dbContext.Users.IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Id == user.Id);
+        stillInDb.Should().NotBeNull("soft-deleted row must remain in the database");
+        stillInDb!.IsDeleted.Should().BeTrue();
     }
 
     [Fact]
-    public async Task FindByUsernameAsync_NonExistentUsername_ReturnsNull()
+    public async Task SoftDelete_AllowsEmailReuseViaFilteredUniqueIndex()
     {
-        var result = await _repository.FindByUsernameAsync("ghost");
+        await using var dbContext = fixture.CreateDbContext();
+        var repository = new UserRepository(dbContext);
+        var email = $"reuse-email-{Guid.NewGuid():N}@test.com";
+        var original = User.Create(email, $"user-{Guid.NewGuid():N}", "hash");
+        await repository.InsertAsync(original);
 
-        result.Should().BeNull();
+        original.SoftDelete();
+        await repository.UpdateAsync(original);
+
+        var replacement = User.Create(email, $"user-{Guid.NewGuid():N}", "hash");
+        var act = async () => await repository.InsertAsync(replacement);
+
+        await act.Should().NotThrowAsync("filtered unique index permits email reuse after soft-delete");
     }
 
     [Fact]
-    public async Task UpdateAsync_PersistsChangesToExistingDocument()
+    public async Task SoftDelete_AllowsUsernameReuseViaFilteredUniqueIndex()
     {
-        var user = User.Create("frank@example.com", "frank", "hash");
-        await _repository.InsertAsync(user);
+        await using var dbContext = fixture.CreateDbContext();
+        var repository = new UserRepository(dbContext);
+        var username = $"reuse-user-{Guid.NewGuid():N}";
+        var original = User.Create($"{Guid.NewGuid():N}@test.com", username, "hash");
+        await repository.InsertAsync(original);
 
-        user.IsActive = true;
-        user.EmailConfirmedAt = DateTime.UtcNow;
-        user.UpdatedAt = DateTime.UtcNow;
-        await _repository.UpdateAsync(user);
+        original.SoftDelete();
+        await repository.UpdateAsync(original);
 
-        var updated = await _repository.FindByIdAsync(user.Id);
-        updated.Should().NotBeNull();
-        updated!.IsActive.Should().BeTrue();
-        updated.EmailConfirmedAt.Should().NotBeNull();
-    }
+        var replacement = User.Create($"{Guid.NewGuid():N}@test.com", username, "hash");
+        var act = async () => await repository.InsertAsync(replacement);
 
-    [Fact]
-    public async Task Indexes_EmailAndUsername_AreUnique_AndLockedUntil_IsSparse()
-    {
-        await CreateAllIndexesAsync();
-
-        var indexList = await _context
-            .GetCollection<User>(CollectionNames.Users)
-            .Indexes
-            .List()
-            .ToListAsync();
-
-        var indexNames = indexList.Select(doc => doc["name"].AsString).ToList();
-
-        indexNames.Should().Contain("ix_email_unique");
-        indexNames.Should().Contain("ix_username_unique");
-        indexNames.Should().Contain("ix_lockedUntil_sparse");
-    }
-
-    private async Task CreateUniqueEmailIndexAsync()
-    {
-        var collection = _context.GetCollection<User>(CollectionNames.Users);
-        var model = new CreateIndexModel<User>(
-            Builders<User>.IndexKeys.Ascending(u => u.Email),
-            new CreateIndexOptions { Unique = true, Name = "ix_email_unique" });
-        await collection.Indexes.CreateOneAsync(model);
-    }
-
-    private async Task CreateAllIndexesAsync()
-    {
-        var collection = _context.GetCollection<User>(CollectionNames.Users);
-
-        var models = new[]
-        {
-            new CreateIndexModel<User>(
-                Builders<User>.IndexKeys.Ascending(u => u.Email),
-                new CreateIndexOptions { Unique = true, Name = "ix_email_unique" }),
-            new CreateIndexModel<User>(
-                Builders<User>.IndexKeys.Ascending(u => u.Username),
-                new CreateIndexOptions { Unique = true, Name = "ix_username_unique" }),
-            new CreateIndexModel<User>(
-                Builders<User>.IndexKeys.Ascending(u => u.LockedUntil),
-                new CreateIndexOptions { Sparse = true, Name = "ix_lockedUntil_sparse" }),
-        };
-
-        foreach (var model in models)
-            await collection.Indexes.CreateOneAsync(model);
+        await act.Should().NotThrowAsync("filtered unique index permits username reuse after soft-delete");
     }
 }

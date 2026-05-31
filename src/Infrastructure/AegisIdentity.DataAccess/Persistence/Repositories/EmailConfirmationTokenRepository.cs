@@ -1,31 +1,30 @@
 using AegisIdentity.Domain.Tokens;
-using MongoDB.Driver;
+using Microsoft.EntityFrameworkCore;
 
 namespace AegisIdentity.DataAccess.Persistence.Repositories;
 
-public sealed class EmailConfirmationTokenRepository : IEmailConfirmationTokenRepository
+internal sealed class EmailConfirmationTokenRepository : IEmailConfirmationTokenRepository
 {
-    private readonly IMongoCollection<EmailConfirmationToken> _collection;
+    private readonly AegisIdentityDbContext _dbContext;
 
-    public EmailConfirmationTokenRepository(MongoDbContext context)
+    public EmailConfirmationTokenRepository(AegisIdentityDbContext dbContext)
     {
-        _collection = context.GetCollection<EmailConfirmationToken>(CollectionNames.EmailConfirmationTokens);
+        _dbContext = dbContext;
     }
 
-    public async Task<EmailConfirmationToken?> FindByTokenHashAsync(string tokenHash, CancellationToken ct = default)
-    {
-        var filter = Builders<EmailConfirmationToken>.Filter.Eq(t => t.TokenHash, tokenHash);
-        return await _collection.Find(filter).FirstOrDefaultAsync(ct);
-    }
+    public Task<EmailConfirmationToken?> FindByTokenHashAsync(string tokenHash, CancellationToken ct = default)
+        => _dbContext.EmailConfirmationTokens
+                     .FirstOrDefaultAsync(t => t.TokenHash == tokenHash, ct);
 
     public async Task InsertAsync(EmailConfirmationToken token, CancellationToken ct = default)
     {
-        await _collection.InsertOneAsync(token, options: null, ct);
+        _dbContext.EmailConfirmationTokens.Add(token);
+        await _dbContext.SaveChangesAsync(ct);
     }
 
     public async Task UpdateAsync(EmailConfirmationToken token, CancellationToken ct = default)
     {
-        var filter = Builders<EmailConfirmationToken>.Filter.Eq(t => t.Id, token.Id);
-        await _collection.ReplaceOneAsync(filter, token, cancellationToken: ct);
+        _dbContext.EmailConfirmationTokens.Update(token);
+        await _dbContext.SaveChangesAsync(ct);
     }
 }

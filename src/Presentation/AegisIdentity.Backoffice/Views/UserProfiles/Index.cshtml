@@ -1,0 +1,79 @@
+@using AegisIdentity.Backoffice.Services
+@model IReadOnlyList<AdminApiClient.UserProfileItem>
+
+@{
+    ViewData["Title"] = "Perfis do Usuário";
+    var userId = (Guid)ViewData["UserId"]!;
+    var availableProfiles = ViewData["AvailableProfiles"] as IReadOnlyList<AdminApiClient.ProfileItem> ?? [];
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Perfis do Usuário</h2>
+    <small class="text-muted">@userId</small>
+</div>
+
+@if (TempData["Error"] is string error)
+{
+    <div class="alert alert-danger">@error</div>
+}
+
+<h5 class="mb-3">Perfis atribuídos</h5>
+
+@if (!Model.Any())
+{
+    <p class="text-muted">Nenhum perfil atribuído.</p>
+}
+else
+{
+    <table class="table table-hover align-middle mb-4">
+        <thead class="table-dark">
+            <tr>
+                <th>Perfil</th>
+                <th>Sistema</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var up in Model)
+            {
+                <tr>
+                    <td>@up.ProfileName</td>
+                    <td>
+                        @if (up.IsSystem)
+                        {
+                            <span class="badge bg-secondary">Sistema</span>
+                        }
+                    </td>
+                    <td class="text-end">
+                        @if (await Html.HasPermissionAsync("UserProfiles", "Remove"))
+                        {
+                            <form asp-action="Remove"
+                                  asp-route-userId="@userId"
+                                  asp-route-profileId="@up.ProfileId"
+                                  method="post" class="d-inline"
+                                  onsubmit="return confirm('Remover perfil @up.ProfileName deste usuário?')">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-outline-danger btn-sm">Remover</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (availableProfiles.Any() && await Html.HasPermissionAsync("UserProfiles", "Assign"))
+{
+    <h5 class="mb-3">Atribuir perfil</h5>
+    <form asp-action="Assign" asp-route-userId="@userId" method="post" class="d-flex gap-2 align-items-center">
+        @Html.AntiForgeryToken()
+        <select name="profileId" class="form-select" style="max-width: 300px;">
+            @foreach (var p in availableProfiles)
+            {
+                <option value="@p.Id">@p.Name</option>
+            }
+        </select>
+        <button type="submit" class="btn btn-primary btn-sm">Atribuir</button>
+    </form>
+}

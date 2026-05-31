@@ -14,3 +14,17 @@
         @await Component.InvokeAsync("UserDetail")
     </div>
 </div>
+
+<div class="mt-4">
+    @if (await Html.HasPermissionAsync("Admin", "Ping"))
+    {
+        <div class="alert alert-info">
+            Você tem acesso à área administrativa de diagnóstico.
+        </div>
+    }
+
+    <div asp-require-permission-controller="Admin" asp-require-permission-action="Ping"
+         class="mt-2">
+        <a class="btn btn-outline-secondary btn-sm" href="#">Diagnóstico (Admin.Ping)</a>
+    </div>
+</div>

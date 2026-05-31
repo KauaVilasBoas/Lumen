@@ -10,7 +10,7 @@ namespace AegisIdentity.CommandHandlers.Auth.Logout;
 public sealed class LogoutUserCommandHandler
     : IRequestHandler<LogoutUserCommandHandler.Command, Unit>
 {
-    public sealed record Command(string? RefreshToken, string UserId, string ClientIp) : IRequest<Unit>;
+    public sealed record Command(string? RefreshToken, Guid UserId, string ClientIp) : IRequest<Unit>;
 
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly ILogger<LogoutUserCommandHandler> _logger;
@@ -49,7 +49,7 @@ public sealed class LogoutUserCommandHandler
     private static bool IsAlreadyInactive(RefreshToken token) =>
         token.IsRevoked() || token.IsExpired();
 
-    private void ValidateOwnership(RefreshToken token, string requestingUserId, string clientIp)
+    private void ValidateOwnership(RefreshToken token, Guid requestingUserId, string clientIp)
     {
         if (token.UserId == requestingUserId)
             return;

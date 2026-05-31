@@ -1,6 +1,7 @@
 using AegisIdentity.Domain.Security;
 using AegisIdentity.Infrastructure.Configuration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -29,7 +30,12 @@ public static class SecurityServiceExtensions
                 options.TokenValidationParameters = JwtService.BuildValidationParameters(jwtOptions);
             });
 
-        services.AddAuthorization();
+        services.AddAuthorization(options =>
+        {
+            options.FallbackPolicy = new AuthorizationPolicyBuilder()
+                .RequireAuthenticatedUser()
+                .Build();
+        });
 
         return services;
     }

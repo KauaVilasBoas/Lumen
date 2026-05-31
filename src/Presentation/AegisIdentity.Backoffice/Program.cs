@@ -1,24 +1,25 @@
 using AegisIdentity.Backoffice.Services;
+using AegisIdentity.DataAccess.Cache;
+using AegisIdentity.DataAccess.Persistence;
 using AegisIdentity.Infrastructure.Configuration;
 using AegisIdentity.Jobs.Configuration;
 using AegisIdentity.Jobs.Dashboard;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ── MVC ──────────────────────────────────────────────────────────────────────
 builder.Services.AddControllersWithViews();
+builder.Services.AddHttpContextAccessor();
 
 // ── Hangfire dashboard (storage only — no job server) ────────────────────────
-// The Backoffice reads from the same Hangfire Mongo database as the Api so
-// the dashboard reflects live job state.  AddAegisHangfireServer is NOT called
-// here; only the Api runs jobs to avoid competing consumers.
-//
-// AddAegisDashboard binds HangfireDashboardOptions (path + Basic Auth
-// credentials) from configuration.  Real credentials must be set via
-// dotnet user-secrets in dev or environment variables in production — the
-// appsettings entry is a placeholder only.
+// AddAegisHangfireServer is NOT called here; only the Api runs jobs to avoid
+// competing consumers.  AddAegisDashboard binds HangfireDashboardOptions
+// (path + Basic Auth credentials) from configuration.
 builder.Services.AddInfrastructureOptions(builder.Configuration);
+builder.Services.AddRelationalDataAccess();
+builder.Services.AddRedisCache(builder.Configuration);
 builder.Services.AddAegisHangfire(builder.Configuration);
 builder.Services.AddAegisDashboard(builder.Configuration);
 
@@ -51,10 +52,23 @@ builder.Services
         options.SlidingExpiration = true;
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+});
 
 // ── HttpClient — Api ──────────────────────────────────────────────────────────
 builder.Services.AddHttpClient<AuthApiClient>(client =>
+{
+    var baseUrl = builder.Configuration["Api:BaseUrl"]
+        ?? throw new InvalidOperationException("Api:BaseUrl is required in appsettings.json.");
+
+    client.BaseAddress = new Uri(baseUrl);
+});
+
+builder.Services.AddHttpClient<AdminApiClient>(client =>
 {
     var baseUrl = builder.Configuration["Api:BaseUrl"]
         ?? throw new InvalidOperationException("Api:BaseUrl is required in appsettings.json.");

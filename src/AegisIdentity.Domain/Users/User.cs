@@ -1,20 +1,16 @@
-using System.Security.Cryptography;
+using AegisIdentity.SharedKernel.Persistence;
 
 namespace AegisIdentity.Domain.Users;
 
-public sealed class User
+public sealed class User : ISoftDeletable
 {
-    public static readonly IReadOnlyList<string> DefaultRoles = ["user"];
-
-    public string Id { get; init; } = GenerateObjectId();
+    public Guid Id { get; init; } = Guid.NewGuid();
 
     public string Email { get; private set; } = string.Empty;
 
     public string Username { get; set; } = string.Empty;
 
     public string PasswordHash { get; set; } = string.Empty;
-
-    public List<string> Roles { get; init; } = [..DefaultRoles];
 
     public bool IsActive { get; set; }
 
@@ -29,6 +25,10 @@ public sealed class User
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    public bool IsDeleted { get; private set; }
+
+    public DateTime? DeletedAt { get; private set; }
 
     public static User Create(string email, string username, string passwordHash)
     {
@@ -65,6 +65,9 @@ public sealed class User
 
     public bool IsLockedOut() => LockedUntil.HasValue && LockedUntil.Value > DateTime.UtcNow;
 
-    private static string GenerateObjectId()
-        => Convert.ToHexString(RandomNumberGenerator.GetBytes(12)).ToLowerInvariant();
+    public void SoftDelete()
+    {
+        IsDeleted = true;
+        DeletedAt = DateTime.UtcNow;
+    }
 }

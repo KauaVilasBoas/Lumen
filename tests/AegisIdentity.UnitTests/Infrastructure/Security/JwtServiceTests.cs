@@ -60,7 +60,7 @@ public sealed class JwtServiceTests
 
         // JwtSecurityTokenHandler maps "sub" → ClaimTypes.NameIdentifier during validation.
         var principal = ValidateToken(token)!;
-        principal.FindFirstValue(ClaimTypes.NameIdentifier).Should().Be(user.Id);
+        principal.FindFirstValue(ClaimTypes.NameIdentifier).Should().Be(user.Id.ToString());
     }
 
     [Fact]
@@ -84,18 +84,6 @@ public sealed class JwtServiceTests
 
         var principal = ValidateToken(token)!;
         principal.FindFirstValue("username").Should().Be(user.Username);
-    }
-
-    [Fact]
-    public void GenerateAccessToken_ContainsRoleClaims()
-    {
-        var user = ActiveUser();
-
-        var token = _service.GenerateAccessToken(user);
-
-        var principal = ValidateToken(token)!;
-        var roles = principal.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
-        roles.Should().Contain("user");
     }
 
     [Fact]
@@ -153,11 +141,10 @@ public sealed class JwtServiceTests
         var principal = _service.ValidateToken(token);
 
         principal.Should().NotBeNull();
-        // JwtSecurityTokenHandler maps "sub" → ClaimTypes.NameIdentifier during validation.
-        principal!.FindFirstValue(ClaimTypes.NameIdentifier).Should().Be(user.Id);
+        principal!.FindFirstValue(ClaimTypes.NameIdentifier).Should().Be(user.Id.ToString());
         principal.FindFirstValue(ClaimTypes.Email).Should().Be(user.Email);
         principal.FindFirstValue("username").Should().Be(user.Username);
-        principal.FindAll(ClaimTypes.Role).Select(c => c.Value).Should().Contain("user");
+        principal.FindAll(ClaimTypes.Role).Should().BeEmpty();
         principal.FindFirstValue(JwtRegisteredClaimNames.Jti).Should().NotBeNullOrWhiteSpace();
     }
 

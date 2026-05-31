@@ -11,12 +11,6 @@ public static class InfrastructureOptionsExtensions
         IConfiguration configuration)
     {
         services
-            .AddOptions<MongoOptions>()
-            .Bind(configuration.GetSection(MongoOptions.SectionName))
-            .ValidateDataAnnotations()
-            .ValidateOnStart();
-
-        services
             .AddOptions<JwtOptions>()
             .Bind(configuration.GetSection(JwtOptions.SectionName))
             .ValidateDataAnnotations()
@@ -37,6 +31,12 @@ public static class InfrastructureOptionsExtensions
         services
             .AddOptions<AppOptions>()
             .Bind(configuration.GetSection(AppOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services
+            .AddOptions<SqlServerOptions>()
+            .Bind(configuration.GetSection(SqlServerOptions.SectionName))
             .ValidateDataAnnotations()
             .ValidateOnStart();
 

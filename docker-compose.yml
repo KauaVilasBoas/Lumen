@@ -13,20 +13,36 @@ services:
     #   - ./.mailpit-data:/data
     restart: unless-stopped
 
-  mongo:
-    image: mongo:7
-    container_name: aegis-mongo
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: aegis-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Dev@AegisIdentity2024!"
     ports:
-      - "27017:27017"
+      - "1433:1433"
     volumes:
-      - mongo-data:/data/db
+      - sqlserver-data:/var/opt/mssql
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.runCommand({ ping: 1 })", "--quiet"]
+      test: ["CMD", "/opt/mssql-tools18/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "Dev@AegisIdentity2024!", "-Q", "SELECT 1", "-No"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  redis:
+    image: redis:7
+    container_name: aegis-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
 
 volumes:
-  mongo-data:
+  sqlserver-data:

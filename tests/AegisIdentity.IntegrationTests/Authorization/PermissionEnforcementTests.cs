@@ -1,0 +1,155 @@
+using System.Net;
+using AegisIdentity.DataAccess.Persistence;
+using AegisIdentity.Domain.Authorization;
+using AegisIdentity.IntegrationTests.Infrastructure;
+using AegisIdentity.SharedKernel.Authorization;
+using FluentAssertions;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace AegisIdentity.IntegrationTests.Authorization;
+
+[Collection(IntegrationCollection.Name)]
+[Trait("Category", "Integration")]
+public sealed class PermissionEnforcementTests
+{
+    private readonly IntegrationFixture _fixture;
+
+    public PermissionEnforcementTests(IntegrationFixture fixture)
+    {
+        _fixture = fixture;
+    }
+
+    [Fact]
+    public async Task AuthenticatedUser_WithoutRequiredPermission_Returns403()
+    {
+        await using var scope = _fixture.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        await SeedPermissionAsync(db, PermissionProbeController.ProbePermissionCode);
+
+        var client = _fixture.CreateProbeClient();
+        var response = await client.GetAsync(PermissionProbeController.ProtectedPath);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task AnonymousUser_OnPermissionProtectedEndpoint_Returns401()
+    {
+        var client = _fixture.CreateAnonymousProbeClient();
+        var response = await client.GetAsync(PermissionProbeController.ProtectedPath);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task AuthenticatedUser_WithRequiredPermission_Returns200()
+    {
+        const string userId = "00000000-0000-0000-0000-000000000002";
+
+        await using var scope = _fixture.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        await SeedUserWithPermissionAsync(db, Guid.Parse(userId), PermissionProbeController.ProbePermissionCode);
+
+        var client = _fixture.CreateProbeClientWithUser(userId);
+        var response = await client.GetAsync(PermissionProbeController.ProtectedPath);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task CacheInvalidation_AfterProfileChange_ReflectsNewPermissionsImmediately()
+    {
+        const string userId = "00000000-0000-0000-0000-000000000003";
+        var userGuid = Guid.Parse(userId);
+
+        await using var scope = _fixture.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var cache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
+
+        await SeedPermissionAsync(db, PermissionProbeController.ProbePermissionCode);
+
+        var client = _fixture.CreateProbeClientWithUser(userId);
+
+        var firstResponse = await client.GetAsync(PermissionProbeController.ProtectedPath);
+        firstResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        await SeedUserWithPermissionAsync(db, userGuid, PermissionProbeController.ProbePermissionCode);
+        await cache.InvalidateAsync(userGuid);
+
+        var secondResponse = await client.GetAsync(PermissionProbeController.ProtectedPath);
+        secondResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task AuthenticatedUser_WithPermission_WhenRedisUnavailable_FallsBackToDatabase_Returns200()
+    {
+        const string userId = "00000000-0000-0000-0000-000000000004";
+
+        await using var scope = _fixture.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        await SeedUserWithPermissionAsync(db, Guid.Parse(userId), PermissionProbeController.ProbePermissionCode);
+
+        var client = _fixture.CreateProbeClientWithBrokenRedis(userId);
+        var response = await client.GetAsync(PermissionProbeController.ProtectedPath);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK,
+            "authorization must fall back to the database when Redis is unavailable");
+    }
+
+    private static async Task SeedPermissionAsync(AegisIdentityDbContext db, string code)
+    {
+        if (!db.Permissions.Any(p => p.Code == code))
+        {
+            var parts = code.Split('.');
+            db.Permissions.Add(Permission.Create(parts[0], parts[1], code));
+            await db.SaveChangesAsync();
+        }
+    }
+
+    private static async Task SeedUserWithPermissionAsync(
+        AegisIdentityDbContext db,
+        Guid userId,
+        string permissionCode)
+    {
+        await SeedPermissionAsync(db, permissionCode);
+
+        var permission = db.Permissions.First(p => p.Code == permissionCode);
+
+        var profileName = $"test-profile-{userId}";
+        var profile = db.Profiles.FirstOrDefault(p => p.Name == profileName);
+
+        if (profile is null)
+        {
+            profile = Profile.Create(profileName, profileName);
+            db.Profiles.Add(profile);
+            await db.SaveChangesAsync();
+        }
+
+        if (!db.PermissionProfiles.Any(pp => pp.ProfileId == profile.Id && pp.PermissionId == permission.Id))
+        {
+            db.PermissionProfiles.Add(PermissionProfile.Create(permission.Id, profile.Id));
+            await db.SaveChangesAsync();
+        }
+
+        if (!db.UserProfiles.Any(up => up.UserId == userId && up.ProfileId == profile.Id))
+        {
+            db.UserProfiles.Add(UserProfile.Create(userId, profile.Id));
+            await db.SaveChangesAsync();
+        }
+    }
+}
+
+[ApiController]
+[Route("probe")]
+public sealed class PermissionProbeController : ControllerBase
+{
+    public const string ProbePermissionCode = "Probe.Protected";
+    public const string ProtectedPath = "/probe/protected";
+
+    [HttpGet("protected")]
+    [RequirePermission(ProbePermissionCode)]
+    [Authorize(Policy = ProbePermissionCode)]
+    public IActionResult Protected() => Ok(new { ok = true });
+}

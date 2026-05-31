@@ -7,6 +7,107 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (DOC-01)
+- `docs/authz.md` — full reference for the relational authorization model: domain entities,
+  permission code convention, data initialization (migrations vs startup reconciliation),
+  endpoint protection guide, Redis cache architecture, soft-delete rules, `/me` contract,
+  Backoffice helpers, data model diagram, and ADR links.
+- `README.md` updated: SQL Server + Redis replace MongoDB as the stack; Authorization section
+  added (permission flow, endpoint decoration, Razor helpers, cache summary); Engineering
+  decisions, Stack, Solution layout, Getting Started, Configuration, API surface, Roadmap and
+  Known Limitations sections updated to reflect the completed authz epic.
+
+### Added (AUTH-16)
+- `GET /api/me` now returns `profiles` as a list of objects `{ id, name }` (one entry per
+  active profile assignment) instead of the removed `roles` field.
+- `GetCurrentUserQueryHandler.Result` gains `Profiles: IReadOnlyList<ProfileSummary>`.
+  `ProfileSummary` is a nested record `{ Guid Id, string Name }`.
+- Soft-delete respected: only `UserProfile` and `Profile` records that survive the global
+  query filter are included; users with no active profiles receive `"profiles": []`.
+- Unit tests updated: 0, 1, N profiles; orphan assignment (profile not in repository list)
+  excluded; scalar fields mapping preserved.
+
+### Breaking change (AUTH-16)
+- `GET /api/me` response no longer contains a `roles` field. Consumers must migrate to
+  `profiles[].name` for role-like display and to the permission enforcement layer for
+  access control.
+
+### Added (AUTH-15)
+- CRUD endpoints for `Profile`: list, create, update, soft-delete (system profiles blocked).
+- `GET /api/permissions` — lists discovered permissions grouped by `GroupPermission`;
+  exposes `IsOrphan` flag for visibility of stale permissions.
+- Endpoint to set permissions on a profile (set of `PermissionProfile` join records);
+  "remove" is soft-delete of the join row, never physical deletion.
+- Endpoint to assign/remove a `Profile` from a `User` via `UserProfile`; removal is
+  soft-delete of the join row.
+- All endpoints protected by `[RequirePermission]` (e.g. `Profiles.Manage`,
+  `UserProfiles.Assign`), automatically granted to the Administrator profile at startup.
+- Cache invalidation via `UserPermissionsChanged` event on every write: profile edits
+  invalidate all users holding that profile; assignment changes invalidate the affected user.
+- Backoffice UI: Profiles index/create/edit/details/delete views; UserProfiles index/assign
+  views — all guarded by the `RequirePermissionTagHelper`.
+
+### Added (AUTH-14)
+- `HasPermissionAsync(IHtmlHelper, controller, action)` — Razor HTML helper for conditional
+  rendering based on the current user's permissions.
+- `RequirePermissionTagHelper` — suppresses an HTML element entirely when the user lacks the
+  permission (`asp-require-permission-controller` / `asp-require-permission-action`).
+- Both helpers resolve permissions via `IUserPermissionService` (Redis-cached, DB fallback)
+  and use the same `ControllerNameNormalizer` + `Permission.BuildCode` convention as the API.
+
+### Added (AUTH-13)
+- Fallback authorization policy on the Backoffice: all endpoints require authentication by
+  default; `[AllowAnonymous]` opts out.
+- `Roles` column physically removed from the `Users` table via EF Core migration. The
+  domain model no longer carries a `Roles` property.
+
+### Added (AUTH-12)
+- EF Core data migration `SeedDefaultProfiles`: inserts `Profile` "Administrator" and "User"
+  (`IsSystem = true`), and the `UserProfile` binding the bootstrap admin to Administrator.
+- Startup service `AdministratorPermissionReconciler`: additive-only diff — grants the
+  Administrator profile every `Permission` not yet associated, without touching other
+  profiles or removing existing associations.
+- Startup order guaranteed: `Database.Migrate()` → discovery → reconciliation.
+
+### Added (AUTH-11)
+- `IUserPermissionCache` (Domain) with Redis implementation in `UserPermissionCache`
+  (DataAccess). Safety-net TTL: 5 minutes.
+- `IUserPermissionService` — resolution layer: Redis → DB fallback → repopulate cache.
+  Redis unavailability never propagates as an authorization failure.
+- `UserPermissionsChanged` domain event + `InvalidateUserPermissionsEventHandler` for
+  event-driven cache invalidation.
+
+### Added (AUTH-09)
+- `PermissionDiscoveryService`: scans all registered `IActionDescriptor`s at startup,
+  upserts `Permission` records derived from `[RequirePermission]`-decorated actions, and
+  marks removed actions as `IsOrphan = true` (soft-delete rule: never physically deleted).
+- Dynamic `IAuthorizationPolicyProvider` resolves permission requirements at request time
+  without pre-registering named policies.
+
+### Added (AUTH-08)
+- Domain entities: `Permission`, `GroupPermission`, `Profile`, `PermissionProfile`,
+  `UserProfile` — all implementing `ISoftDeletable`.
+- Repository interfaces: `IPermissionRepository`, `IProfileRepository`,
+  `IUserProfileRepository`.
+- EF Core configuration and SQL Server migrations for all five entities with filtered unique
+  indexes and global query filters.
+
+### Changed (INFRA-01..06)
+- **Persistence migrated from MongoDB to SQL Server + EF Core 8** (see
+  [ADR-0001](docs/adr/0001-mongodb-to-relational-efcore.md)):
+  - `AegisIdentity.DataAccess`: `MongoDbContext` + Mongo repositories replaced by
+    `AegisIdentityDbContext` (EF Core) + SQL Server repositories.
+  - `AegisIdentity.Migrations` / `AegisIdentity.Migrations.Cli`: Mongo migration runner
+    removed; EF Core migrations take over schema + data management.
+  - `AegisIdentity.Jobs`: `Hangfire.Mongo` replaced by `Hangfire.SqlServer`.
+  - `User.Id`: `string` ObjectId hex replaced by `Guid`.
+  - `docker-compose.yml`: `mongo` service replaced by `sqlserver` (SQL Server 2022) and
+    `redis` (Redis 7).
+  - EF Core global query filters + filtered unique indexes implement the soft-delete strategy.
+  - Bootstrap admin user inserted via EF Core data migration (see
+    [ADR-0002](docs/adr/0002-admin-bootstrap-credential.md)).
+  - Redis distributed cache added for permission resolution (INFRA-06 / AUTH-11).
+
 ### Added (AUTH-02)
 - **`POST /api/auth/login`** endpoint (`src/AegisIdentity.Api/Endpoints/Auth/LoginEndpoint.cs`):
   - Accepts `{ identifier, password }` where `identifier` is an email address or a username.

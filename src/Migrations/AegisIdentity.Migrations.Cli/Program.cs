@@ -1,29 +1,48 @@
-using AegisIdentity.Migrations;
+// AegisIdentity.Migrations.Cli
+//
+// Thin wrapper around EF Core migrations for use in CI/CD pipelines or local
+// development without the full API host.
+//
+// Commands:
+//   up      — applies all pending EF Core migrations (equivalent to: dotnet ef database update)
+//   status  — lists applied and pending migrations
+//
+// For generating new migrations use the dotnet-ef tooling directly against the
+// AegisIdentity.Migrations project:
+//   dotnet ef migrations add <MigrationName> \
+//     --project src/Migrations/AegisIdentity.Migrations \
+//     --startup-project src/Migrations/AegisIdentity.Migrations
+//
+// The connection string is resolved from:
+//   1. Environment variable  SQLSERVER_CONNECTION_STRING
+//   2. SqlServer:ConnectionString in appsettings.json (design-time fallback)
+
+using AegisIdentity.DataAccess.Persistence;
+using AegisIdentity.Infrastructure.Configuration;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using MongoDB.Driver;
+using Microsoft.Extensions.Options;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-var connectionString = builder.Configuration["Mongo:ConnectionString"]
-    ?? throw new InvalidOperationException("Configuration value 'Mongo:ConnectionString' is required.");
-var databaseName = builder.Configuration["Mongo:Database"]
-    ?? throw new InvalidOperationException("Configuration value 'Mongo:Database' is required.");
+builder.Services.Configure<SqlServerOptions>(
+    builder.Configuration.GetSection(SqlServerOptions.SectionName));
 
-builder.Services.AddSingleton<IMongoClient>(_ => new MongoClient(connectionString));
-builder.Services.AddSingleton<IMongoDatabase>(sp =>
-    sp.GetRequiredService<IMongoClient>().GetDatabase(databaseName));
-
-builder.Services.AddMongoMigrations();
+builder.Services.AddDbContext<AegisIdentityDbContext>((sp, options) =>
+{
+    var sqlServerOptions = sp.GetRequiredService<IOptions<SqlServerOptions>>().Value;
+    options.UseSqlServer(
+        sqlServerOptions.ConnectionString,
+        sql => sql.MigrationsAssembly("AegisIdentity.Migrations"));
+});
 
 using var host = builder.Build();
 
-// Runner is registered Scoped to compose with Api wiring; resolve it through
-// a scope here too so the CLI uses the same lifetime rules as the Api.
 using var scope = host.Services.CreateScope();
-var runner = scope.ServiceProvider.GetRequiredService<MongoMigrationRunner>();
+var dbContext = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
 var logger = host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("AegisIdentity.Migrations.Cli");
 
 var command = args.FirstOrDefault()?.ToLowerInvariant() ?? "status";
@@ -34,29 +53,42 @@ try
     {
         case "up":
         {
-            var applied = await runner.ApplyPendingAsync(CancellationToken.None);
-            logger.LogInformation("Applied {Count} pending migration(s).", applied);
+            var pending = (await dbContext.Database.GetPendingMigrationsAsync()).ToList();
+
+            if (pending.Count == 0)
+            {
+                logger.LogInformation("No pending migrations to apply.");
+                return 0;
+            }
+
+            logger.LogInformation(
+                "Applying {Count} pending migration(s): {Migrations}",
+                pending.Count,
+                string.Join(", ", pending));
+
+            await dbContext.Database.MigrateAsync();
+            logger.LogInformation("All migrations applied.");
             return 0;
         }
-        case "down":
-        {
-            var reverted = await runner.RevertLastAsync(CancellationToken.None);
-            logger.LogInformation(reverted ? "Reverted last migration." : "Nothing to revert.");
-            return 0;
-        }
+
         case "status":
         {
-            var status = await runner.GetStatusAsync(CancellationToken.None);
-            Console.WriteLine($"Applied ({status.Applied.Count}):");
-            foreach (var m in status.Applied)
-                Console.WriteLine($"  + {m.Id}  {m.Name}");
-            Console.WriteLine($"Pending ({status.Pending.Count}):");
-            foreach (var m in status.Pending)
-                Console.WriteLine($"  - {m.Id}  {m.Name}");
+            var applied = (await dbContext.Database.GetAppliedMigrationsAsync()).ToList();
+            var pending = (await dbContext.Database.GetPendingMigrationsAsync()).ToList();
+
+            Console.WriteLine($"Applied ({applied.Count}):");
+            foreach (var m in applied)
+                Console.WriteLine($"  + {m}");
+
+            Console.WriteLine($"Pending ({pending.Count}):");
+            foreach (var m in pending)
+                Console.WriteLine($"  - {m}");
+
             return 0;
         }
+
         default:
-            Console.Error.WriteLine($"Unknown command '{command}'. Expected: up | down | status.");
+            Console.Error.WriteLine($"Unknown command '{command}'. Expected: up | status.");
             return 1;
     }
 }
