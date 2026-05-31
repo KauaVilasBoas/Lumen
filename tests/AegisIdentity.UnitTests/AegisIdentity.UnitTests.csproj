@@ -27,6 +27,8 @@
     <ProjectReference Include="..\..\src\Infrastructure\AegisIdentity.Integration\AegisIdentity.Integration.csproj" />
     <ProjectReference Include="..\..\src\AegisIdentity.Api\AegisIdentity.Api.csproj" />
     <ProjectReference Include="..\..\src\Jobs\AegisIdentity.Jobs\AegisIdentity.Jobs.csproj" />
+    <ProjectReference Include="..\..\src\Infrastructure\AegisIdentity.DataAccess\AegisIdentity.DataAccess.csproj" />
+    <ProjectReference Include="..\..\src\Presentation\AegisIdentity.Backoffice\AegisIdentity.Backoffice.csproj" />
   </ItemGroup>
 
 </Project>
