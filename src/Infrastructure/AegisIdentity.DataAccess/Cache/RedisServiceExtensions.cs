@@ -28,6 +28,7 @@ public static class RedisServiceExtensions
         services.AddStackExchangeRedisCache(_ => { });
 
         services.AddScoped<IUserPermissionCache, UserPermissionCache>();
+        services.AddScoped<IUserPermissionService, UserPermissionService>();
 
         return services;
     }

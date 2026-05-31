@@ -1,25 +1,17 @@
 using System.Security.Claims;
 using AegisIdentity.Domain.Authorization;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.Logging;
 
 namespace AegisIdentity.Api.Authorization;
 
 public sealed class PermissionAuthorizationHandler
     : AuthorizationHandler<PermissionRequirement>
 {
-    private readonly IUserPermissionCache _cache;
-    private readonly IProfileRepository _profileRepository;
-    private readonly ILogger<PermissionAuthorizationHandler> _logger;
+    private readonly IUserPermissionService _permissionService;
 
-    public PermissionAuthorizationHandler(
-        IUserPermissionCache cache,
-        IProfileRepository profileRepository,
-        ILogger<PermissionAuthorizationHandler> logger)
+    public PermissionAuthorizationHandler(IUserPermissionService permissionService)
     {
-        _cache = cache;
-        _profileRepository = profileRepository;
-        _logger = logger;
+        _permissionService = permissionService;
     }
 
     protected override async Task HandleRequirementAsync(
@@ -31,25 +23,9 @@ public sealed class PermissionAuthorizationHandler
         if (!Guid.TryParse(sub, out var userId))
             return;
 
-        var permissions = await ResolvePermissionsAsync(userId);
+        var hasPermission = await _permissionService.HasPermissionAsync(userId, requirement.Code);
 
-        if (permissions.Contains(requirement.Code))
+        if (hasPermission)
             context.Succeed(requirement);
-    }
-
-    private async Task<HashSet<string>> ResolvePermissionsAsync(Guid userId)
-    {
-        var cached = await _cache.GetAsync(userId);
-
-        if (cached is not null)
-            return cached;
-
-        _logger.LogDebug("Permission cache miss for user {UserId}. Falling back to database.", userId);
-
-        var fromDb = await _profileRepository.GetPermissionCodesByUserIdAsync(userId);
-
-        await _cache.SetAsync(userId, fromDb);
-
-        return fromDb;
     }
 }
