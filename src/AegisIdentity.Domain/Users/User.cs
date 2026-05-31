@@ -4,8 +4,6 @@ namespace AegisIdentity.Domain.Users;
 
 public sealed class User : ISoftDeletable
 {
-    public static readonly IReadOnlyList<string> DefaultRoles = ["user"];
-
     public Guid Id { get; init; } = Guid.NewGuid();
 
     public string Email { get; private set; } = string.Empty;
@@ -13,8 +11,6 @@ public sealed class User : ISoftDeletable
     public string Username { get; set; } = string.Empty;
 
     public string PasswordHash { get; set; } = string.Empty;
-
-    public List<string> Roles { get; init; } = [..DefaultRoles];
 
     public bool IsActive { get; set; }
 
