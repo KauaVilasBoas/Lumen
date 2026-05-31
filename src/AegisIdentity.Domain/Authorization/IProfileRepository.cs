@@ -14,7 +14,15 @@ public interface IProfileRepository
 
     Task<HashSet<string>> GetPermissionCodesByUserIdAsync(Guid userId, CancellationToken ct = default);
 
+    Task<bool> ActiveNameExistsAsync(string name, Guid? excludeId, CancellationToken ct = default);
+
     Task<IReadOnlyList<PermissionProfile>> GetPermissionProfilesByProfileIdAsync(Guid profileId, CancellationToken ct = default);
 
+    Task<IReadOnlyList<PermissionProfile>> GetActivePermissionProfilesByProfileIdAsync(Guid profileId, CancellationToken ct = default);
+
     Task InsertPermissionProfilesAsync(IReadOnlyList<PermissionProfile> permissionProfiles, CancellationToken ct = default);
+
+    Task UpdatePermissionProfileAsync(PermissionProfile permissionProfile, CancellationToken ct = default);
+
+    Task<IReadOnlyList<Guid>> GetUserIdsByProfileIdAsync(Guid profileId, CancellationToken ct = default);
 }

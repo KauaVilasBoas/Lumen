@@ -29,6 +29,15 @@ public sealed class Profile : ISoftDeletable
         };
     }
 
+    public void Update(string name, string description)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentException.ThrowIfNullOrWhiteSpace(description);
+
+        Name = name;
+        Description = description;
+    }
+
     public void SoftDelete()
     {
         if (IsSystem)

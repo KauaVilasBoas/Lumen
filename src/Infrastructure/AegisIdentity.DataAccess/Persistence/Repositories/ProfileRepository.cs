@@ -20,6 +20,10 @@ internal sealed class ProfileRepository : IProfileRepository
         => _dbContext.Profiles
                      .FirstOrDefaultAsync(p => p.Name == name, ct);
 
+    public Task<bool> ActiveNameExistsAsync(string name, Guid? excludeId, CancellationToken ct = default)
+        => _dbContext.Profiles
+                     .AnyAsync(p => p.Name == name && (excludeId == null || p.Id != excludeId.Value), ct);
+
     public async Task<IReadOnlyList<Domain.Authorization.Profile>> ListAllAsync(CancellationToken ct = default)
         => await _dbContext.Profiles.ToListAsync(ct);
 
@@ -61,6 +65,13 @@ internal sealed class ProfileRepository : IProfileRepository
                            .Where(pp => pp.ProfileId == profileId && !pp.IsDeleted)
                            .ToListAsync(ct);
 
+    public async Task<IReadOnlyList<PermissionProfile>> GetActivePermissionProfilesByProfileIdAsync(
+        Guid profileId,
+        CancellationToken ct = default)
+        => await _dbContext.PermissionProfiles
+                           .Where(pp => pp.ProfileId == profileId)
+                           .ToListAsync(ct);
+
     public async Task InsertPermissionProfilesAsync(
         IReadOnlyList<PermissionProfile> permissionProfiles,
         CancellationToken ct = default)
@@ -68,4 +79,20 @@ internal sealed class ProfileRepository : IProfileRepository
         _dbContext.PermissionProfiles.AddRange(permissionProfiles);
         await _dbContext.SaveChangesAsync(ct);
     }
+
+    public async Task UpdatePermissionProfileAsync(
+        PermissionProfile permissionProfile,
+        CancellationToken ct = default)
+    {
+        _dbContext.PermissionProfiles.Update(permissionProfile);
+        await _dbContext.SaveChangesAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<Guid>> GetUserIdsByProfileIdAsync(
+        Guid profileId,
+        CancellationToken ct = default)
+        => await _dbContext.UserProfiles
+                           .Where(up => up.ProfileId == profileId)
+                           .Select(up => up.UserId)
+                           .ToListAsync(ct);
 }

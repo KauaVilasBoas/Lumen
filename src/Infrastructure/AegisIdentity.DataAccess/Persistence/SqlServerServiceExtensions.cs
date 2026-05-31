@@ -31,6 +31,7 @@ public static class SqlServerServiceExtensions
         services.AddScoped<IPermissionRepository, PermissionRepository>();
         services.AddScoped<IGroupPermissionRepository, GroupPermissionRepository>();
         services.AddScoped<IProfileRepository, ProfileRepository>();
+        services.AddScoped<IUserProfileRepository, UserProfileRepository>();
 
         return services;
     }
