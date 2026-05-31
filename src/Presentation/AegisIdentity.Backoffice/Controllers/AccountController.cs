@@ -4,6 +4,7 @@ using AegisIdentity.Backoffice.Services;
 using AegisIdentity.SharedKernel.Constants;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AegisIdentity.Backoffice.Controllers;
@@ -19,6 +20,7 @@ public sealed class AccountController : Controller
     public sealed record LoginFormModel(string Identifier = "", string Password = "");
 
     [HttpGet]
+    [AllowAnonymous]
     public IActionResult Login(string? returnUrl = null)
     {
         ViewData["ReturnUrl"] = returnUrl;
@@ -26,6 +28,7 @@ public sealed class AccountController : Controller
     }
 
     [HttpPost]
+    [AllowAnonymous]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Login(
         LoginFormModel form,
