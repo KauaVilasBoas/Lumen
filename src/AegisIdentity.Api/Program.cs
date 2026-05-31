@@ -2,6 +2,7 @@ using AegisIdentity.Api.Authorization;
 using AegisIdentity.Api.ExceptionHandlers;
 using AegisIdentity.Api.Middleware;
 using AegisIdentity.CommandHandlers.Auth.Register;
+using AegisIdentity.EventHandlers.Authorization;
 using AegisIdentity.ReadModels.Queries;
 using AegisIdentity.CommandHandlers.Behaviors;
 using AegisIdentity.DataAccess.Cache;
@@ -53,6 +54,7 @@ try
     // IHostedService execution order guarantees migrations run before discovery.
     builder.Services.AddEfMigrationsHostedService();
     builder.Services.AddPermissionDiscovery();
+    builder.Services.AddPermissionEnforcement();
 
     // ── Background Jobs (Hangfire + SQL Server storage) ──────────────────────
     // RegisterJobs scans AegisIdentity.Jobs for IJobDefinition implementations
@@ -66,6 +68,7 @@ try
     {
         cfg.RegisterServicesFromAssemblyContaining<RegisterUserCommandHandler>();
         cfg.RegisterServicesFromAssemblyContaining<GetCurrentUserQueryHandler>();
+        cfg.RegisterServicesFromAssemblyContaining<UserPermissionsChangedHandler>();
         cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
     });
 
