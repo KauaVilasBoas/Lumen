@@ -4,4 +4,8 @@
     <ProjectReference Include="..\SharedKernel\AegisIdentity.SharedKernel\AegisIdentity.SharedKernel.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="MediatR" />
+  </ItemGroup>
+
 </Project>
