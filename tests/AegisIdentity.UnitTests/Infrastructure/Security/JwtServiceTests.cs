@@ -87,18 +87,6 @@ public sealed class JwtServiceTests
     }
 
     [Fact]
-    public void GenerateAccessToken_ContainsRoleClaims()
-    {
-        var user = ActiveUser();
-
-        var token = _service.GenerateAccessToken(user);
-
-        var principal = ValidateToken(token)!;
-        var roles = principal.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
-        roles.Should().Contain("user");
-    }
-
-    [Fact]
     public void GenerateAccessToken_ExpiresAfterConfiguredMinutes()
     {
         var user = ActiveUser();
@@ -153,11 +141,10 @@ public sealed class JwtServiceTests
         var principal = _service.ValidateToken(token);
 
         principal.Should().NotBeNull();
-        // JwtSecurityTokenHandler maps "sub" → ClaimTypes.NameIdentifier during validation.
         principal!.FindFirstValue(ClaimTypes.NameIdentifier).Should().Be(user.Id.ToString());
         principal.FindFirstValue(ClaimTypes.Email).Should().Be(user.Email);
         principal.FindFirstValue("username").Should().Be(user.Username);
-        principal.FindAll(ClaimTypes.Role).Select(c => c.Value).Should().Contain("user");
+        principal.FindAll(ClaimTypes.Role).Should().BeEmpty();
         principal.FindFirstValue(JwtRegisteredClaimNames.Jti).Should().NotBeNullOrWhiteSpace();
     }
 

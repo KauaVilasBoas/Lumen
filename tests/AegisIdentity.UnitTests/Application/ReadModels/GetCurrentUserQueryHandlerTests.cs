@@ -27,7 +27,6 @@ public sealed class GetCurrentUserQueryHandlerTests
         result!.Id.Should().Be(user.Id.ToString());
         result.Email.Should().Be(user.Email);
         result.Username.Should().Be(user.Username);
-        result.Roles.Should().BeEquivalentTo(user.Roles);
         result.CreatedAt.Should().Be(user.CreatedAt);
         result.LastLoginAt.Should().Be(user.LastLoginAt);
         result.EmailConfirmedAt.Should().Be(user.EmailConfirmedAt);

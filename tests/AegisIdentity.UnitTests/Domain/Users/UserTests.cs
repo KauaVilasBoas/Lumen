@@ -11,7 +11,6 @@ public sealed class UserTests
         var user = User.Create("Alice@Example.COM", "alice", "hash");
 
         user.IsActive.Should().BeFalse();
-        user.Roles.Should().ContainSingle().Which.Should().Be("user");
     }
 
     [Fact]
@@ -143,20 +142,4 @@ public sealed class UserTests
         user.IsLockedOut().Should().BeFalse();
     }
 
-    [Fact]
-    public void DefaultRoles_ContainsUserRole()
-    {
-        User.DefaultRoles.Should().ContainSingle().Which.Should().Be("user");
-    }
-
-    [Fact]
-    public void Create_Roles_AreIndependentCopiesOfDefault()
-    {
-        var user1 = User.Create("a@b.com", "user1", "hash");
-        var user2 = User.Create("c@d.com", "user2", "hash");
-
-        user1.Roles.Add("admin");
-
-        user2.Roles.Should().ContainSingle().Which.Should().Be("user");
-    }
 }
