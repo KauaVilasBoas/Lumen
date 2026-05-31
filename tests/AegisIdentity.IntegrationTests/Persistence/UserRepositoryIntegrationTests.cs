@@ -1,14 +1,15 @@
 using AegisIdentity.DataAccess.Persistence;
 using AegisIdentity.DataAccess.Persistence.Repositories;
 using AegisIdentity.Domain.Users;
+using AegisIdentity.IntegrationTests.Infrastructure;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 
 namespace AegisIdentity.IntegrationTests.Persistence;
 
-[Collection(SqlServerCollection.Name)]
+[Collection(IntegrationCollection.Name)]
 [Trait("Category", "Integration")]
-public sealed class UserRepositoryIntegrationTests(SqlServerFixture fixture)
+public sealed class UserRepositoryIntegrationTests(IntegrationFixture fixture)
 {
     [Fact]
     public async Task InsertAsync_ValidUser_PersistsToDatabase()

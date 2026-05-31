@@ -1,17 +1,18 @@
 using System.Net;
+using AegisIdentity.IntegrationTests.Infrastructure;
 using FluentAssertions;
 
 namespace AegisIdentity.IntegrationTests.Authorization;
 
-[Collection(AuthorizationCollection.Name)]
+[Collection(IntegrationCollection.Name)]
 [Trait("Category", "Integration")]
 public sealed class FallbackAuthorizationPolicyTests
 {
-    private readonly AuthorizationWebApplicationFactory _factory;
+    private readonly IntegrationFixture _fixture;
 
-    public FallbackAuthorizationPolicyTests(AuthorizationWebApplicationFactory factory)
+    public FallbackAuthorizationPolicyTests(IntegrationFixture fixture)
     {
-        _factory = factory;
+        _fixture = fixture;
     }
 
     [Theory]
@@ -20,7 +21,7 @@ public sealed class FallbackAuthorizationPolicyTests
     [InlineData("POST", "/api/auth/refresh")]
     public async Task AnonymousEndpoints_WithNoToken_ReturnNonUnauthorized(string method, string path)
     {
-        var client = _factory.CreateAnonymousClient();
+        var client = _fixture.CreateAnonymousClient();
 
         var response = await client.SendAsync(
             new HttpRequestMessage(new HttpMethod(method), path)
@@ -35,7 +36,7 @@ public sealed class FallbackAuthorizationPolicyTests
     [Fact]
     public async Task ProtectedEndpoint_WithNoToken_Returns401()
     {
-        var client = _factory.CreateAnonymousClient();
+        var client = _fixture.CreateAnonymousClient();
 
         var response = await client.GetAsync("/api/me");
 
@@ -45,7 +46,7 @@ public sealed class FallbackAuthorizationPolicyTests
     [Fact]
     public async Task ProtectedEndpoint_WithValidToken_DoesNotReturn401()
     {
-        var client = _factory.CreateAuthenticatedClient();
+        var client = _fixture.CreateAuthenticatedClient();
 
         var response = await client.GetAsync("/api/me");
 
@@ -56,7 +57,7 @@ public sealed class FallbackAuthorizationPolicyTests
     [Fact]
     public async Task HealthCheck_WithNoToken_Returns200()
     {
-        var client = _factory.CreateAnonymousClient();
+        var client = _fixture.CreateAnonymousClient();
 
         var response = await client.GetAsync("/health/db");
 

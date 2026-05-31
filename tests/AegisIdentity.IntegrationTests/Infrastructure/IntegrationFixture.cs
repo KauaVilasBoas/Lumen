@@ -12,29 +12,74 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Testcontainers.MsSql;
+using Testcontainers.Redis;
 
-namespace AegisIdentity.IntegrationTests.Authorization;
+namespace AegisIdentity.IntegrationTests.Infrastructure;
 
-public sealed class AuthorizationWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
+/// <summary>
+/// Single shared fixture for the entire integration test suite.
+/// Owns one SQL Server container and one Redis container; both are started
+/// once per test collection and torn down after the last test completes.
+///
+/// Repository tests call <see cref="CreateDbContext"/> directly.
+/// HTTP tests call <see cref="CreateAnonymousClient"/> or <see cref="CreateAuthenticatedClient"/>.
+///
+/// Design note: xUnit's ICollectionFixture guarantees exactly one instance per
+/// [Collection] across all test classes that belong to it.  Keeping a single
+/// fixture avoids the two-container problem where AuthorizationWebApplicationFactory
+/// previously spun up its own MsSqlContainer independently of SqlServerFixture.
+/// </summary>
+public sealed class IntegrationFixture : WebApplicationFactory<Program>, IAsyncLifetime
 {
     internal const string TestJwtIssuer = "aegis-test";
     internal const string TestJwtAudience = "aegis-test";
     internal const string TestJwtSecret = "aegis-test-secret-key-min-32-chars!!";
 
-    private readonly MsSqlContainer _container = new MsSqlBuilder()
+    private readonly MsSqlContainer _sqlContainer = new MsSqlBuilder()
         .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
+        .Build();
+
+    private readonly RedisContainer _redisContainer = new RedisBuilder()
+        .WithImage("redis:7")
         .Build();
 
     async Task IAsyncLifetime.InitializeAsync()
     {
-        await _container.StartAsync();
+        await Task.WhenAll(
+            _sqlContainer.StartAsync(),
+            _redisContainer.StartAsync());
+
         await ApplyMigrationsAsync();
     }
 
     async Task IAsyncLifetime.DisposeAsync()
     {
-        await _container.DisposeAsync();
+        await _sqlContainer.DisposeAsync();
+        await _redisContainer.DisposeAsync();
         await base.DisposeAsync();
+    }
+
+    /// <summary>Creates a <see cref="AegisIdentityDbContext"/> connected to the shared SQL Server container.</summary>
+    public AegisIdentityDbContext CreateDbContext()
+    {
+        var options = new DbContextOptionsBuilder<AegisIdentityDbContext>()
+            .UseSqlServer(
+                _sqlContainer.GetConnectionString(),
+                sql => sql.MigrationsAssembly("AegisIdentity.Migrations"))
+            .Options;
+
+        return new AegisIdentityDbContext(options);
+    }
+
+    public HttpClient CreateAnonymousClient() => CreateClient();
+
+    public HttpClient CreateAuthenticatedClient(string userId = "00000000-0000-0000-0000-000000000001")
+    {
+        var token = BuildValidJwt(userId);
+        var client = CreateClient();
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        return client;
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -50,7 +95,9 @@ public sealed class AuthorizationWebApplicationFactory : WebApplicationFactory<P
                 ["Jwt:Secret"] = TestJwtSecret,
                 ["Jwt:ExpirationMinutes"] = "15",
                 ["Jwt:RefreshExpirationDays"] = "7",
-                ["SqlServer:ConnectionString"] = _container.GetConnectionString(),
+                ["SqlServer:ConnectionString"] = _sqlContainer.GetConnectionString(),
+                ["Redis:ConnectionString"] = _redisContainer.GetConnectionString(),
+                ["Redis:InstanceName"] = "aegis-test:",
                 ["Smtp:Host"] = "localhost",
                 ["Smtp:Port"] = "1025",
                 ["Smtp:From"] = "test@aegis.local",
@@ -72,26 +119,9 @@ public sealed class AuthorizationWebApplicationFactory : WebApplicationFactory<P
         });
     }
 
-    public HttpClient CreateAnonymousClient() => CreateClient();
-
-    public HttpClient CreateAuthenticatedClient(string userId = "00000000-0000-0000-0000-000000000001")
-    {
-        var token = BuildValidJwt(userId);
-        var client = CreateClient();
-        client.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-        return client;
-    }
-
     private async Task ApplyMigrationsAsync()
     {
-        var options = new DbContextOptionsBuilder<AegisIdentityDbContext>()
-            .UseSqlServer(
-                _container.GetConnectionString(),
-                sql => sql.MigrationsAssembly("AegisIdentity.Migrations"))
-            .Options;
-
-        await using var dbContext = new AegisIdentityDbContext(options);
+        await using var dbContext = CreateDbContext();
         await dbContext.Database.MigrateAsync();
     }
 
@@ -118,7 +148,7 @@ public sealed class AuthorizationWebApplicationFactory : WebApplicationFactory<P
 }
 
 [CollectionDefinition(Name)]
-public sealed class AuthorizationCollection : ICollectionFixture<AuthorizationWebApplicationFactory>
+public sealed class IntegrationCollection : ICollectionFixture<IntegrationFixture>
 {
-    public const string Name = "Authorization";
+    public const string Name = "Integration";
 }

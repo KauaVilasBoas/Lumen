@@ -1,13 +1,14 @@
 using AegisIdentity.DataAccess.Persistence;
+using AegisIdentity.IntegrationTests.Infrastructure;
 using FluentAssertions;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace AegisIdentity.IntegrationTests.Persistence;
 
-[Collection(SqlServerCollection.Name)]
+[Collection(IntegrationCollection.Name)]
 [Trait("Category", "Integration")]
-public sealed class AegisIdentityDbContextIntegrationTests(SqlServerFixture fixture)
+public sealed class AegisIdentityDbContextIntegrationTests(IntegrationFixture fixture)
 {
     [Fact]
     public async Task MigrateAsync_AppliesAllMigrations_WithoutError()

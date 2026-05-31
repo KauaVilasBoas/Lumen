@@ -1,14 +1,15 @@
 using AegisIdentity.DataAccess.Persistence.Repositories;
 using AegisIdentity.Domain.Tokens;
 using AegisIdentity.Domain.Users;
+using AegisIdentity.IntegrationTests.Infrastructure;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 
 namespace AegisIdentity.IntegrationTests.Persistence;
 
-[Collection(SqlServerCollection.Name)]
+[Collection(IntegrationCollection.Name)]
 [Trait("Category", "Integration")]
-public sealed class RefreshTokenRepositoryIntegrationTests(SqlServerFixture fixture)
+public sealed class RefreshTokenRepositoryIntegrationTests(IntegrationFixture fixture)
 {
     [Fact]
     public async Task InsertAsync_ValidToken_PersistsToDatabase()
