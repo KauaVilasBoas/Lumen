@@ -108,8 +108,5 @@ public sealed class JwtService : IJwtService
         yield return new Claim(JwtRegisteredClaimNames.Email, user.Email);
         yield return new Claim("username", user.Username);
         yield return new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString());
-
-        foreach (var role in user.Roles)
-            yield return new Claim(ClaimTypes.Role, role);
     }
 }
