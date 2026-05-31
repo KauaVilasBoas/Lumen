@@ -1,0 +1,38 @@
+@using AegisIdentity.Backoffice.Controllers
+@model ProfilesController.CreateProfileFormModel
+
+@{
+    ViewData["Title"] = "Novo Perfil";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Novo Perfil</h2>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">Voltar</a>
+</div>
+
+<div class="card" style="max-width: 540px;">
+    <div class="card-body">
+        <form asp-action="Create" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label">Nome</label>
+                <input asp-for="Name" class="form-control" maxlength="128" />
+                <span asp-validation-for="Name" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Description" class="form-label">Descrição</label>
+                <input asp-for="Description" class="form-control" maxlength="512" />
+                <span asp-validation-for="Description" class="text-danger small"></span>
+            </div>
+
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3"></div>
+            }
+
+            <button type="submit" class="btn btn-primary">Criar</button>
+        </form>
+    </div>
+</div>

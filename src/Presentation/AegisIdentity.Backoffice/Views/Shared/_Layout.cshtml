@@ -22,6 +22,10 @@
                     <span class="text-light small">
                         Olá, <strong>@User.Identity.Name</strong>
                     </span>
+                    @if (await Html.HasPermissionAsync("Profiles", "List"))
+                    {
+                        <a class="nav-link text-light small" asp-controller="Profiles" asp-action="Index">Perfis</a>
+                    }
                     <a class="nav-link text-light small" href="/hangfire" target="_blank" rel="noopener">
                         Jobs
                     </a>

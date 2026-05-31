@@ -68,6 +68,14 @@ builder.Services.AddHttpClient<AuthApiClient>(client =>
     client.BaseAddress = new Uri(baseUrl);
 });
 
+builder.Services.AddHttpClient<AdminApiClient>(client =>
+{
+    var baseUrl = builder.Configuration["Api:BaseUrl"]
+        ?? throw new InvalidOperationException("Api:BaseUrl is required in appsettings.json.");
+
+    client.BaseAddress = new Uri(baseUrl);
+});
+
 var app = builder.Build();
 
 // ── Middleware pipeline ───────────────────────────────────────────────────────

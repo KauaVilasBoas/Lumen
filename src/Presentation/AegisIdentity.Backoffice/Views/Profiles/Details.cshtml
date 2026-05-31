@@ -1,0 +1,77 @@
+@using AegisIdentity.Backoffice.Services
+@model AdminApiClient.ProfileDetail
+
+@{
+    ViewData["Title"] = $"Perfil — {Model.Name}";
+    var allGroups = ViewData["AllPermissions"] as IReadOnlyList<AdminApiClient.PermissionGroup> ?? [];
+    var assignedIds = new HashSet<Guid>(Model.PermissionIds);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="mb-1">@Model.Name</h2>
+        <p class="text-muted mb-0">@Model.Description</p>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">Voltar</a>
+</div>
+
+@if (TempData["Error"] is string error)
+{
+    <div class="alert alert-danger">@error</div>
+}
+
+@if (await Html.HasPermissionAsync("Profiles", "SetPermissions"))
+{
+    <form asp-action="SetPermissions" asp-route-id="@Model.Id" method="post">
+        @Html.AntiForgeryToken()
+        <h5 class="mb-3">Permissões atribuídas</h5>
+
+        @foreach (var group in allGroups)
+        {
+            <div class="card mb-3">
+                <div class="card-header fw-semibold">@group.GroupName</div>
+                <div class="card-body">
+                    <div class="row row-cols-1 row-cols-md-3 g-2">
+                        @foreach (var permission in group.Permissions)
+                        {
+                            <div class="col">
+                                <div class="form-check">
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           name="selectedPermissionIds"
+                                           value="@permission.Id"
+                                           id="perm-@permission.Id"
+                                           @(assignedIds.Contains(permission.Id) ? "checked" : "")
+                                           @(Model.IsSystem ? "disabled" : "") />
+                                    <label class="form-check-label @(permission.IsOrphan ? "text-warning" : "")"
+                                           for="perm-@permission.Id">
+                                        @permission.Code
+                                        @if (permission.IsOrphan)
+                                        {
+                                            <small class="text-warning">(órfã)</small>
+                                        }
+                                    </label>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (!Model.IsSystem)
+        {
+            <button type="submit" class="btn btn-primary">Salvar permissões</button>
+        }
+        else
+        {
+            <div class="alert alert-info mt-2">
+                Perfis de sistema têm permissões gerenciadas automaticamente pelo servidor.
+            </div>
+        }
+    </form>
+}
+else
+{
+    <div class="alert alert-warning">Você não tem permissão para gerenciar permissões de perfis.</div>
+}
