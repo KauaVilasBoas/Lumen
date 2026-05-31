@@ -1,6 +1,7 @@
 using AegisIdentity.Domain.Notifications;
 using AegisIdentity.Infrastructure.Configuration;
 using AegisIdentity.Integration.Notifications;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -15,6 +16,7 @@ namespace AegisIdentity.Api.Controllers.Dev;
 [Route("dev")]
 [Produces("application/json")]
 [ApiExplorerSettings(GroupName = "Dev")]
+[AllowAnonymous]
 public sealed class DevController : ControllerBase
 {
     private readonly IEmailService _emailService;

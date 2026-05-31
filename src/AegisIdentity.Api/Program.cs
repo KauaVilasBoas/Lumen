@@ -89,7 +89,8 @@ try
     // ScheduleRecurringJobs resolves all IJobDefinition implementations from DI
     // and registers each via RecurringJob.AddOrUpdate — idempotent on restart.
     // To add a new job: implement IJobDefinition.  No changes here required.
-    app.ScheduleRecurringJobs();
+    if (!app.Environment.IsEnvironment("Testing"))
+        app.ScheduleRecurringJobs();
 
     // Reject loopback SMTP in Production — would silently discard all outbound emails.
     if (app.Environment.IsProduction())
@@ -143,7 +144,7 @@ try
     app.MapHealthChecks("/health/db", new HealthCheckOptions
     {
         Predicate = registration => registration.Name == "sqlserver",
-    });
+    }).AllowAnonymous();
 
     app.MapControllers();
 
@@ -157,3 +158,5 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+public partial class Program { }
