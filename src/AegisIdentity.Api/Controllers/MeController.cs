@@ -1,14 +1,12 @@
 using System.Security.Claims;
 using AegisIdentity.ReadModels.Queries;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AegisIdentity.Api.Controllers;
 
 [ApiController]
 [Route("api/me")]
-[Authorize]
 [Produces("application/json")]
 public sealed class MeController : ControllerBase
 {
