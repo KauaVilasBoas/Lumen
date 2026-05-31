@@ -1,4 +1,6 @@
 using AegisIdentity.Backoffice.Services;
+using AegisIdentity.DataAccess.Cache;
+using AegisIdentity.DataAccess.Persistence;
 using AegisIdentity.Infrastructure.Configuration;
 using AegisIdentity.Jobs.Configuration;
 using AegisIdentity.Jobs.Dashboard;
@@ -9,12 +11,15 @@ var builder = WebApplication.CreateBuilder(args);
 
 // ── MVC ──────────────────────────────────────────────────────────────────────
 builder.Services.AddControllersWithViews();
+builder.Services.AddHttpContextAccessor();
 
 // ── Hangfire dashboard (storage only — no job server) ────────────────────────
 // AddAegisHangfireServer is NOT called here; only the Api runs jobs to avoid
 // competing consumers.  AddAegisDashboard binds HangfireDashboardOptions
 // (path + Basic Auth credentials) from configuration.
 builder.Services.AddInfrastructureOptions(builder.Configuration);
+builder.Services.AddRelationalDataAccess();
+builder.Services.AddRedisCache(builder.Configuration);
 builder.Services.AddAegisHangfire(builder.Configuration);
 builder.Services.AddAegisDashboard(builder.Configuration);
 
