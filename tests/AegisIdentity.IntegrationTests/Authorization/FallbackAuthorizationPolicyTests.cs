@@ -3,12 +3,13 @@ using FluentAssertions;
 
 namespace AegisIdentity.IntegrationTests.Authorization;
 
+[Collection(AuthorizationCollection.Name)]
 [Trait("Category", "Integration")]
-public sealed class FallbackAuthorizationPolicyTests : IClassFixture<ApiWebApplicationFactory>
+public sealed class FallbackAuthorizationPolicyTests
 {
-    private readonly ApiWebApplicationFactory _factory;
+    private readonly AuthorizationWebApplicationFactory _factory;
 
-    public FallbackAuthorizationPolicyTests(ApiWebApplicationFactory factory)
+    public FallbackAuthorizationPolicyTests(AuthorizationWebApplicationFactory factory)
     {
         _factory = factory;
     }

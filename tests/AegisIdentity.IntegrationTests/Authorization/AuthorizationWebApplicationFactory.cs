@@ -2,8 +2,6 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using AegisIdentity.DataAccess.Persistence;
-using Hangfire;
-using Hangfire.InMemory;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -13,14 +11,31 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
+using Testcontainers.MsSql;
 
 namespace AegisIdentity.IntegrationTests.Authorization;
 
-public sealed class ApiWebApplicationFactory : WebApplicationFactory<Program>
+public sealed class AuthorizationWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
     internal const string TestJwtIssuer = "aegis-test";
     internal const string TestJwtAudience = "aegis-test";
     internal const string TestJwtSecret = "aegis-test-secret-key-min-32-chars!!";
+
+    private readonly MsSqlContainer _container = new MsSqlBuilder()
+        .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
+        .Build();
+
+    async Task IAsyncLifetime.InitializeAsync()
+    {
+        await _container.StartAsync();
+        await ApplyMigrationsAsync();
+    }
+
+    async Task IAsyncLifetime.DisposeAsync()
+    {
+        await _container.DisposeAsync();
+        await base.DisposeAsync();
+    }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -35,7 +50,7 @@ public sealed class ApiWebApplicationFactory : WebApplicationFactory<Program>
                 ["Jwt:Secret"] = TestJwtSecret,
                 ["Jwt:ExpirationMinutes"] = "15",
                 ["Jwt:RefreshExpirationDays"] = "7",
-                ["SqlServer:ConnectionString"] = "Server=.;Database=aegis_test;Trusted_Connection=True;",
+                ["SqlServer:ConnectionString"] = _container.GetConnectionString(),
                 ["Smtp:Host"] = "localhost",
                 ["Smtp:Port"] = "1025",
                 ["Smtp:From"] = "test@aegis.local",
@@ -54,15 +69,6 @@ public sealed class ApiWebApplicationFactory : WebApplicationFactory<Program>
         builder.ConfigureTestServices(services =>
         {
             services.RemoveAll<IHostedService>();
-
-            services.RemoveAll<DbContextOptions<AegisIdentityDbContext>>();
-            services.RemoveAll<AegisIdentityDbContext>();
-
-            services.AddDbContext<AegisIdentityDbContext>(options =>
-                options.UseInMemoryDatabase("aegis_test_authz"));
-
-            services.AddHangfire(config =>
-                config.UseInMemoryStorage());
         });
     }
 
@@ -75,6 +81,18 @@ public sealed class ApiWebApplicationFactory : WebApplicationFactory<Program>
         client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
         return client;
+    }
+
+    private async Task ApplyMigrationsAsync()
+    {
+        var options = new DbContextOptionsBuilder<AegisIdentityDbContext>()
+            .UseSqlServer(
+                _container.GetConnectionString(),
+                sql => sql.MigrationsAssembly("AegisIdentity.Migrations"))
+            .Options;
+
+        await using var dbContext = new AegisIdentityDbContext(options);
+        await dbContext.Database.MigrateAsync();
     }
 
     private static string BuildValidJwt(string userId)
@@ -97,4 +115,10 @@ public sealed class ApiWebApplicationFactory : WebApplicationFactory<Program>
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+}
+
+[CollectionDefinition(Name)]
+public sealed class AuthorizationCollection : ICollectionFixture<AuthorizationWebApplicationFactory>
+{
+    public const string Name = "Authorization";
 }
