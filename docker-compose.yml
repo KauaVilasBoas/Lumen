@@ -31,5 +31,18 @@ services:
       retries: 10
       start_period: 30s
 
+  redis:
+    image: redis:7
+    container_name: aegis-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
 volumes:
   sqlserver-data:

@@ -4,6 +4,7 @@ using AegisIdentity.Api.Middleware;
 using AegisIdentity.CommandHandlers.Auth.Register;
 using AegisIdentity.ReadModels.Queries;
 using AegisIdentity.CommandHandlers.Behaviors;
+using AegisIdentity.DataAccess.Cache;
 using AegisIdentity.DataAccess.HealthChecks;
 using AegisIdentity.DataAccess.Persistence;
 using AegisIdentity.Infrastructure.Configuration;
@@ -40,6 +41,7 @@ try
     // ── Infrastructure ────────────────────────────────────────────────────────
     builder.Services.AddInfrastructureOptions(builder.Configuration);
     builder.Services.AddRelationalDataAccess();
+    builder.Services.AddRedisCache(builder.Configuration);
     builder.Services.AddSecurity();
     builder.Services.AddHibpClient();
     builder.Services.AddNotifications();
@@ -79,7 +81,8 @@ try
     // ── Health checks ─────────────────────────────────────────────────────────
     builder.Services
         .AddHealthChecks()
-        .AddCheck<SqlServerHealthCheck>("sqlserver");
+        .AddCheck<SqlServerHealthCheck>("sqlserver")
+        .AddRedisHealthCheck();
 
     builder.Services.AddRazorPages();
 
@@ -144,6 +147,11 @@ try
     app.MapHealthChecks("/health/db", new HealthCheckOptions
     {
         Predicate = registration => registration.Name == "sqlserver",
+    }).AllowAnonymous();
+
+    app.MapHealthChecks("/health/cache", new HealthCheckOptions
+    {
+        Predicate = registration => registration.Name == "redis",
     }).AllowAnonymous();
 
     app.MapControllers();
