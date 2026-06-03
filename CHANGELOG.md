@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (FIX-01)
+- `DeleteProfileCommandHandler` now raises `ForbiddenException` (HTTP 403) when attempting to
+  delete a system profile (`IsSystem = true`), instead of propagating the domain-level
+  `InvalidOperationException` as an unhandled 500.
+- `UpdateProfileCommandHandler` now raises `ForbiddenException` when attempting to rename a
+  system profile; updating only the description (keeping the same name) is still allowed.
+- `SetProfilePermissionsCommandHandler` now raises `ForbiddenException` when attempting to
+  overwrite permissions on a system profile. Administrator permissions are managed exclusively
+  by the startup reconciliation service.
+- Unit tests added: `DeleteProfileCommandHandlerTests`, `UpdateProfileCommandHandlerTests`,
+  `SetProfilePermissionsCommandHandlerTests` — all three covering system-profile guard paths
+  and confirming non-system profiles remain fully editable.
+
 ### Added (DOC-01)
 - `docs/authz.md` — full reference for the relational authorization model: domain entities,
   permission code convention, data initialization (migrations vs startup reconciliation),
