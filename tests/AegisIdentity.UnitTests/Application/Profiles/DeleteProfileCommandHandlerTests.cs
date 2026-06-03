@@ -41,25 +41,41 @@ public sealed class DeleteProfileCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenSystemProfile_ThrowsInvalidOperationException()
+    public async Task Handle_WhenSystemProfile_ThrowsForbiddenException()
     {
         var systemProfile = DomainProfile.Create("Admin", "System profile", isSystem: true);
 
         _profileRepository.FindByIdAsync(systemProfile.Id, Arg.Any<CancellationToken>())
             .Returns(systemProfile);
-        _profileRepository.GetUserIdsByProfileIdAsync(systemProfile.Id, Arg.Any<CancellationToken>())
-            .Returns(new List<Guid>());
-        _profileRepository.GetActivePermissionProfilesByProfileIdAsync(systemProfile.Id, Arg.Any<CancellationToken>())
-            .Returns(new List<PermissionProfile>());
-        _userProfileRepository.ListByProfileIdAsync(systemProfile.Id, Arg.Any<CancellationToken>())
-            .Returns(new List<UserProfile>());
 
         var act = async () => await _sut.Handle(
             new DeleteProfileCommandHandler.Command(systemProfile.Id),
             CancellationToken.None);
 
-        await act.Should().ThrowAsync<InvalidOperationException>()
+        await act.Should().ThrowAsync<ForbiddenException>()
             .WithMessage("*cannot be deleted*");
+    }
+
+    [Fact]
+    public async Task Handle_WhenSystemProfile_DoesNotTouchRepositoryAfterGuard()
+    {
+        var systemProfile = DomainProfile.Create("Admin", "System profile", isSystem: true);
+
+        _profileRepository.FindByIdAsync(systemProfile.Id, Arg.Any<CancellationToken>())
+            .Returns(systemProfile);
+
+        try
+        {
+            await _sut.Handle(
+                new DeleteProfileCommandHandler.Command(systemProfile.Id),
+                CancellationToken.None);
+        }
+        catch (ForbiddenException) { }
+
+        await _profileRepository.DidNotReceive()
+            .UpdateAsync(Arg.Any<DomainProfile>(), Arg.Any<CancellationToken>());
+        await _userProfileRepository.DidNotReceive()
+            .UpdateAsync(Arg.Any<UserProfile>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
