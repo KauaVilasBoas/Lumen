@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (FIX-02)
+- `DeleteProfileCommandHandler` now performs the full cascade soft-delete — `PermissionProfile`
+  records, `UserProfile` records, and the `Profile` itself — inside a single database transaction
+  via `IProfileRepository.DeleteWithCascadeAsync`.
+- Children are soft-deleted in FK order (PermissionProfiles → UserProfiles → Profile) within one
+  `SaveChangesAsync` call, preventing partial state if any step fails.
+- If the transaction fails at any point, EF Core rolls back automatically; no soft-deleted
+  children are left with a live parent record.
+- Cache invalidation (`UserPermissionsChanged` events) is only published **after** the
+  transaction commits successfully, so a DB failure does not evict cache entries for a write
+  that never persisted.
+- The `IsSystem` guard introduced in FIX-01 continues to be evaluated before any mutation or
+  transaction begins, ensuring it cannot be bypassed.
+- New method `IProfileRepository.DeleteWithCascadeAsync` added to the domain interface and
+  implemented in `ProfileRepository` using an explicit EF Core `BeginTransactionAsync` scope.
+- Unit tests expanded: cascade called with all soft-deleted entities; empty-association path;
+  rollback scenario confirms no cache event fires on DB failure; system profile guard confirms
+  `DeleteWithCascadeAsync` is never reached.
+- Integration tests added: `DeleteWithCascade_SoftDeletesProfileAndAllAssociationsAtomically`
+  and `DeleteWithCascade_WithNoAssociations_SoftDeletesOnlyProfile` — both verify the
+  persisted state against the real SQL Server container.
+
 ### Fixed (FIX-01)
 - `DeleteProfileCommandHandler` now raises `ForbiddenException` (HTTP 403) when attempting to
   delete a system profile (`IsSystem = true`), instead of propagating the domain-level
