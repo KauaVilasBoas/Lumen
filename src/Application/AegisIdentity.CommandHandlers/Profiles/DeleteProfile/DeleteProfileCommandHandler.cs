@@ -28,6 +28,9 @@ public sealed class DeleteProfileCommandHandler
         var profile = await _profileRepository.FindByIdAsync(cmd.Id, ct)
             ?? throw new NotFoundException($"Profile '{cmd.Id}' not found.");
 
+        if (profile.IsSystem)
+            throw new ForbiddenException($"System profile '{profile.Name}' cannot be deleted.");
+
         var affectedUserIds = await _profileRepository.GetUserIdsByProfileIdAsync(cmd.Id, ct);
 
         var permissionProfiles = await _profileRepository.GetActivePermissionProfilesByProfileIdAsync(cmd.Id, ct);
