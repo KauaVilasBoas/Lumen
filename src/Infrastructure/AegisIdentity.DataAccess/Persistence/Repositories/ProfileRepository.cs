@@ -95,4 +95,34 @@ internal sealed class ProfileRepository : IProfileRepository
                            .Where(up => up.ProfileId == profileId)
                            .Select(up => up.UserId)
                            .ToListAsync(ct);
+
+    public async Task DeleteWithCascadeAsync(
+        Domain.Authorization.Profile profile,
+        IReadOnlyList<PermissionProfile> permissionProfiles,
+        IReadOnlyList<UserProfile> userProfiles,
+        CancellationToken ct = default)
+    {
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(ct);
+
+        try
+        {
+            // FK order: children before parent.
+            // 1. PermissionProfiles (references Profile)
+            _dbContext.PermissionProfiles.UpdateRange(permissionProfiles);
+
+            // 2. UserProfiles (references Profile)
+            _dbContext.UserProfiles.UpdateRange(userProfiles);
+
+            // 3. Profile (parent)
+            _dbContext.Profiles.Update(profile);
+
+            await _dbContext.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(ct);
+            throw;
+        }
+    }
 }
