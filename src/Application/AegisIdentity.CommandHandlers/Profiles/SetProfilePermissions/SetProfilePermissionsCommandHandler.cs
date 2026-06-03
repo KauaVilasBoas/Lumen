@@ -41,6 +41,9 @@ public sealed class SetProfilePermissionsCommandHandler
         var profile = await _profileRepository.FindByIdAsync(cmd.ProfileId, ct)
             ?? throw new NotFoundException($"Profile '{cmd.ProfileId}' not found.");
 
+        if (profile.IsSystem)
+            throw new ForbiddenException($"Permissions on system profile '{profile.Name}' are managed automatically and cannot be overwritten via the API.");
+
         foreach (var permId in cmd.PermissionIds)
         {
             var permission = await _permissionRepository.FindByIdAsync(permId, ct);
