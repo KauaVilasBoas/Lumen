@@ -69,7 +69,17 @@ internal sealed class UserPermissionCache : IUserPermissionCache
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Redis unavailable while invalidating user permission cache for {UserId}. Entry will expire via TTL.", userId);
+            // Permission revocation is a security-critical write: swallowing this failure would
+            // leave a revoked user authorised until the TTL expires (fail-open).
+            // Log at Error and re-throw so the caller (UserPermissionsChangedHandler / the
+            // originating command) surfaces the failure and does not silently succeed.
+            _logger.LogError(
+                ex,
+                "Failed to invalidate permission cache for user {UserId}. " +
+                "The stale cache entry may keep a revoked permission alive until TTL expiry. " +
+                "Propagating exception to caller.",
+                userId);
+            throw;
         }
     }
 }
