@@ -33,13 +33,21 @@ public static class HangfireSchedulerExtensions
     public static WebApplication ScheduleRecurringJobs(this WebApplication app)
     {
         using var scope = app.Services.CreateScope();
+
+        // Resolve the service-based IRecurringJobManager from DI rather than using
+        // the static RecurringJob.AddOrUpdate. Resolving it initialises the
+        // DI-registered JobStorage (and JobStorage.Current) — the static API throws
+        // "Current JobStorage instance has not been initialized yet" because nothing
+        // has resolved Hangfire storage at this point in startup (the server hosted
+        // service only starts later, during app.Run()).
+        var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
         var jobs = scope.ServiceProvider.GetServices<IJobDefinition>();
 
         foreach (var job in jobs)
         {
             var capturedJob = job;
 
-            RecurringJob.AddOrUpdate(
+            recurringJobManager.AddOrUpdate(
                 recurringJobId: capturedJob.Name,
                 methodCall:     () => capturedJob.ExecuteAsync(CancellationToken.None),
                 cronExpression: capturedJob.Cron);
