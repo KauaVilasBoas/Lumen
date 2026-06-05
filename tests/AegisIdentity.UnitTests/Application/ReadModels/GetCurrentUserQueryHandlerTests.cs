@@ -12,16 +12,13 @@ public sealed class GetCurrentUserQueryHandlerTests
     private static readonly Guid UserId = Guid.Parse("aabbccdd-eeff-0011-2233-aabbccddeeff");
 
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
-    private readonly IUserProfileRepository _userProfileRepository = Substitute.For<IUserProfileRepository>();
     private readonly IProfileRepository _profileRepository = Substitute.For<IProfileRepository>();
 
     [Fact]
     public async Task Handle_WhenUserHasNoProfiles_ReturnsEmptyProfilesList()
     {
         _userRepository.FindByIdAsync(UserId, Arg.Any<CancellationToken>()).Returns(BuildUser());
-        _userProfileRepository.ListByUserIdAsync(UserId, Arg.Any<CancellationToken>())
-            .Returns(Array.Empty<UserProfile>());
-        _profileRepository.ListAllAsync(Arg.Any<CancellationToken>())
+        _profileRepository.GetProfilesByUserIdAsync(UserId, Arg.Any<CancellationToken>())
             .Returns(Array.Empty<Profile>());
 
         var result = await CreateHandler().Handle(new GetCurrentUserQueryHandler.Query(UserId), CancellationToken.None);
@@ -34,12 +31,9 @@ public sealed class GetCurrentUserQueryHandlerTests
     public async Task Handle_WhenUserHasOneProfile_ReturnsSingleProfileWithIdAndName()
     {
         var profile = Profile.Create("Administrator", "Full access profile");
-        var userProfile = UserProfile.Create(UserId, profile.Id);
 
         _userRepository.FindByIdAsync(UserId, Arg.Any<CancellationToken>()).Returns(BuildUser());
-        _userProfileRepository.ListByUserIdAsync(UserId, Arg.Any<CancellationToken>())
-            .Returns(new[] { userProfile });
-        _profileRepository.ListAllAsync(Arg.Any<CancellationToken>())
+        _profileRepository.GetProfilesByUserIdAsync(UserId, Arg.Any<CancellationToken>())
             .Returns(new[] { profile });
 
         var result = await CreateHandler().Handle(new GetCurrentUserQueryHandler.Query(UserId), CancellationToken.None);
@@ -55,13 +49,9 @@ public sealed class GetCurrentUserQueryHandlerTests
     {
         var adminProfile = Profile.Create("Administrator", "Full access profile");
         var userProfile = Profile.Create("User", "Basic access profile");
-        var userProfileAssignment1 = UserProfile.Create(UserId, adminProfile.Id);
-        var userProfileAssignment2 = UserProfile.Create(UserId, userProfile.Id);
 
         _userRepository.FindByIdAsync(UserId, Arg.Any<CancellationToken>()).Returns(BuildUser());
-        _userProfileRepository.ListByUserIdAsync(UserId, Arg.Any<CancellationToken>())
-            .Returns(new[] { userProfileAssignment1, userProfileAssignment2 });
-        _profileRepository.ListAllAsync(Arg.Any<CancellationToken>())
+        _profileRepository.GetProfilesByUserIdAsync(UserId, Arg.Any<CancellationToken>())
             .Returns(new[] { adminProfile, userProfile });
 
         var result = await CreateHandler().Handle(new GetCurrentUserQueryHandler.Query(UserId), CancellationToken.None);
@@ -70,45 +60,6 @@ public sealed class GetCurrentUserQueryHandlerTests
         result!.Profiles.Should().HaveCount(2);
         result.Profiles.Should().ContainSingle(p => p.Id == adminProfile.Id && p.Name == "Administrator");
         result.Profiles.Should().ContainSingle(p => p.Id == userProfile.Id && p.Name == "User");
-    }
-
-    [Fact]
-    public async Task Handle_WhenUserProfileJoinIsSoftDeleted_RepositoryOmitsItFromList()
-    {
-        var activeProfile = Profile.Create("Administrator", "Full access profile");
-        var activeAssignment = UserProfile.Create(UserId, activeProfile.Id);
-
-        _userRepository.FindByIdAsync(UserId, Arg.Any<CancellationToken>()).Returns(BuildUser());
-        _userProfileRepository.ListByUserIdAsync(UserId, Arg.Any<CancellationToken>())
-            .Returns(new[] { activeAssignment });
-        _profileRepository.ListAllAsync(Arg.Any<CancellationToken>())
-            .Returns(new[] { activeProfile });
-
-        var result = await CreateHandler().Handle(new GetCurrentUserQueryHandler.Query(UserId), CancellationToken.None);
-
-        result.Should().NotBeNull();
-        result!.Profiles.Should().HaveCount(1);
-        result.Profiles[0].Id.Should().Be(activeProfile.Id);
-    }
-
-    [Fact]
-    public async Task Handle_WhenProfileIdHasNoMatchingProfile_ExcludesThatAssignmentFromResult()
-    {
-        var knownProfile = Profile.Create("User", "Basic access profile");
-        var orphanAssignment = UserProfile.Create(UserId, Guid.NewGuid());
-        var validAssignment = UserProfile.Create(UserId, knownProfile.Id);
-
-        _userRepository.FindByIdAsync(UserId, Arg.Any<CancellationToken>()).Returns(BuildUser());
-        _userProfileRepository.ListByUserIdAsync(UserId, Arg.Any<CancellationToken>())
-            .Returns(new[] { orphanAssignment, validAssignment });
-        _profileRepository.ListAllAsync(Arg.Any<CancellationToken>())
-            .Returns(new[] { knownProfile });
-
-        var result = await CreateHandler().Handle(new GetCurrentUserQueryHandler.Query(UserId), CancellationToken.None);
-
-        result.Should().NotBeNull();
-        result!.Profiles.Should().HaveCount(1);
-        result.Profiles[0].Id.Should().Be(knownProfile.Id);
     }
 
     [Fact]
@@ -129,9 +80,7 @@ public sealed class GetCurrentUserQueryHandlerTests
             emailConfirmedAt: new DateTime(2026, 1, 10, 8, 0, 0, DateTimeKind.Utc));
 
         _userRepository.FindByIdAsync(UserId, Arg.Any<CancellationToken>()).Returns(user);
-        _userProfileRepository.ListByUserIdAsync(UserId, Arg.Any<CancellationToken>())
-            .Returns(Array.Empty<UserProfile>());
-        _profileRepository.ListAllAsync(Arg.Any<CancellationToken>())
+        _profileRepository.GetProfilesByUserIdAsync(UserId, Arg.Any<CancellationToken>())
             .Returns(Array.Empty<Profile>());
 
         var result = await CreateHandler().Handle(new GetCurrentUserQueryHandler.Query(UserId), CancellationToken.None);
@@ -151,9 +100,7 @@ public sealed class GetCurrentUserQueryHandlerTests
         var user = BuildUser(lastLoginAt: null, emailConfirmedAt: null);
 
         _userRepository.FindByIdAsync(UserId, Arg.Any<CancellationToken>()).Returns(user);
-        _userProfileRepository.ListByUserIdAsync(UserId, Arg.Any<CancellationToken>())
-            .Returns(Array.Empty<UserProfile>());
-        _profileRepository.ListAllAsync(Arg.Any<CancellationToken>())
+        _profileRepository.GetProfilesByUserIdAsync(UserId, Arg.Any<CancellationToken>())
             .Returns(Array.Empty<Profile>());
 
         var result = await CreateHandler().Handle(new GetCurrentUserQueryHandler.Query(UserId), CancellationToken.None);
@@ -173,8 +120,21 @@ public sealed class GetCurrentUserQueryHandlerTests
         resultType.GetProperty("LockedUntil").Should().BeNull();
     }
 
+    [Fact]
+    public async Task Handle_DoesNotCallListAllAsync_UsesSingleFilteredQuery()
+    {
+        _userRepository.FindByIdAsync(UserId, Arg.Any<CancellationToken>()).Returns(BuildUser());
+        _profileRepository.GetProfilesByUserIdAsync(UserId, Arg.Any<CancellationToken>())
+            .Returns(Array.Empty<Profile>());
+
+        await CreateHandler().Handle(new GetCurrentUserQueryHandler.Query(UserId), CancellationToken.None);
+
+        await _profileRepository.Received(1).GetProfilesByUserIdAsync(UserId, Arg.Any<CancellationToken>());
+        await _profileRepository.DidNotReceive().ListAllAsync(Arg.Any<CancellationToken>());
+    }
+
     private GetCurrentUserQueryHandler CreateHandler() =>
-        new(_userRepository, _userProfileRepository, _profileRepository);
+        new(_userRepository, _profileRepository);
 
     private static User BuildUser(DateTime? lastLoginAt = null, DateTime? emailConfirmedAt = null)
     {
