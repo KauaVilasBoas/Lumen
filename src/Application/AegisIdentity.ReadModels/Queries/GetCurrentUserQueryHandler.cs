@@ -21,16 +21,13 @@ public sealed class GetCurrentUserQueryHandler
         IReadOnlyList<ProfileSummary> Profiles);
 
     private readonly IUserRepository _userRepository;
-    private readonly IUserProfileRepository _userProfileRepository;
     private readonly IProfileRepository _profileRepository;
 
     public GetCurrentUserQueryHandler(
         IUserRepository userRepository,
-        IUserProfileRepository userProfileRepository,
         IProfileRepository profileRepository)
     {
         _userRepository = userRepository;
-        _userProfileRepository = userProfileRepository;
         _profileRepository = profileRepository;
     }
 
@@ -41,14 +38,10 @@ public sealed class GetCurrentUserQueryHandler
         if (user is null)
             return null;
 
-        var userProfiles = await _userProfileRepository.ListByUserIdAsync(query.UserId, ct);
-        var allProfiles = await _profileRepository.ListAllAsync(ct);
+        var profiles = await _profileRepository.GetProfilesByUserIdAsync(query.UserId, ct);
 
-        var profileById = allProfiles.ToDictionary(p => p.Id);
-
-        var profiles = userProfiles
-            .Where(up => profileById.ContainsKey(up.ProfileId))
-            .Select(up => new ProfileSummary(up.ProfileId, profileById[up.ProfileId].Name))
+        var profileSummaries = profiles
+            .Select(p => new ProfileSummary(p.Id, p.Name))
             .ToList();
 
         return new Result(
@@ -58,6 +51,6 @@ public sealed class GetCurrentUserQueryHandler
             CreatedAt: user.CreatedAt,
             LastLoginAt: user.LastLoginAt,
             EmailConfirmedAt: user.EmailConfirmedAt,
-            Profiles: profiles);
+            Profiles: profileSummaries);
     }
 }
