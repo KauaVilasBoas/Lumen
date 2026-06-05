@@ -17,6 +17,9 @@ public sealed class SetProfilePermissionsCommandHandler
             RuleFor(x => x.ProfileId)
                 .NotEmpty().WithMessage("ProfileId is required.");
 
+            RuleFor(x => x.PermissionIds)
+                .NotNull().WithMessage("PermissionIds is required.");
+
             RuleForEach(x => x.PermissionIds)
                 .NotEmpty().WithMessage("Each PermissionId must be a valid non-empty Guid.");
         }
