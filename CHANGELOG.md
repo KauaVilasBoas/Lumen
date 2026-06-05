@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (INFRA-07)
+- `AegisIdentity.Backoffice` startup configuration aligned with the Api host:
+  - `BackofficeApiOptions` (`Api:BaseUrl`) introduced as a typed options class bound from the
+    `Api` section. Validation (`[Required]`, `[Url]`, `ValidateOnStart`) replaces the two
+    manual `?? throw` guards that existed in `Program.cs`.
+  - `HttpClient` factories for `AuthApiClient` and `AdminApiClient` now resolve `BaseAddress`
+    from `IOptions<BackofficeApiOptions>` instead of reading configuration directly.
+  - `appsettings.json` sanitised: empty string defaults replaced with `"REPLACE_ME"` sentinel
+    (consistent with `AegisIdentity.Api/appsettings.json`); inline `_comment` fields added for
+    `Api`, `SqlServer`, and `Redis` sections, explicitly noting that Redis is a required
+    dependency of the Backoffice for the permission cache.
+  - `appsettings.Development.json` updated with guidance on setting the three required secrets
+    (`SqlServer:ConnectionString`, `Redis:ConnectionString`, `Api:BaseUrl`) via `dotnet
+    user-secrets`.
+- `Program.cs` block comments reorganised: each registration call now has a docblock explaining
+  its purpose and what options it consumes, matching the explanatory style used in the Api host.
+- `README.md`: new "Backoffice required configuration" subsection documents the three required
+  variables (`Api:BaseUrl`, `SqlServer:ConnectionString`, `Redis:ConnectionString`) and
+  explicitly flags Redis as a required Backoffice dependency. `dotnet user-secrets` examples
+  expanded to include Backoffice commands.
+
 ### Performance (FIX-05)
 - `GetCurrentUserQueryHandler` (endpoint `/me`) no longer calls `IProfileRepository.ListAllAsync`
   (full table scan) followed by an in-memory join. It now calls the new
