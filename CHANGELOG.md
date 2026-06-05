@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Performance (FIX-05)
+- `GetCurrentUserQueryHandler` (endpoint `/me`) no longer calls `IProfileRepository.ListAllAsync`
+  (full table scan) followed by an in-memory join. It now calls the new
+  `IProfileRepository.GetProfilesByUserIdAsync(userId)`, which pushes the JOIN and WHERE filter
+  to the database and returns only the profiles assigned to the requesting user.
+- `ListUserProfilesQueryHandler` no longer calls `ListAllAsync`. It continues to use
+  `IUserProfileRepository.ListByUserIdAsync` (already filtered) and now resolves the matching
+  profiles with the new `IProfileRepository.GetByIdsAsync(ids)`, which issues a single
+  `WHERE Id IN (...)` query instead of materialising the entire Profiles table.
+- `IProfileRepository` extended with two new server-side query methods:
+  - `GetProfilesByUserIdAsync(Guid userId)` — UserProfiles ⋈ Profiles JOIN translated to SQL,
+    soft-delete filter applied by EF Core global query filter.
+  - `GetByIdsAsync(IReadOnlyList<Guid> ids)` — `WHERE Id IN (...)` batch fetch, no table scan.
+- `GetCurrentUserQueryHandler` constructor simplified: the unused `IUserProfileRepository`
+  dependency was removed (the new repository method encapsulates the join).
+- Unit tests updated: `GetCurrentUserQueryHandlerTests` rewritten against the new two-dependency
+  constructor; new test `Handle_DoesNotCallListAllAsync_UsesSingleFilteredQuery` asserts
+  `ListAllAsync` is never invoked.
+- Unit tests added: `ListUserProfilesQueryHandlerTests` — 6 cases covering empty assignments
+  (short-circuit before second DB call), single/multiple assignments, system profile flag,
+  orphan assignment exclusion, and `ListAllAsync` never-called assertion.
+
 ### Fixed (FIX-04)
 - `UserPermissionCache.InvalidateAsync` is now **fail-closed**: when the Redis `RemoveAsync`
   call raises an exception (network error, timeout, Redis unavailable), the exception is
