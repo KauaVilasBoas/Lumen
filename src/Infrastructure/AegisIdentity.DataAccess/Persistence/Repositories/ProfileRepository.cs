@@ -27,6 +27,25 @@ internal sealed class ProfileRepository : IProfileRepository
     public async Task<IReadOnlyList<Domain.Authorization.Profile>> ListAllAsync(CancellationToken ct = default)
         => await _dbContext.Profiles.ToListAsync(ct);
 
+    public async Task<IReadOnlyList<Domain.Authorization.Profile>> GetProfilesByUserIdAsync(
+        Guid userId,
+        CancellationToken ct = default)
+        => await _dbContext.UserProfiles
+                           .Where(up => up.UserId == userId)
+                           .Join(
+                               _dbContext.Profiles,
+                               up => up.ProfileId,
+                               p => p.Id,
+                               (up, p) => p)
+                           .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<Domain.Authorization.Profile>> GetByIdsAsync(
+        IReadOnlyList<Guid> ids,
+        CancellationToken ct = default)
+        => await _dbContext.Profiles
+                           .Where(p => ids.Contains(p.Id))
+                           .ToListAsync(ct);
+
     public async Task InsertAsync(Domain.Authorization.Profile profile, CancellationToken ct = default)
     {
         _dbContext.Profiles.Add(profile);
