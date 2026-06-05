@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (FIX-04)
+- `UserPermissionCache.InvalidateAsync` is now **fail-closed**: when the Redis `RemoveAsync`
+  call raises an exception (network error, timeout, Redis unavailable), the exception is
+  re-thrown after logging at `Error` level instead of being swallowed.
+- Previously the catch block only logged a `Warning` and returned normally, leaving the caller
+  unaware that the revocation never reached the cache — a stale entry could keep a revoked
+  permission alive for up to the 5-minute TTL (fail-open security regression).
+- `GetAsync` and `SetAsync` retain their existing fail-open behaviour: cache-read misses and
+  warm-write failures are tolerable degradations, not security issues.
+- `IUserPermissionCache.InvalidateAsync` XMLDoc updated to document the fail-closed contract
+  and the `Exception` rethrow semantics explicitly.
+- Unit tests added (`UserPermissionCacheTests`): `InvalidateAsync` propagates exception on
+  Redis failure; `InvalidateAsync` does not throw on success; `InvalidateAsync` removes the
+  entry from cache; `GetAsync` returns null on Redis failure (regression guard); `GetAsync`
+  deserializes a stored entry correctly; `SetAsync` does not throw on Redis failure (regression guard).
+- Unit tests added (`UserPermissionsChangedHandlerTests`): handler propagates cache exception
+  to the caller (fail-closed); handler completes normally when invalidation succeeds.
+
 ### Fixed (FIX-03)
 - `SetProfilePermissionsCommandHandler.Validator` now includes an explicit `NotNull` rule on
   `PermissionIds`, rejecting `null` values with HTTP 400 (`ValidationProblemDetails`) before
