@@ -15,10 +15,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddHttpContextAccessor();
 
-// ── Infrastructure options (SqlServer, Redis, …) ─────────────────────────────
-// AddInfrastructureOptions: binds and validates SqlServerOptions, RedisOptions,
-// JwtOptions, SmtpOptions, HibpOptions, AppOptions — all with ValidateOnStart.
-builder.Services.AddInfrastructureOptions(builder.Configuration);
+// ── Infrastructure options (SqlServer) ───────────────────────────────────────
+// The Backoffice only consumes the data-access layer (SQL Server + Redis), so it
+// validates SqlServerOptions only — NOT the full AddInfrastructureOptions set,
+// which also demands Jwt/Smtp/Hibp/App (API-only concerns the Backoffice never uses).
+// RedisOptions is bound separately by AddRedisCache below.
+builder.Services.AddSqlServerOptions(builder.Configuration);
 
 // ── Backoffice-specific options ───────────────────────────────────────────────
 // Api:BaseUrl — the upstream AegisIdentity API this host proxies calls to.
