@@ -2,6 +2,7 @@ using AegisIdentity.CommandHandlers.Profiles.SetProfilePermissions;
 using AegisIdentity.Domain.Authorization;
 using AegisIdentity.SharedKernel.Exceptions;
 using FluentAssertions;
+using FluentValidation.TestHelper;
 using MediatR;
 using NSubstitute;
 using DomainProfile = AegisIdentity.Domain.Authorization.Profile;
@@ -140,5 +141,66 @@ public sealed class SetProfilePermissionsCommandHandlerTests
             Arg.Is<IReadOnlyList<PermissionProfile>>(list =>
                 list.Count == 1 && list[0].PermissionId == permIdToAdd),
             Arg.Any<CancellationToken>());
+    }
+
+    // ── Validator unit tests ──────────────────────────────────────────────────
+
+    private readonly SetProfilePermissionsCommandHandler.Validator _validator = new();
+
+    [Fact]
+    public async Task Validator_WhenPermissionIdsIsNull_FailsWithRequiredMessage()
+    {
+        var command = new SetProfilePermissionsCommandHandler.Command(Guid.NewGuid(), null!);
+
+        var result = await _validator.TestValidateAsync(command);
+
+        result.ShouldHaveValidationErrorFor(c => c.PermissionIds)
+            .WithErrorMessage("PermissionIds is required.");
+    }
+
+    [Fact]
+    public async Task Validator_WhenPermissionIdsIsEmpty_PassesListRule()
+    {
+        var command = new SetProfilePermissionsCommandHandler.Command(Guid.NewGuid(), new List<Guid>());
+
+        var result = await _validator.TestValidateAsync(command);
+
+        result.ShouldNotHaveValidationErrorFor(c => c.PermissionIds);
+    }
+
+    [Fact]
+    public async Task Validator_WhenPermissionIdsContainsEmptyGuid_FailsItemRule()
+    {
+        var command = new SetProfilePermissionsCommandHandler.Command(
+            Guid.NewGuid(),
+            new List<Guid> { Guid.Empty });
+
+        var result = await _validator.TestValidateAsync(command);
+
+        result.ShouldHaveValidationErrorFor("PermissionIds[0]")
+            .WithErrorMessage("Each PermissionId must be a valid non-empty Guid.");
+    }
+
+    [Fact]
+    public async Task Validator_WhenProfileIdIsEmpty_FailsRequiredMessage()
+    {
+        var command = new SetProfilePermissionsCommandHandler.Command(Guid.Empty, new List<Guid>());
+
+        var result = await _validator.TestValidateAsync(command);
+
+        result.ShouldHaveValidationErrorFor(c => c.ProfileId)
+            .WithErrorMessage("ProfileId is required.");
+    }
+
+    [Fact]
+    public async Task Validator_WhenCommandIsFullyValid_HasNoErrors()
+    {
+        var command = new SetProfilePermissionsCommandHandler.Command(
+            Guid.NewGuid(),
+            new List<Guid> { Guid.NewGuid() });
+
+        var result = await _validator.TestValidateAsync(command);
+
+        result.IsValid.Should().BeTrue();
     }
 }
