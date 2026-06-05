@@ -4,8 +4,11 @@
 // development without the full API host.
 //
 // Commands:
-//   up      — applies all pending EF Core migrations (equivalent to: dotnet ef database update)
-//   status  — lists applied and pending migrations
+//   up      — (default) prints migration status, applies all pending EF Core
+//             migrations, then prints the status again. Running with no command
+//             is equivalent to 'up'.
+//   status  — lists applied and pending migrations without touching the
+//             database (read-only).
 //
 // For generating new migrations use the dotnet-ef tooling directly against the
 // AegisIdentity.Migrations project:
@@ -14,7 +17,7 @@
 //     --startup-project src/Migrations/AegisIdentity.Migrations
 //
 // The connection string is resolved from:
-//   1. Environment variable  SQLSERVER_CONNECTION_STRING
+//   1. Environment variable  SqlServer__ConnectionString
 //   2. SqlServer:ConnectionString in appsettings.json (design-time fallback)
 
 using AegisIdentity.DataAccess.Persistence;
@@ -26,7 +29,15 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-var builder = Host.CreateApplicationBuilder(args);
+// Anchor the content root to the binary's directory (rather than the current
+// working directory) so appsettings.json is found regardless of where the CLI
+// is launched from — e.g. `dotnet run` from the repository root vs. the IDE
+// launching from the output directory.
+var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings
+{
+    Args = args,
+    ContentRootPath = AppContext.BaseDirectory,
+});
 
 builder.Services.Configure<SqlServerOptions>(
     builder.Configuration.GetSection(SqlServerOptions.SectionName));
@@ -45,7 +56,24 @@ using var scope = host.Services.CreateScope();
 var dbContext = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
 var logger = host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("AegisIdentity.Migrations.Cli");
 
-var command = args.FirstOrDefault()?.ToLowerInvariant() ?? "status";
+// Default to 'up': running the CLI with no arguments always applies pending
+// migrations (listing the status before and after).
+var command = args.FirstOrDefault()?.ToLowerInvariant() ?? "up";
+
+async Task PrintStatusAsync(string label)
+{
+    var applied = (await dbContext.Database.GetAppliedMigrationsAsync()).ToList();
+    var pending = (await dbContext.Database.GetPendingMigrationsAsync()).ToList();
+
+    Console.WriteLine($"--- {label} ---");
+    Console.WriteLine($"Applied ({applied.Count}):");
+    foreach (var m in applied)
+        Console.WriteLine($"  + {m}");
+
+    Console.WriteLine($"Pending ({pending.Count}):");
+    foreach (var m in pending)
+        Console.WriteLine($"  - {m}");
+}
 
 try
 {
@@ -53,37 +81,32 @@ try
     {
         case "up":
         {
+            await PrintStatusAsync("status before 'up'");
+
             var pending = (await dbContext.Database.GetPendingMigrationsAsync()).ToList();
 
             if (pending.Count == 0)
             {
                 logger.LogInformation("No pending migrations to apply.");
-                return 0;
+            }
+            else
+            {
+                logger.LogInformation(
+                    "Applying {Count} pending migration(s): {Migrations}",
+                    pending.Count,
+                    string.Join(", ", pending));
+
+                await dbContext.Database.MigrateAsync();
+                logger.LogInformation("All migrations applied.");
             }
 
-            logger.LogInformation(
-                "Applying {Count} pending migration(s): {Migrations}",
-                pending.Count,
-                string.Join(", ", pending));
-
-            await dbContext.Database.MigrateAsync();
-            logger.LogInformation("All migrations applied.");
+            await PrintStatusAsync("status after 'up'");
             return 0;
         }
 
         case "status":
         {
-            var applied = (await dbContext.Database.GetAppliedMigrationsAsync()).ToList();
-            var pending = (await dbContext.Database.GetPendingMigrationsAsync()).ToList();
-
-            Console.WriteLine($"Applied ({applied.Count}):");
-            foreach (var m in applied)
-                Console.WriteLine($"  + {m}");
-
-            Console.WriteLine($"Pending ({pending.Count}):");
-            foreach (var m in pending)
-                Console.WriteLine($"  - {m}");
-
+            await PrintStatusAsync("status");
             return 0;
         }
 
