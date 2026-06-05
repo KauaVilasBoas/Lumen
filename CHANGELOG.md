@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (FIX-03)
+- `SetProfilePermissionsCommandHandler.Validator` now includes an explicit `NotNull` rule on
+  `PermissionIds`, rejecting `null` values with HTTP 400 (`ValidationProblemDetails`) before
+  the handler executes.
+- Previously, a `null` `permissionIds` body field bypassed the `RuleForEach` rule (FluentValidation
+  silently skips iteration on `null` collections), causing a `NullReferenceException` in the
+  `foreach` loop that propagated as HTTP 500.
+- The fix is purely in the `Validator` class; no changes to the handler logic or repository layer
+  were required.
+- An empty list (`[]`) remains a valid value and performs a full permission wipe — this behaviour
+  is intentional and unaffected by this fix.
+- Unit tests added: `Validator_WhenPermissionIdsIsNull_FailsWithRequiredMessage`,
+  `Validator_WhenPermissionIdsIsEmpty_PassesListRule`,
+  `Validator_WhenPermissionIdsContainsEmptyGuid_FailsItemRule`,
+  `Validator_WhenProfileIdIsEmpty_FailsRequiredMessage`,
+  `Validator_WhenCommandIsFullyValid_HasNoErrors` — all using `FluentValidation.TestHelper`
+  consistent with the project's validator test style.
+
 ### Fixed (FIX-02)
 - `DeleteProfileCommandHandler` now performs the full cascade soft-delete — `PermissionProfile`
   records, `UserProfile` records, and the `Profile` itself — inside a single database transaction
