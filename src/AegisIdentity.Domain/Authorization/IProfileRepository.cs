@@ -8,6 +8,19 @@ public interface IProfileRepository
 
     Task<IReadOnlyList<Profile>> ListAllAsync(CancellationToken ct = default);
 
+    /// <summary>
+    /// Returns only the <see cref="Profile"/> records assigned to <paramref name="userId"/>.
+    /// The filter is pushed down to the database — no full table scan occurs.
+    /// </summary>
+    Task<IReadOnlyList<Profile>> GetProfilesByUserIdAsync(Guid userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns the <see cref="Profile"/> records whose <see cref="Profile.Id"/> is in
+    /// <paramref name="ids"/>. Profiles not found are silently omitted.
+    /// The filter is pushed down to the database — no full table scan occurs.
+    /// </summary>
+    Task<IReadOnlyList<Profile>> GetByIdsAsync(IReadOnlyList<Guid> ids, CancellationToken ct = default);
+
     Task InsertAsync(Profile profile, CancellationToken ct = default);
 
     Task UpdateAsync(Profile profile, CancellationToken ct = default);
