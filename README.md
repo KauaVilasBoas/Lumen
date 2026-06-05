@@ -326,11 +326,29 @@ Then open `http://localhost:8025` to confirm the message arrived.
 
 > Every `[Required]` option fails the startup if missing (`ValidateOnStart`). Misconfiguration crashes the app on boot, never silently in production.
 
+### Backoffice required configuration
+
+The Backoffice (`src/Presentation/AegisIdentity.Backoffice`) depends on three infrastructure
+services. All are validated on startup with `ValidateOnStart` — a missing or empty value fails
+fast on boot.
+
+| Variable (env var format) | Section : Key | Description | Example |
+|---|---|---|---|
+| `Api__BaseUrl` | `Api:BaseUrl` | Base URL of the AegisIdentity API (no trailing slash) | `https://api.aegisidentity.io` |
+| `SqlServer__ConnectionString` | `SqlServer:ConnectionString` | SQL Server connection string — same database as the API | `Server=localhost,1433;...` |
+| `Redis__ConnectionString` | `Redis:ConnectionString` | Redis connection string — required for the permission cache (`IUserPermissionCache`) | `localhost:6379` |
+
+> **Redis is a required dependency of the Backoffice** (introduced in FIX-04 / INFRA-07).
+> The permission cache used by `RequirePermissionTagHelper` and `HasPermissionAsync` reads
+> from Redis on every request. Start Redis with `docker compose up -d redis` before running
+> the Backoffice locally.
+
 ### Local development via User Secrets
 
 Use `dotnet user-secrets` to store local secrets without committing them:
 
 ```powershell
+# API
 cd src/AegisIdentity.Api
 
 dotnet user-secrets set "SqlServer:ConnectionString" "Server=localhost,1433;Database=AegisIdentity;User Id=sa;Password=Dev@AegisIdentity2024!;TrustServerCertificate=True"
@@ -339,6 +357,13 @@ dotnet user-secrets set "Jwt:Secret" "<your-random-key-at-least-32-chars>"
 dotnet user-secrets set "Smtp:Host" "localhost"
 dotnet user-secrets set "Smtp:Port" "1025"
 dotnet user-secrets set "Smtp:From" "no-reply@aegisidentity.local"
+
+# Backoffice
+cd src/Presentation/AegisIdentity.Backoffice
+
+dotnet user-secrets set "SqlServer:ConnectionString" "Server=localhost,1433;Database=AegisIdentity;User Id=sa;Password=Dev@AegisIdentity2024!;TrustServerCertificate=True"
+dotnet user-secrets set "Redis:ConnectionString" "localhost:6379"
+dotnet user-secrets set "Api:BaseUrl" "https://localhost:7068"
 ```
 
 Secrets live in `%APPDATA%\Microsoft\UserSecrets\<UserSecretsId>\secrets.json` and never enter the repository.
