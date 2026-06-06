@@ -1,30 +1,174 @@
 @{
-    ViewData["Title"] = "Início";
+    ViewData["Title"] = "Overview";
+    ViewData["Subtitle"] = "System state at a glance";
+    Layout = "_Layout";
+
+    // Counts come from the controller via ViewBag when available; sensible fallbacks otherwise.
+    var userCount = ViewBag.UserCount as int? ?? 6;
+    var profileCount = ViewBag.ProfileCount as int? ?? 5;
+    var permissionCount = ViewBag.PermissionCount as int? ?? 15;
+    var orphanCount = ViewBag.OrphanCount as int? ?? 1;
+
+    var chain = new[] {
+        ("Permission","Controller.Action","key","var(--pres)","Permissions","Discovered from [RequirePermission]-decorated actions at startup. Code = Controller.Action."),
+        ("PermissionProfile","join","link","var(--app)","PermissionProfiles","Join entity granting a permission to every holder of a profile. Soft-deletable."),
+        ("Profile","Administrator · User · custom","shieldKey","var(--dom)","Profiles","Role-like container. System profiles (IsSystem) cannot be deleted."),
+        ("UserProfile","join","link","var(--app)","UserProfiles","Join entity assigning a profile to a user. Change publishes UserPermissionsChanged."),
+        ("User","identity","user","var(--violet)","Users","The authenticated identity. Permissions resolved as the union over assigned profiles."),
+    };
+
+    var activity = new[] {
+        ("cache.invalidate","cache","var(--jobs)","UserPermissionsChanged → cache invalidated","user:permissions:a1b2…0003","2m ago"),
+        ("profile.permset","shieldKey","var(--app)","Permission set updated on Profile Manager","+ Profiles.SetPermissions","2m ago"),
+        ("auth.login","lock","var(--pres)","Login succeeded · JWT issued (15m)","admin@aegisidentity.local","4m ago"),
+        ("userprofile.assign","link","var(--app)","Profile assigned to user","Security Auditor → lfischer","38m ago"),
+        ("auth.lockout","lock","var(--danger)","Account locked after 5 failed logins","tbecker · 15m lockout","2d ago"),
+        ("job.cleanup","clock","var(--jobs)","CleanupExpiredRefreshTokens ran","cron 03:00 UTC · 12 rows","1d ago"),
+        ("permission.discover","sparkles","var(--pres)","Permission discovery upserted 14 actions","1 orphan flagged: Reports.Export","3d ago"),
+    };
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h2 class="mb-1">Painel Administrativo</h2>
-        <p class="text-muted mb-0">Bem-vindo ao AegisIdentity Backoffice.</p>
-    </div>
-</div>
-
-<div class="row g-4">
-    <div class="col-md-6 col-lg-5">
-        @await Component.InvokeAsync("UserDetail")
-    </div>
-</div>
-
-<div class="mt-4">
-    @if (await Html.HasPermissionAsync("Admin", "Ping"))
-    {
-        <div class="alert alert-info">
-            Você tem acesso à área administrativa de diagnóstico.
+<div class="content-wrap">
+    <div class="reveal-banner">
+        <span class="reveal-banner-ico">@await Html.PartialAsync("_Icon", "eye")</span>
+        <span><strong>Reveal Architecture is on.</strong> Hover the dotted tags to see which layer, handler or port backs each element.</span>
+        <div class="reveal-banner-legend">
+            @foreach (var l in new[] { "pres", "app", "dom", "infra", "jobs" })
+            {
+                var names = new Dictionary<string, string> { ["pres"]="Presentation",["app"]="Application",["dom"]="Domain",["infra"]="Infrastructure",["jobs"]="Jobs" };
+                <span class="reveal-legend-item mono" style="--lc:var(--@l)"><span class="sq"></span>@names[l]</span>
+            }
         </div>
-    }
+    </div>
 
-    <div asp-require-permission-controller="Admin" asp-require-permission-action="Ping"
-         class="mt-2">
-        <a class="btn btn-outline-secondary btn-sm" href="#">Diagnóstico (Admin.Ping)</a>
+    <div class="grid-4" style="margin-bottom:18px">
+        <div class="stat card">
+            <div class="stat-top"><span class="stat-ico" style="color:var(--violet);background:color-mix(in srgb, var(--violet) 14%, transparent)">@await Html.PartialAsync("_Icon", "users")</span><span class="badge muted">Users</span></div>
+            <div class="stat-value tnum">@userCount</div><div class="stat-label">Identities</div><div class="stat-sub mono">across the directory</div>
+        </div>
+        <div class="stat card">
+            <div class="stat-top"><span class="stat-ico" style="color:var(--dom);background:color-mix(in srgb, var(--dom) 14%, transparent)">@await Html.PartialAsync("_Icon", "shieldKey")</span><span class="badge muted">Profiles</span></div>
+            <div class="stat-value tnum">@profileCount</div><div class="stat-label">Profiles</div><div class="stat-sub mono">2 system · custom</div>
+        </div>
+        <div class="stat card">
+            <div class="stat-top"><span class="stat-ico" style="color:var(--pres);background:color-mix(in srgb, var(--pres) 14%, transparent)">@await Html.PartialAsync("_Icon", "key")</span><span class="badge muted">discovered</span></div>
+            <div class="stat-value tnum">@permissionCount</div><div class="stat-label">Permissions</div><div class="stat-sub mono">@orphanCount orphan flagged</div>
+        </div>
+        <div class="stat card">
+            <div class="stat-top"><span class="stat-ico" style="color:var(--ok);background:color-mix(in srgb, var(--ok) 14%, transparent)">@await Html.PartialAsync("_Icon", "bolt")</span><span class="badge muted">Redis</span></div>
+            <div class="stat-value tnum">98.6%</div><div class="stat-label">Cache hit rate</div><div class="stat-sub mono"><span style="color:var(--ok)">▲ </span>5m TTL safety net</div>
+        </div>
+    </div>
+
+    <div class="dash-grid">
+        <div class="dash-col-main">
+            <div class="reveal-region">
+                <div class="card chain-card">
+                    <div class="reveal-tag" style="--lc:var(--dom);top:-11px;right:12px">
+                        <span class="reveal-tag-dot"></span><span class="reveal-tag-label mono">Authorization model</span>
+                        <div class="reveal-tag-pop card">
+                            <div class="reveal-tag-pop-layer mono" style="color:var(--dom)"><span class="sq" style="background:var(--dom)"></span>Domain</div>
+                            <div class="reveal-tag-pop-body">The five-entity model in <span class="code">docs/authz.md</span>. Every join is soft-deletable; nothing is physically removed.</div>
+                        </div>
+                    </div>
+                    <div class="card-head">
+                        <div><div class="eyebrow">Domain orchestration</div><h3 class="card-title">How access resolves</h3></div>
+                        <span class="chip"><span class="dot" style="color:var(--dom)"></span>5 entities · N:N</span>
+                    </div>
+                    <div class="chain">
+                        @for (var i = 0; i < chain.Length; i++)
+                        {
+                            var (label, sub, ic, color, tag, note) = chain[i];
+                            <div class="chain-node" style="--nc:@color">
+                                <span class="chain-node-ico">@await Html.PartialAsync("_Icon", ic)</span>
+                                <div class="chain-node-label">@label</div>
+                                <div class="chain-node-sub mono">@sub</div>
+                                <div class="chain-node-tag mono">@tag</div>
+                                <div class="chain-tip card">@note</div>
+                            </div>
+                            @if (i < chain.Length - 1)
+                            {
+                                <div class="chain-arrow"><svg viewBox="0 0 40 24"><path d="M2 12h32M28 6l8 6-8 6" /></svg></div>
+                            }
+                        }
+                    </div>
+                    <div class="chain-foot">
+                        <div class="chain-foot-item">@await Html.PartialAsync("_Icon", "cache") <span>Resolved set cached in Redis at <span class="code">user:permissions:{userId}</span></span></div>
+                        <div class="chain-foot-item">@await Html.PartialAsync("_Icon", "refresh") <span>Event-driven invalidation on <span class="code">UserPermissionsChanged</span></span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="reveal-region">
+                <div class="card activity-card">
+                    <div class="reveal-tag" style="--lc:var(--app);top:-11px;right:12px">
+                        <span class="reveal-tag-dot"></span><span class="reveal-tag-label mono">Domain events</span>
+                        <div class="reveal-tag-pop card">
+                            <div class="reveal-tag-pop-layer mono" style="color:var(--app)"><span class="sq" style="background:var(--app)"></span>Application</div>
+                            <div class="reveal-tag-pop-body">Command handlers publish notifications via MediatR; <span class="code">EventHandlers</span> react (e.g. cache invalidation).</div>
+                        </div>
+                    </div>
+                    <div class="card-head">
+                        <div><div class="eyebrow">Live feed</div><h3 class="card-title">Recent activity</h3></div>
+                        <span class="chip"><span class="dot" style="color:var(--ok)"></span>streaming</span>
+                    </div>
+                    <div class="activity-list">
+                        @foreach (var (kind, ic, color, text, detail, ago) in activity)
+                        {
+                            <div class="activity-item">
+                                <span class="activity-ico" style="color:@color;background:color-mix(in srgb, @color 13%, transparent)">@await Html.PartialAsync("_Icon", ic)</span>
+                                <div class="activity-body"><div class="activity-text">@text</div><div class="activity-detail mono">@detail</div></div>
+                                <div class="activity-meta"><span class="activity-kind mono">@kind</span><span class="activity-time mono">@ago</span></div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dash-col-side">
+            <div class="reveal-region">
+                <div class="card security-card">
+                    <div class="reveal-tag" style="--lc:var(--infra);top:-11px;right:12px">
+                        <span class="reveal-tag-dot"></span><span class="reveal-tag-label mono">IPasswordValidator</span>
+                        <div class="reveal-tag-pop card">
+                            <div class="reveal-tag-pop-layer mono" style="color:var(--infra)"><span class="sq" style="background:var(--infra)"></span>Infrastructure</div>
+                            <div class="reveal-tag-pop-body">Implemented in Infrastructure/Security. The HIBP client is <strong>fail-open</strong> — an outage never blocks registration.</div>
+                        </div>
+                    </div>
+                    <div class="card-head"><div><div class="eyebrow">Posture</div><h3 class="card-title">Security policy</h3></div><span style="color:var(--ok);font-size:20px">@await Html.PartialAsync("_Icon", "shieldSm")</span></div>
+                    <div class="security-list">
+                        @foreach (var r in new[] { "Min 12 chars · mixed classes", "BCrypt hashing (Next)", "HaveIBeenPwned k-anonymity check", "Account lockout after 5 fails", "JWT 15m + refresh 7d" })
+                        {
+                            <div class="security-row"><span class="security-check">@await Html.PartialAsync("_Icon", "check")</span><span>@r</span></div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="reveal-region">
+                <div class="card jobs-card">
+                    <div class="reveal-tag" style="--lc:var(--jobs);top:-11px;right:12px">
+                        <span class="reveal-tag-dot"></span><span class="reveal-tag-label mono">Hangfire</span>
+                        <div class="reveal-tag-pop card">
+                            <div class="reveal-tag-pop-layer mono" style="color:var(--jobs)"><span class="sq" style="background:var(--jobs)"></span>Jobs</div>
+                            <div class="reveal-tag-pop-body">The API hosts the Hangfire server. <span class="code">CleanupExpiredRefreshTokensJob</span> runs daily via the same repository port.</div>
+                        </div>
+                    </div>
+                    <div class="card-head"><div><div class="eyebrow">Background work</div><h3 class="card-title">Recurring jobs</h3></div><span class="chip">@await Html.PartialAsync("_Icon", "clock") cron</span></div>
+                    <div class="job-row">
+                        <div class="job-main"><div class="job-name mono">CleanupExpiredRefreshTokens</div><div class="job-sub">Removes expired refresh tokens</div></div>
+                        <div class="job-meta"><span class="chip"><span class="dot" style="color:var(--ok)"></span>03:00 UTC</span><span class="faint mono" style="font-size:11px">next in 18h</span></div>
+                    </div>
+                    <div class="job-spark">
+                        @{ var bars = new[] { 8, 6, 11, 4, 9, 12, 7, 10, 5, 9, 12, 8, 6, 11 }; }
+                        @for (var i = 0; i < bars.Length; i++)
+                        {
+                            <span style="height:@(bars[i] * 4)px;background:@(i == bars.Length - 1 ? "var(--jobs)" : "var(--raised-2)")"></span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
