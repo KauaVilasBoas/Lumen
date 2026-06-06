@@ -26,6 +26,18 @@ public interface IUserPermissionCache
     /// <summary>Stores <paramref name="codes"/> for <paramref name="userId"/> with the default TTL.</summary>
     Task SetAsync(Guid userId, HashSet<string> codes, CancellationToken cancellationToken = default);
 
-    /// <summary>Removes the cached entry for <paramref name="userId"/>.</summary>
+    /// <summary>
+    /// Removes the cached entry for <paramref name="userId"/>.
+    /// </summary>
+    /// <remarks>
+    /// Unlike <see cref="GetAsync"/> and <see cref="SetAsync"/>, this operation is
+    /// <b>fail-closed</b>: if the underlying cache store is unavailable, the exception is
+    /// propagated to the caller rather than swallowed.  Silently ignoring an invalidation
+    /// failure would leave a revoked permission alive in cache until TTL expiry — a
+    /// security regression (fail-open on revocation).
+    /// </remarks>
+    /// <exception cref="Exception">
+    /// Re-throws whatever the cache store raises when the remove operation fails.
+    /// </exception>
     Task InvalidateAsync(Guid userId, CancellationToken cancellationToken = default);
 }

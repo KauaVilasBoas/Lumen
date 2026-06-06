@@ -39,6 +39,9 @@ public sealed class UpdateProfileCommandHandler
         var profile = await _profileRepository.FindByIdAsync(cmd.Id, ct)
             ?? throw new NotFoundException($"Profile '{cmd.Id}' not found.");
 
+        if (profile.IsSystem && !string.Equals(profile.Name, cmd.Name, StringComparison.Ordinal))
+            throw new ForbiddenException($"System profile '{profile.Name}' cannot be renamed.");
+
         var nameAlreadyUsed = await _profileRepository.ActiveNameExistsAsync(cmd.Name, excludeId: cmd.Id, ct);
 
         if (nameAlreadyUsed)

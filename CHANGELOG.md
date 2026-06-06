@@ -7,6 +7,120 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (INFRA-07)
+- `AegisIdentity.Backoffice` startup configuration aligned with the Api host:
+  - `BackofficeApiOptions` (`Api:BaseUrl`) introduced as a typed options class bound from the
+    `Api` section. Validation (`[Required]`, `[Url]`, `ValidateOnStart`) replaces the two
+    manual `?? throw` guards that existed in `Program.cs`.
+  - `HttpClient` factories for `AuthApiClient` and `AdminApiClient` now resolve `BaseAddress`
+    from `IOptions<BackofficeApiOptions>` instead of reading configuration directly.
+  - `appsettings.json` sanitised: empty string defaults replaced with `"REPLACE_ME"` sentinel
+    (consistent with `AegisIdentity.Api/appsettings.json`); inline `_comment` fields added for
+    `Api`, `SqlServer`, and `Redis` sections, explicitly noting that Redis is a required
+    dependency of the Backoffice for the permission cache.
+  - `appsettings.Development.json` updated with guidance on setting the three required secrets
+    (`SqlServer:ConnectionString`, `Redis:ConnectionString`, `Api:BaseUrl`) via `dotnet
+    user-secrets`.
+- `Program.cs` block comments reorganised: each registration call now has a docblock explaining
+  its purpose and what options it consumes, matching the explanatory style used in the Api host.
+- `README.md`: new "Backoffice required configuration" subsection documents the three required
+  variables (`Api:BaseUrl`, `SqlServer:ConnectionString`, `Redis:ConnectionString`) and
+  explicitly flags Redis as a required Backoffice dependency. `dotnet user-secrets` examples
+  expanded to include Backoffice commands.
+
+### Performance (FIX-05)
+- `GetCurrentUserQueryHandler` (endpoint `/me`) no longer calls `IProfileRepository.ListAllAsync`
+  (full table scan) followed by an in-memory join. It now calls the new
+  `IProfileRepository.GetProfilesByUserIdAsync(userId)`, which pushes the JOIN and WHERE filter
+  to the database and returns only the profiles assigned to the requesting user.
+- `ListUserProfilesQueryHandler` no longer calls `ListAllAsync`. It continues to use
+  `IUserProfileRepository.ListByUserIdAsync` (already filtered) and now resolves the matching
+  profiles with the new `IProfileRepository.GetByIdsAsync(ids)`, which issues a single
+  `WHERE Id IN (...)` query instead of materialising the entire Profiles table.
+- `IProfileRepository` extended with two new server-side query methods:
+  - `GetProfilesByUserIdAsync(Guid userId)` — UserProfiles ⋈ Profiles JOIN translated to SQL,
+    soft-delete filter applied by EF Core global query filter.
+  - `GetByIdsAsync(IReadOnlyList<Guid> ids)` — `WHERE Id IN (...)` batch fetch, no table scan.
+- `GetCurrentUserQueryHandler` constructor simplified: the unused `IUserProfileRepository`
+  dependency was removed (the new repository method encapsulates the join).
+- Unit tests updated: `GetCurrentUserQueryHandlerTests` rewritten against the new two-dependency
+  constructor; new test `Handle_DoesNotCallListAllAsync_UsesSingleFilteredQuery` asserts
+  `ListAllAsync` is never invoked.
+- Unit tests added: `ListUserProfilesQueryHandlerTests` — 6 cases covering empty assignments
+  (short-circuit before second DB call), single/multiple assignments, system profile flag,
+  orphan assignment exclusion, and `ListAllAsync` never-called assertion.
+
+### Fixed (FIX-04)
+- `UserPermissionCache.InvalidateAsync` is now **fail-closed**: when the Redis `RemoveAsync`
+  call raises an exception (network error, timeout, Redis unavailable), the exception is
+  re-thrown after logging at `Error` level instead of being swallowed.
+- Previously the catch block only logged a `Warning` and returned normally, leaving the caller
+  unaware that the revocation never reached the cache — a stale entry could keep a revoked
+  permission alive for up to the 5-minute TTL (fail-open security regression).
+- `GetAsync` and `SetAsync` retain their existing fail-open behaviour: cache-read misses and
+  warm-write failures are tolerable degradations, not security issues.
+- `IUserPermissionCache.InvalidateAsync` XMLDoc updated to document the fail-closed contract
+  and the `Exception` rethrow semantics explicitly.
+- Unit tests added (`UserPermissionCacheTests`): `InvalidateAsync` propagates exception on
+  Redis failure; `InvalidateAsync` does not throw on success; `InvalidateAsync` removes the
+  entry from cache; `GetAsync` returns null on Redis failure (regression guard); `GetAsync`
+  deserializes a stored entry correctly; `SetAsync` does not throw on Redis failure (regression guard).
+- Unit tests added (`UserPermissionsChangedHandlerTests`): handler propagates cache exception
+  to the caller (fail-closed); handler completes normally when invalidation succeeds.
+
+### Fixed (FIX-03)
+- `SetProfilePermissionsCommandHandler.Validator` now includes an explicit `NotNull` rule on
+  `PermissionIds`, rejecting `null` values with HTTP 400 (`ValidationProblemDetails`) before
+  the handler executes.
+- Previously, a `null` `permissionIds` body field bypassed the `RuleForEach` rule (FluentValidation
+  silently skips iteration on `null` collections), causing a `NullReferenceException` in the
+  `foreach` loop that propagated as HTTP 500.
+- The fix is purely in the `Validator` class; no changes to the handler logic or repository layer
+  were required.
+- An empty list (`[]`) remains a valid value and performs a full permission wipe — this behaviour
+  is intentional and unaffected by this fix.
+- Unit tests added: `Validator_WhenPermissionIdsIsNull_FailsWithRequiredMessage`,
+  `Validator_WhenPermissionIdsIsEmpty_PassesListRule`,
+  `Validator_WhenPermissionIdsContainsEmptyGuid_FailsItemRule`,
+  `Validator_WhenProfileIdIsEmpty_FailsRequiredMessage`,
+  `Validator_WhenCommandIsFullyValid_HasNoErrors` — all using `FluentValidation.TestHelper`
+  consistent with the project's validator test style.
+
+### Fixed (FIX-02)
+- `DeleteProfileCommandHandler` now performs the full cascade soft-delete — `PermissionProfile`
+  records, `UserProfile` records, and the `Profile` itself — inside a single database transaction
+  via `IProfileRepository.DeleteWithCascadeAsync`.
+- Children are soft-deleted in FK order (PermissionProfiles → UserProfiles → Profile) within one
+  `SaveChangesAsync` call, preventing partial state if any step fails.
+- If the transaction fails at any point, EF Core rolls back automatically; no soft-deleted
+  children are left with a live parent record.
+- Cache invalidation (`UserPermissionsChanged` events) is only published **after** the
+  transaction commits successfully, so a DB failure does not evict cache entries for a write
+  that never persisted.
+- The `IsSystem` guard introduced in FIX-01 continues to be evaluated before any mutation or
+  transaction begins, ensuring it cannot be bypassed.
+- New method `IProfileRepository.DeleteWithCascadeAsync` added to the domain interface and
+  implemented in `ProfileRepository` using an explicit EF Core `BeginTransactionAsync` scope.
+- Unit tests expanded: cascade called with all soft-deleted entities; empty-association path;
+  rollback scenario confirms no cache event fires on DB failure; system profile guard confirms
+  `DeleteWithCascadeAsync` is never reached.
+- Integration tests added: `DeleteWithCascade_SoftDeletesProfileAndAllAssociationsAtomically`
+  and `DeleteWithCascade_WithNoAssociations_SoftDeletesOnlyProfile` — both verify the
+  persisted state against the real SQL Server container.
+
+### Fixed (FIX-01)
+- `DeleteProfileCommandHandler` now raises `ForbiddenException` (HTTP 403) when attempting to
+  delete a system profile (`IsSystem = true`), instead of propagating the domain-level
+  `InvalidOperationException` as an unhandled 500.
+- `UpdateProfileCommandHandler` now raises `ForbiddenException` when attempting to rename a
+  system profile; updating only the description (keeping the same name) is still allowed.
+- `SetProfilePermissionsCommandHandler` now raises `ForbiddenException` when attempting to
+  overwrite permissions on a system profile. Administrator permissions are managed exclusively
+  by the startup reconciliation service.
+- Unit tests added: `DeleteProfileCommandHandlerTests`, `UpdateProfileCommandHandlerTests`,
+  `SetProfilePermissionsCommandHandlerTests` — all three covering system-profile guard paths
+  and confirming non-system profiles remain fully editable.
+
 ### Added (DOC-01)
 - `docs/authz.md` — full reference for the relational authorization model: domain entities,
   permission code convention, data initialization (migrations vs startup reconciliation),

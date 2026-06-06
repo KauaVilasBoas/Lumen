@@ -17,6 +17,9 @@ public sealed class SetProfilePermissionsCommandHandler
             RuleFor(x => x.ProfileId)
                 .NotEmpty().WithMessage("ProfileId is required.");
 
+            RuleFor(x => x.PermissionIds)
+                .NotNull().WithMessage("PermissionIds is required.");
+
             RuleForEach(x => x.PermissionIds)
                 .NotEmpty().WithMessage("Each PermissionId must be a valid non-empty Guid.");
         }
@@ -40,6 +43,9 @@ public sealed class SetProfilePermissionsCommandHandler
     {
         var profile = await _profileRepository.FindByIdAsync(cmd.ProfileId, ct)
             ?? throw new NotFoundException($"Profile '{cmd.ProfileId}' not found.");
+
+        if (profile.IsSystem)
+            throw new ForbiddenException($"Permissions on system profile '{profile.Name}' are managed automatically and cannot be overwritten via the API.");
 
         foreach (var permId in cmd.PermissionIds)
         {

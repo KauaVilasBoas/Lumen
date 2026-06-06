@@ -27,6 +27,25 @@ internal sealed class ProfileRepository : IProfileRepository
     public async Task<IReadOnlyList<Domain.Authorization.Profile>> ListAllAsync(CancellationToken ct = default)
         => await _dbContext.Profiles.ToListAsync(ct);
 
+    public async Task<IReadOnlyList<Domain.Authorization.Profile>> GetProfilesByUserIdAsync(
+        Guid userId,
+        CancellationToken ct = default)
+        => await _dbContext.UserProfiles
+                           .Where(up => up.UserId == userId)
+                           .Join(
+                               _dbContext.Profiles,
+                               up => up.ProfileId,
+                               p => p.Id,
+                               (up, p) => p)
+                           .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<Domain.Authorization.Profile>> GetByIdsAsync(
+        IReadOnlyList<Guid> ids,
+        CancellationToken ct = default)
+        => await _dbContext.Profiles
+                           .Where(p => ids.Contains(p.Id))
+                           .ToListAsync(ct);
+
     public async Task InsertAsync(Domain.Authorization.Profile profile, CancellationToken ct = default)
     {
         _dbContext.Profiles.Add(profile);
@@ -95,4 +114,34 @@ internal sealed class ProfileRepository : IProfileRepository
                            .Where(up => up.ProfileId == profileId)
                            .Select(up => up.UserId)
                            .ToListAsync(ct);
+
+    public async Task DeleteWithCascadeAsync(
+        Domain.Authorization.Profile profile,
+        IReadOnlyList<PermissionProfile> permissionProfiles,
+        IReadOnlyList<UserProfile> userProfiles,
+        CancellationToken ct = default)
+    {
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(ct);
+
+        try
+        {
+            // FK order: children before parent.
+            // 1. PermissionProfiles (references Profile)
+            _dbContext.PermissionProfiles.UpdateRange(permissionProfiles);
+
+            // 2. UserProfiles (references Profile)
+            _dbContext.UserProfiles.UpdateRange(userProfiles);
+
+            // 3. Profile (parent)
+            _dbContext.Profiles.Update(profile);
+
+            await _dbContext.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(ct);
+            throw;
+        }
+    }
 }

@@ -1,3 +1,4 @@
+using AegisIdentity.Backoffice.Configuration;
 using AegisIdentity.Backoffice.Services;
 using AegisIdentity.DataAccess.Cache;
 using AegisIdentity.DataAccess.Persistence;
@@ -6,6 +7,7 @@ using AegisIdentity.Jobs.Configuration;
 using AegisIdentity.Jobs.Dashboard;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,13 +15,33 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddHttpContextAccessor();
 
+// ── Infrastructure options (SqlServer) ───────────────────────────────────────
+// The Backoffice only consumes the data-access layer (SQL Server + Redis), so it
+// validates SqlServerOptions only — NOT the full AddInfrastructureOptions set,
+// which also demands Jwt/Smtp/Hibp/App (API-only concerns the Backoffice never uses).
+// RedisOptions is bound separately by AddRedisCache below.
+builder.Services.AddSqlServerOptions(builder.Configuration);
+
+// ── Backoffice-specific options ───────────────────────────────────────────────
+// Api:BaseUrl — the upstream AegisIdentity API this host proxies calls to.
+// Validated on startup so a missing/empty value fails fast before serving traffic.
+builder.Services
+    .AddOptions<BackofficeApiOptions>()
+    .Bind(builder.Configuration.GetSection(BackofficeApiOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
+// ── Data Access: SQL Server + Redis ──────────────────────────────────────────
+// Both extension methods consume the validated options registered above.
+// SQL Server: SqlServerOptions → EF Core DbContext + all domain repositories.
+// Redis: RedisOptions → IDistributedCache (StackExchange) + IUserPermissionCache.
+builder.Services.AddRelationalDataAccess();
+builder.Services.AddRedisCache(builder.Configuration);
+
 // ── Hangfire dashboard (storage only — no job server) ────────────────────────
 // AddAegisHangfireServer is NOT called here; only the Api runs jobs to avoid
 // competing consumers.  AddAegisDashboard binds HangfireDashboardOptions
 // (path + Basic Auth credentials) from configuration.
-builder.Services.AddInfrastructureOptions(builder.Configuration);
-builder.Services.AddRelationalDataAccess();
-builder.Services.AddRedisCache(builder.Configuration);
 builder.Services.AddAegisHangfire(builder.Configuration);
 builder.Services.AddAegisDashboard(builder.Configuration);
 
@@ -60,20 +82,19 @@ builder.Services.AddAuthorization(options =>
 });
 
 // ── HttpClient — Api ──────────────────────────────────────────────────────────
-builder.Services.AddHttpClient<AuthApiClient>(client =>
+// BaseAddress is resolved from the validated BackofficeApiOptions, so a missing
+// Api:BaseUrl value causes an InvalidOperationException on startup rather than at
+// the first request.
+builder.Services.AddHttpClient<AuthApiClient>((serviceProvider, client) =>
 {
-    var baseUrl = builder.Configuration["Api:BaseUrl"]
-        ?? throw new InvalidOperationException("Api:BaseUrl is required in appsettings.json.");
-
-    client.BaseAddress = new Uri(baseUrl);
+    var apiOptions = serviceProvider.GetRequiredService<IOptions<BackofficeApiOptions>>().Value;
+    client.BaseAddress = new Uri(apiOptions.BaseUrl);
 });
 
-builder.Services.AddHttpClient<AdminApiClient>(client =>
+builder.Services.AddHttpClient<AdminApiClient>((serviceProvider, client) =>
 {
-    var baseUrl = builder.Configuration["Api:BaseUrl"]
-        ?? throw new InvalidOperationException("Api:BaseUrl is required in appsettings.json.");
-
-    client.BaseAddress = new Uri(baseUrl);
+    var apiOptions = serviceProvider.GetRequiredService<IOptions<BackofficeApiOptions>>().Value;
+    client.BaseAddress = new Uri(apiOptions.BaseUrl);
 });
 
 var app = builder.Build();

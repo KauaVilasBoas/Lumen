@@ -247,4 +247,90 @@ public sealed class ProfileManagementTests
         await act.Should().NotThrowAsync(
             "the unique index is partial ([IsDeleted] = 0), so a deleted profile does not block re-use of the name");
     }
+
+    // ── Atomic cascade via repository ─────────────────────────────────────────
+
+    [Fact]
+    public async Task DeleteWithCascade_SoftDeletesProfileAndAllAssociationsAtomically()
+    {
+        await using var scope = _fixture.Services.CreateAsyncScope();
+        var repository = scope.ServiceProvider.GetRequiredService<IProfileRepository>();
+        var userProfileRepository = scope.ServiceProvider.GetRequiredService<IUserProfileRepository>();
+        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+
+        var permission = Permission.Create("Items", "Delete", "Items — Delete");
+        db.Permissions.Add(permission);
+
+        var profile = Domain.Authorization.Profile.Create("Deletable", "Will be cascade-deleted");
+        db.Profiles.Add(profile);
+
+        var userId = Guid.NewGuid();
+        var userProfile = UserProfile.Create(userId, profile.Id);
+        db.UserProfiles.Add(userProfile);
+
+        var permissionProfile = PermissionProfile.Create(permission.Id, profile.Id);
+        db.PermissionProfiles.Add(permissionProfile);
+
+        await db.SaveChangesAsync();
+
+        // Soft-delete all in memory, then persist atomically.
+        permissionProfile.SoftDelete();
+        userProfile.SoftDelete();
+        profile.SoftDelete();
+
+        await repository.DeleteWithCascadeAsync(
+            profile,
+            new List<PermissionProfile> { permissionProfile },
+            new List<UserProfile> { userProfile });
+
+        // All three must be soft-deleted — none physically removed.
+        var rawProfile = await db.Profiles
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(p => p.Id == profile.Id);
+        rawProfile.Should().NotBeNull();
+        rawProfile!.IsDeleted.Should().BeTrue();
+        rawProfile.DeletedAt.Should().NotBeNull();
+
+        var rawUserProfile = await db.UserProfiles
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(up => up.Id == userProfile.Id);
+        rawUserProfile.Should().NotBeNull();
+        rawUserProfile!.IsDeleted.Should().BeTrue();
+
+        var rawPermissionProfile = await db.PermissionProfiles
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(pp => pp.Id == permissionProfile.Id);
+        rawPermissionProfile.Should().NotBeNull();
+        rawPermissionProfile!.IsDeleted.Should().BeTrue();
+
+        // Active queries (with global filter) must return nothing.
+        var activeProfile = await db.Profiles.FirstOrDefaultAsync(p => p.Id == profile.Id);
+        activeProfile.Should().BeNull("soft-deleted profile must be hidden by the global query filter");
+    }
+
+    [Fact]
+    public async Task DeleteWithCascade_WithNoAssociations_SoftDeletesOnlyProfile()
+    {
+        await using var scope = _fixture.Services.CreateAsyncScope();
+        var repository = scope.ServiceProvider.GetRequiredService<IProfileRepository>();
+        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+
+        var profile = Domain.Authorization.Profile.Create("IsolatedProfile", "No associations");
+        db.Profiles.Add(profile);
+        await db.SaveChangesAsync();
+
+        profile.SoftDelete();
+
+        await repository.DeleteWithCascadeAsync(
+            profile,
+            Array.Empty<PermissionProfile>(),
+            Array.Empty<UserProfile>());
+
+        var rawProfile = await db.Profiles
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(p => p.Id == profile.Id);
+
+        rawProfile.Should().NotBeNull();
+        rawProfile!.IsDeleted.Should().BeTrue();
+    }
 }

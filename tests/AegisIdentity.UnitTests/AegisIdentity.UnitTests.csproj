@@ -29,6 +29,7 @@
     <ProjectReference Include="..\..\src\Jobs\AegisIdentity.Jobs\AegisIdentity.Jobs.csproj" />
     <ProjectReference Include="..\..\src\Infrastructure\AegisIdentity.DataAccess\AegisIdentity.DataAccess.csproj" />
     <ProjectReference Include="..\..\src\Presentation\AegisIdentity.Backoffice\AegisIdentity.Backoffice.csproj" />
+    <ProjectReference Include="..\..\src\Application\AegisIdentity.EventHandlers\AegisIdentity.EventHandlers.csproj" />
   </ItemGroup>
 
 </Project>

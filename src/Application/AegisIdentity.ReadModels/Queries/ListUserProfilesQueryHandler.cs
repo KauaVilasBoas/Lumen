@@ -29,10 +29,12 @@ public sealed class ListUserProfilesQueryHandler
     {
         var userProfiles = await _userProfileRepository.ListByUserIdAsync(query.UserId, ct);
 
-        var profileIds = userProfiles.Select(up => up.ProfileId).Distinct().ToList();
+        if (userProfiles.Count == 0)
+            return [];
 
-        var allProfiles = await _profileRepository.ListAllAsync(ct);
-        var profileById = allProfiles.ToDictionary(p => p.Id);
+        var profileIds = userProfiles.Select(up => up.ProfileId).Distinct().ToList();
+        var profiles = await _profileRepository.GetByIdsAsync(profileIds, ct);
+        var profileById = profiles.ToDictionary(p => p.Id);
 
         return userProfiles
             .Where(up => profileById.ContainsKey(up.ProfileId))

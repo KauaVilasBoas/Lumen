@@ -40,4 +40,17 @@ public sealed class ProfileUpdateTests
         profile.IsSystem.Should().BeTrue();
         profile.IsDeleted.Should().BeFalse();
     }
+
+    [Fact]
+    public void Update_SystemProfileWithSameName_DoesNotThrow()
+    {
+        // The domain entity has no rename guard — protection lives in the application handler.
+        // This test documents that intent: domain Update() is always callable; handlers decide policy.
+        var profile = DomainProfile.Create("Administrator", "Old description", isSystem: true);
+
+        var act = () => profile.Update("Administrator", "New description");
+
+        act.Should().NotThrow();
+        profile.Description.Should().Be("New description");
+    }
 }
