@@ -1,0 +1,92 @@
+@{
+    ViewData["Title"] = "Authorization Graph";
+    ViewData["Subtitle"] = "How one identity resolves to reachable endpoints";
+    Layout = "_Layout";
+    var graphJson = ViewBag.GraphJson as string ?? "{\"users\":[],\"profiles\":{},\"permissions\":{}}";
+}
+
+<div class="content-wrap graph-wrap" data-graph>
+    <script type="application/json" id="graph-data">@Html.Raw(graphJson)</script>
+
+    <div class="reveal-banner">
+        <span class="reveal-banner-ico">@await Html.PartialAsync("_Icon", "eye")</span>
+        <span><strong>Reveal Architecture is on.</strong> Hover the dotted tags to see which layer or port backs each element.</span>
+        <div class="reveal-banner-legend">
+            @foreach (var l in new[] { "pres", "app", "dom", "infra", "jobs" })
+            {
+                var names = new Dictionary<string, string> { ["pres"]="Presentation",["app"]="Application",["dom"]="Domain",["infra"]="Infrastructure",["jobs"]="Jobs" };
+                <span class="reveal-legend-item mono" style="--lc:var(--@l)"><span class="sq"></span>@names[l]</span>
+            }
+        </div>
+    </div>
+
+    <div class="graph-shell">
+        <div class="graph-rail card">
+            <div class="graph-rail-head"><span class="eyebrow">Identity</span></div>
+            <div class="graph-rail-list" data-graph-rail></div>
+        </div>
+
+        <div class="graph-canvas card" data-graph-canvas>
+            <svg class="graph-edges"></svg>
+            <div class="graph-cols">
+                <div class="gcol gcol-user">
+                    <div class="gcol-head"><span class="gcol-num mono">01</span> User</div>
+                    <div class="reveal-region">
+                        <div data-col-user></div>
+                        <div class="reveal-tag" style="--lc:var(--dom);top:-11px;left:12px">
+                            <span class="reveal-tag-dot"></span><span class="reveal-tag-label mono">Users</span>
+                            <div class="reveal-tag-pop card">
+                                <div class="reveal-tag-pop-layer mono" style="color:var(--dom)"><span class="sq" style="background:var(--dom)"></span>Domain</div>
+                                <div class="reveal-tag-pop-body">The authenticated identity. Permissions are the <strong>union</strong> over assigned profiles, never stored on the user.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="gcol gcol-profiles">
+                    <div class="gcol-head"><span class="gcol-num mono">02</span> Profiles <span class="gcol-via mono">UserProfile</span></div>
+                    <div data-col-profiles></div>
+                </div>
+                <div class="gcol gcol-perms">
+                    <div class="gcol-head"><span class="gcol-num mono">03</span> Reachable endpoints <span class="gcol-via mono">PermissionProfile</span></div>
+                    <div data-col-perms></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="graph-readout">
+        <div class="reveal-region gr-cache-wrap">
+            <div class="card gr-cache hit" data-cache>
+                <div class="reveal-tag" style="--lc:var(--cache);top:-11px;right:12px">
+                    <span class="reveal-tag-dot"></span><span class="reveal-tag-label mono">IUserPermissionCache</span>
+                    <div class="reveal-tag-pop card">
+                        <div class="reveal-tag-pop-layer mono" style="color:var(--cache)"><span class="sq" style="background:var(--cache)"></span>Redis</div>
+                        <div class="reveal-tag-pop-body">On a miss the resolver queries <span class="code">IProfileRepository</span> then writes back to Redis with a 5-minute safety-net TTL.</div>
+                    </div>
+                </div>
+                <div class="gr-cache-ico">@await Html.PartialAsync("_Icon", "cache")</div>
+                <div class="gr-cache-body">
+                    <div class="gr-cache-key mono" data-cache-key>user:permissions:…</div>
+                    <div class="gr-cache-state mono" data-cache-state><span class="d ok"></span>CACHE HIT</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card gr-summary">
+            <div class="gr-stat"><div class="gr-stat-v tnum" data-sum-profiles>0</div><div class="gr-stat-l">profiles</div></div>
+            <div class="gr-sep"></div>
+            <div class="gr-stat"><div class="gr-stat-v tnum" data-sum-endpoints>0</div><div class="gr-stat-l">endpoints</div></div>
+            <div class="gr-sep"></div>
+            <div class="gr-stat"><div class="gr-stat-v tnum" data-sum-revoked>0</div><div class="gr-stat-l">revoked</div></div>
+        </div>
+
+        <div class="gr-actions">
+            <button class="btn sm danger" data-graph-revoke>@await Html.PartialAsync("_Icon", "bolt") Simulate revoke</button>
+            <button class="btn sm ghost" data-graph-reset>@await Html.PartialAsync("_Icon", "refresh") Reset</button>
+        </div>
+    </div>
+
+    <p class="graph-hint mono">
+        @await Html.PartialAsync("_Icon", "eye") Hover a profile to isolate the access it grants · hover an endpoint to trace which profile grants it · pick any identity on the left.
+    </p>
+</div>
