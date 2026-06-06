@@ -1,0 +1,14 @@
+@{
+    var id = "ag" + Guid.NewGuid().ToString("N").Substring(0, 5);
+}
+<svg width="30" height="30" viewBox="0 0 48 48" fill="none" style="filter:drop-shadow(0 3px 10px rgba(139,109,255,0.45))">
+    <defs>
+        <linearGradient id="@id" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#a78bfa" />
+            <stop offset="1" stop-color="#6b49f0" />
+        </linearGradient>
+    </defs>
+    <path d="M24 4 41 10v12c0 11-7.5 18.4-17 22C14.5 40.4 7 33 7 22V10Z" fill="url(#@id)" stroke="rgba(255,255,255,0.25)" stroke-width="1" />
+    <circle cx="24" cy="20" r="4" fill="#0a0e17" />
+    <path d="M24 23.4 24 30" stroke="#0a0e17" stroke-width="3.4" stroke-linecap="round" />
+</svg>
