@@ -1,6 +1,7 @@
 @{
     var controller = ViewContext.RouteData.Values["controller"]?.ToString();
     var action = ViewContext.RouteData.Values["action"]?.ToString();
+
     bool IsActive(string c, string? a = null) =>
         string.Equals(controller, c, StringComparison.OrdinalIgnoreCase)
         && (a == null || string.Equals(action, a, StringComparison.OrdinalIgnoreCase));
@@ -14,10 +15,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>@title — AegisIdentity Console</title>
-    <link rel="stylesheet" href="~/css/aegis-console.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/aegis-console.css" asp-append-version="true"/>
 </head>
 <body>
 @if (!authed)
@@ -30,7 +31,7 @@ else
     <div class="app">
         <aside class="sidebar">
             <div class="sidebar-brand">
-                <partial name="_AegisMark" />
+                <partial name="_AegisMark"/>
                 <div class="sidebar-brand-txt">
                     <div class="sidebar-brand-name">AegisIdentity</div>
                     <div class="sidebar-brand-sub mono">CONSOLE · v0.9</div>
@@ -45,7 +46,8 @@ else
                     <span class="navitem-label">Overview</span>
                 </a>
 
-                <a class="@Cls(IsActive("AuthorizationGraph"))" asp-controller="AuthorizationGraph" asp-action="Index">
+                <a class="@Cls(IsActive("AuthorizationGraph"))" asp-controller="AuthorizationGraph" asp-action="Index"
+                   asp-require-permission-controller="AuthorizationGraph" asp-require-permission-action="View">
                     <span class="navitem-ico">@await Html.PartialAsync("_Icon", "graph")</span>
                     <span class="navitem-label">Authorization Graph</span>
                     <span class="navitem-tag mono">LIVE</span>
@@ -74,9 +76,14 @@ else
 
             <div class="sidebar-foot">
                 <div class="health card">
-                    <div class="health-row"><span class="health-dot" style="background:var(--ok)"></span><span class="health-label mono">SQL Server</span><span class="health-val mono">healthy</span></div>
-                    <div class="health-row"><span class="health-dot" style="background:var(--ok)"></span><span class="health-label mono">Redis cache</span><span class="health-val mono">healthy</span></div>
-                    <div class="health-row"><span class="health-dot" style="background:var(--warn)"></span><span class="health-label mono">Hangfire</span><span class="health-val mono">1 queued</span></div>
+                    <div class="health-row"><span class="health-dot" style="background:var(--ok)"></span><span
+                            class="health-label mono">SQL Server</span><span class="health-val mono">healthy</span>
+                    </div>
+                    <div class="health-row"><span class="health-dot" style="background:var(--ok)"></span><span
+                            class="health-label mono">Redis cache</span><span class="health-val mono">healthy</span>
+                    </div>
+                    <div class="health-row"><span class="health-dot" style="background:var(--warn)"></span><span
+                            class="health-label mono">Hangfire</span><span class="health-val mono">1 queued</span></div>
                 </div>
             </div>
         </aside>
@@ -91,25 +98,28 @@ else
                 <div class="topbar-actions">
                     <div class="search">
                         @await Html.PartialAsync("_Icon", "search")
-                        <input placeholder="Search identities, profiles, permissions…" />
+                        <input placeholder="Search identities, profiles, permissions…"/>
                         <span class="search-kbd mono">⌘K</span>
                     </div>
 
-                    <button type="button" class="reveal-toggle" data-reveal-toggle title="Reveal the architecture behind every screen">
+                    <button type="button" class="reveal-toggle" data-reveal-toggle
+                            title="Reveal the architecture behind every screen">
                         <span class="reveal-toggle-ico">@await Html.PartialAsync("_Icon", "layers")</span>
                         <span class="reveal-toggle-txt">Reveal Architecture</span>
                         <span class="reveal-toggle-switch"><span class="knob"></span></span>
                     </button>
 
                     <div class="topbar-user">
-                        <div class="avatar" style="background:linear-gradient(135deg,#9a7dff,#6b49f0)">@(User.Identity?.Name?.Substring(0, 1).ToUpper() ?? "A")</div>
+                        <div class="avatar"
+                             style="background:linear-gradient(135deg,#9a7dff,#6b49f0)">@(User.Identity?.Name?.Substring(0, 1).ToUpper() ?? "A")</div>
                         <div class="topbar-user-meta">
                             <div class="topbar-user-name">@User.Identity?.Name</div>
                             <div class="topbar-user-mail mono">admin@@aegisidentity.local</div>
                         </div>
                         <form asp-controller="Account" asp-action="Logout" method="post" class="m-0">
                             @Html.AntiForgeryToken()
-                            <button type="submit" class="iconbtn" title="Sign out">@await Html.PartialAsync("_Icon", "logout")</button>
+                            <button type="submit" class="iconbtn"
+                                    title="Sign out">@await Html.PartialAsync("_Icon", "logout")</button>
                         </form>
                     </div>
                 </div>
