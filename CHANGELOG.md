@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (API-USERS-01)
+- `GET /api/users` endpoint — paginates and filters users with full state derivation:
+  - `ListUsersQueryHandler` added to `AegisIdentity.ReadModels.Queries`; accepts `search`,
+    `state` (active/locked/pending/deleted/all), `page`, and `pageSize`.
+  - `state` derived from domain fields: `IsDeleted → deleted`, `LockedUntil > now → locked`,
+    `EmailConfirmedAt == null → pending`, otherwise `active`.
+  - `UsersController` added to `AegisIdentity.Api.Controllers` — protected by
+    `[RequirePermission]` + `[Authorize(Policy = "Users.List")]` + `[PermissionGroup("Users")]`;
+    auto-registered in the permission discovery catalogue.
+  - `IUserRepository.ListAsync` added with search, soft-delete bypass (`IgnoreQueryFilters`),
+    and server-side pagination (SKIP/TAKE). Implemented in `UserRepository`.
+  - `resolvedPermissionCount` and `profileCount` resolved in batch per page (parallel
+    `Task.WhenAll`) to avoid N+1; avoids a full permission-table scan per user.
+  - Input validation: `page ≥ 1`, `1 ≤ pageSize ≤ 100`, and recognised state values enforced in
+    the controller, returning `400` with `ValidationProblemDetails` on violation.
+  - 17 unit tests added in `ListUsersQueryHandlerTests` covering state derivation, state
+    filtering, profile/permission count, paging metadata, and scalar field mapping.
+  - 10 integration tests added in `UsersEndpointTests` covering 401/403 enforcement, response
+    shape, input validation (page, pageSize, state), and soft-delete filter semantics.
+
 ### Changed (INFRA-07)
 - `AegisIdentity.Backoffice` startup configuration aligned with the Api host:
   - `BackofficeApiOptions` (`Api:BaseUrl`) introduced as a typed options class bound from the
