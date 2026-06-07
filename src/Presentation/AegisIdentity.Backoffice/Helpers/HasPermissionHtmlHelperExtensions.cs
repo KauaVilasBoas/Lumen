@@ -1,6 +1,8 @@
 using System.Security.Claims;
+
 using AegisIdentity.Domain.Authorization;
 using AegisIdentity.SharedKernel.Authorization;
+
 using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Mvc.Rendering;
 

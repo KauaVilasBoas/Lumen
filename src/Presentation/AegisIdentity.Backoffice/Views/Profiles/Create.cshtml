@@ -1,4 +1,3 @@
-@using AegisIdentity.Backoffice.Controllers
 @model ProfilesController.CreateProfileFormModel
 @{
     ViewData["Title"] = "New profile";
@@ -9,7 +8,9 @@
 <div class="content-wrap">
     <div class="card" style="max-width:560px;margin:0 auto;padding:26px">
         <div class="card-head" style="padding:0 0 18px">
-            <div><div class="eyebrow">Profiles</div><h3 class="card-title">New profile</h3></div>
+            <div>
+                <div class="eyebrow">Profiles</div>
+                <h3 class="card-title">New profile</h3></div>
             <a asp-action="Index" class="btn sm ghost">Back</a>
         </div>
 
@@ -22,15 +23,21 @@
             @Html.AntiForgeryToken()
             <label class="field">
                 <span class="field-label">Name</span>
-                <div class="field-input"><input asp-for="Name" maxlength="128" placeholder="e.g. Security Auditor" /></div>
+                <div class="field-input"><input asp-for="Name" maxlength="128" placeholder="e.g. Security Auditor"/>
+                </div>
                 <span asp-validation-for="Name" class="faint mono" style="font-size:11px;color:var(--danger)"></span>
             </label>
             <label class="field">
                 <span class="field-label">Description</span>
-                <div class="field-input"><input asp-for="Description" maxlength="512" placeholder="What this profile is for" /></div>
-                <span asp-validation-for="Description" class="faint mono" style="font-size:11px;color:var(--danger)"></span>
+                <div class="field-input"><input asp-for="Description" maxlength="512"
+                                                placeholder="What this profile is for"/></div>
+                <span asp-validation-for="Description" class="faint mono"
+                      style="font-size:11px;color:var(--danger)"></span>
             </label>
-            <button type="submit" class="btn primary" style="align-self:flex-start;margin-top:6px">@await Html.PartialAsync("_Icon", "plus") Create profile</button>
+            <button type="submit" class="btn primary"
+                    style="align-self:flex-start;margin-top:6px">@await Html.PartialAsync("_Icon", "plus") Create
+                profile
+            </button>
         </form>
     </div>
 </div>
