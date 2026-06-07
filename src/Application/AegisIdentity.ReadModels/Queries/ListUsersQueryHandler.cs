@@ -1,5 +1,7 @@
 using AegisIdentity.Domain.Authorization;
 using AegisIdentity.Domain.Users;
+using AegisIdentity.ReadModels.Users;
+using AegisIdentity.SharedKernel.Constants;
 using MediatR;
 
 namespace AegisIdentity.ReadModels.Queries;
@@ -75,10 +77,10 @@ public sealed class ListUsersQueryHandler
         var now = DateTime.UtcNow;
         var filtered = query.State switch
         {
-            UserStateFilter.Active  => users.Where(u => DeriveState(u, now) == "active").ToList(),
-            UserStateFilter.Locked  => users.Where(u => DeriveState(u, now) == "locked").ToList(),
-            UserStateFilter.Pending => users.Where(u => DeriveState(u, now) == "pending").ToList(),
-            UserStateFilter.Deleted => users.Where(u => DeriveState(u, now) == "deleted").ToList(),
+            UserStateFilter.Active  => users.Where(u => UserStateResolver.Resolve(u, now) == UserStates.Active).ToList(),
+            UserStateFilter.Locked  => users.Where(u => UserStateResolver.Resolve(u, now) == UserStates.Locked).ToList(),
+            UserStateFilter.Pending => users.Where(u => UserStateResolver.Resolve(u, now) == UserStates.Pending).ToList(),
+            UserStateFilter.Deleted => users.Where(u => UserStateResolver.Resolve(u, now) == UserStates.Deleted).ToList(),
             _                       => (IReadOnlyList<User>)users,
         };
 
@@ -95,7 +97,7 @@ public sealed class ListUsersQueryHandler
                 Id: u.Id,
                 Username: u.Username,
                 Email: u.Email,
-                State: DeriveState(u, now),
+                State: UserStateResolver.Resolve(u, now),
                 IsBootstrap: IsBootstrapUser(u),
                 CreatedAt: u.CreatedAt,
                 LastLoginAt: u.LastLoginAt,
@@ -106,24 +108,6 @@ public sealed class ListUsersQueryHandler
             .ToList();
 
         return new PagedResult(items, query.Page, query.PageSize, total);
-    }
-
-    /// <summary>
-    /// Derives the logical state of a user from its domain fields.
-    /// Precedence: deleted > locked > pending > active.
-    /// </summary>
-    private static string DeriveState(User user, DateTime now)
-    {
-        if (user.IsDeleted)
-            return "deleted";
-
-        if (user.LockedUntil.HasValue && user.LockedUntil.Value > now)
-            return "locked";
-
-        if (user.EmailConfirmedAt is null)
-            return "pending";
-
-        return "active";
     }
 
     /// <summary>

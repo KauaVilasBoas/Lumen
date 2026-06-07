@@ -6,6 +6,12 @@ public interface IUserRepository
 
     Task<User?> FindByIdAsync(Guid id, CancellationToken ct = default);
 
+    /// <summary>
+    /// Finds a user by <paramref name="id"/> bypassing the global soft-delete query filter,
+    /// so that deleted users are also returned.
+    /// </summary>
+    Task<User?> FindByIdIgnoringFiltersAsync(Guid id, CancellationToken ct = default);
+
     Task<User?> FindByUsernameAsync(string username, CancellationToken ct = default);
 
     Task InsertAsync(User user, CancellationToken ct = default);
