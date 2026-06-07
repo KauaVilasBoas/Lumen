@@ -24,6 +24,11 @@ internal sealed class UserRepository : IUserRepository
         => _dbContext.Users
                      .FirstOrDefaultAsync(u => u.Id == id, ct);
 
+    public Task<User?> FindByIdIgnoringFiltersAsync(Guid id, CancellationToken ct = default)
+        => _dbContext.Users
+                     .IgnoreQueryFilters()
+                     .FirstOrDefaultAsync(u => u.Id == id, ct);
+
     public Task<User?> FindByUsernameAsync(string username, CancellationToken ct = default)
         => _dbContext.Users
                      .FirstOrDefaultAsync(u => u.Username == username, ct);

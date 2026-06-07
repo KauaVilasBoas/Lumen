@@ -39,6 +39,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Microsoft.AspNetCore.SignalR.Client` (v8.0.15) added to `AegisIdentity.IntegrationTests` and
   `Directory.Packages.props` to enable Hub connection testing in the integration test suite.
 
+### Added (API-USERS-02)
+- `GET /api/users/{id:guid}` endpoint — returns full user detail including profiles and lifecycle fields:
+  - `GetUserDetailQueryHandler` added to `AegisIdentity.ReadModels.Queries`; accepts a user GUID
+    and returns a shaped result with `id`, `username`, `email`, `state`, `isBootstrap`, `createdAt`,
+    `emailConfirmedAt`, `lastLoginAt`, `lockoutEndAt`, `profiles[]` (with `profileId`, `name`,
+    `isSystem`, `permissionCount`), and `resolvedPermissionCount`.
+  - State derivation reuses the same precedence rule as `ListUsersQueryHandler`:
+    `IsDeleted → deleted`, `LockedUntil > now → locked`, `EmailConfirmedAt == null → pending`,
+    otherwise `active`.
+  - Soft-deleted users are accessible by id (`IgnoreQueryFilters`) — the `state` field communicates
+    the deleted status to the caller.
+  - Per-profile `permissionCount` resolved via `GetActivePermissionProfilesByProfileIdAsync`;
+    `resolvedPermissionCount` resolved via `GetPermissionCodesByUserIdAsync` (distinct codes).
+  - Returns `404` (`NotFoundException`) when no user matches the requested id (including non-existent
+    soft-deleted ids that were never seeded).
+  - `GetDetail` action added to `UsersController` — protected by `[RequirePermission]` +
+    `[Authorize(Policy = PermissionCodes.Users.Get)]` + `[PermissionGroup(PermissionGroups.Users)]`.
+  - `PermissionCodes.Users.List` and `PermissionCodes.Users.Get` constants added to
+    `AegisIdentity.SharedKernel.Constants.Permissions`; `PermissionGroups.Users` added alongside.
+    `UsersController` migrated from hard-coded `"Users.List"` and `"Users"` strings to these constants.
+  - `FindByIdIgnoringFiltersAsync` added to `IUserRepository` and implemented in `UserRepository`
+    to support the soft-delete bypass needed by the detail endpoint.
+  - 14 unit tests added in `GetUserDetailQueryHandlerTests` covering 404, state derivation (4 cases),
+    deleted-user visibility, scalar field mapping, nullable fields, profile list, isSystem flag,
+    permission count per profile, resolved permission count, and repository access pattern.
+  - 5 integration tests added in `UserDetailEndpointTests` covering 401/403 enforcement, 404 on
+    unknown id, 200 response shape, active state derivation, and soft-deleted user visibility.
+
 ### Added (API-USERS-01)
 - `GET /api/users` endpoint — paginates and filters users with full state derivation:
   - `ListUsersQueryHandler` added to `AegisIdentity.ReadModels.Queries`; accepts `search`,

@@ -1,5 +1,6 @@
 using AegisIdentity.ReadModels.Queries;
 using AegisIdentity.SharedKernel.Authorization;
+using AegisIdentity.SharedKernel.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +10,7 @@ namespace AegisIdentity.Api.Controllers;
 [ApiController]
 [Route("api/users")]
 [Produces("application/json")]
-[PermissionGroup("Users")]
+[PermissionGroup(PermissionGroups.Users)]
 public sealed class UsersController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -21,7 +22,7 @@ public sealed class UsersController : ControllerBase
 
     [HttpGet]
     [RequirePermission]
-    [Authorize(Policy = "Users.List")]
+    [Authorize(Policy = PermissionCodes.Users.List)]
     [ProducesResponseType(typeof(ListUsersQueryHandler.PagedResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -60,6 +61,19 @@ public sealed class UsersController : ControllerBase
 
         var result = await _mediator.Send(query, ct);
 
+        return Ok(result);
+    }
+
+    [HttpGet("{id:guid}")]
+    [RequirePermission]
+    [Authorize(Policy = PermissionCodes.Users.Get)]
+    [ProducesResponseType(typeof(GetUserDetailQueryHandler.Result), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetDetail(Guid id, CancellationToken ct = default)
+    {
+        var result = await _mediator.Send(new GetUserDetailQueryHandler.Query(id), ct);
         return Ok(result);
     }
 
