@@ -1,0 +1,152 @@
+@{
+    ViewData["Title"] = "Architecture";
+    ViewData["Subtitle"] = "Clean Architecture · CQRS · ports & adapters";
+    Layout = "_Layout";
+
+    var layerNames = new Dictionary<string, string> {
+        ["pres"]="Presentation",["app"]="Application",["dom"]="Domain",["infra"]="Infrastructure",["jobs"]="Jobs",["cache"]="Redis"
+    };
+
+    var ports = new[] {
+        ("IUserRepository","EfUserRepository","infra","EF Core · SQL Server"),
+        ("IJwtService","JwtService","infra","HMAC-SHA256"),
+        ("IPasswordHasher","BcryptPasswordHasher","infra","BCrypt.Net-Next"),
+        ("IUserPermissionCache","RedisUserPermissionCache","cache","Redis · 5m TTL"),
+        ("IEmailService","MailKitEmailService","infra","MailKit · SMTP"),
+        ("IPwnedPasswordsClient","PwnedPasswordsClient","infra","HIBP · k-anonymity"),
+    };
+
+    var trace = new[] {
+        ("POST /api/profiles","ProfilesController","pres","Cookie session → Bearer JWT. [RequirePermission] resolved by the dynamic policy provider."),
+        ("CreateProfileCommand","IMediator.Send","pres","Controller sends a command — no logic here, just translation."),
+        ("ValidationBehavior<T>","FluentValidation","app","Pipeline runs cheap input checks first — fail fast before any I/O."),
+        ("CreateProfileHandler","Handle()","app","The single use case. Command, Result & Validator are nested records in one file."),
+        ("IProfileRepository","port (Domain)","dom","Handler depends only on the interface. Domain has zero external references."),
+        ("EfProfileRepository","adapter (Infra)","infra","DI-wired adapter performs async EF Core persistence to SQL Server."),
+    };
+
+    var decisions = new[] {
+        ("Soft-delete everywhere","Global query filters hide deleted rows; filtered unique indexes allow re-registration.","ghost"),
+        ("Startup options validation","ValidateDataAnnotations().ValidateOnStart() — misconfiguration crashes on boot, never in prod.","shieldSm"),
+        ("RFC 7807 errors","Global IExceptionHandler maps ValidationException → 400, ConflictException → 409.","bolt"),
+        ("Central package management","Directory.Packages.props is the single source of NuGet truth across 13 projects.","layers"),
+        ("Fail-open HIBP","An external breach-check outage emits a Warning — it never denies access to our own system.","key"),
+        ("Testcontainers","360+ unit tests; integration suite spins real SQL Server + Redis containers.","check"),
+    };
+}
+
+<div class="content-wrap arch">
+    <div class="reveal-banner">
+        <span class="reveal-banner-ico">@await Html.PartialAsync("_Icon", "eye")</span>
+        <span><strong>Reveal Architecture is on.</strong> Hover the dotted tags to see which layer, handler or port backs each element.</span>
+        <div class="reveal-banner-legend">
+            @foreach (var l in new[] { "pres", "app", "dom", "infra", "jobs" })
+            {
+                <span class="reveal-legend-item mono" style="--lc:var(--@l)"><span class="sq"></span>@layerNames[l]</span>
+            }
+        </div>
+    </div>
+
+    <div class="grid-4" style="margin-bottom:20px">
+        @foreach (var (v, l) in new[] { ("6", "layer solutions"), ("13", "projects"), ("360+", "unit tests"), ("0", "domain deps") })
+        {
+            <div class="card arch-stat"><div class="arch-stat-v tnum">@v</div><div class="arch-stat-l mono">@l</div></div>
+        }
+    </div>
+
+    <div class="section-title"><h3>Dependency direction</h3><span class="line"></span><span class="count mono">everything points inward</span></div>
+    <div class="card arch-map">
+        <div class="arch-map-inner">
+            <div class="arch-side">
+                <div class="arch-layer pres"><div class="al-name">Presentation</div><div class="al-sub mono">Api · Backoffice</div></div>
+                <div class="arch-layer app"><div class="al-name">Application</div><div class="al-sub mono">CQRS · MediatR</div></div>
+            </div>
+            <div class="arch-core-wrap">
+                <div class="arch-arrow-in left"><svg viewBox="0 0 60 20"><path d="M2 10h50M44 4l8 6-8 6" /></svg></div>
+                <div class="arch-core">
+                    <div class="arch-core-glow"></div>
+                    @await Html.PartialAsync("_Icon", "shieldSm")
+                    <div class="al-name">Domain</div>
+                    <div class="al-sub mono">entities · value objects · ports</div>
+                    <div class="arch-core-tag mono">zero outgoing dependencies</div>
+                </div>
+                <div class="arch-arrow-in right"><svg viewBox="0 0 60 20"><path d="M58 10H8M16 4l-8 6 8 6" /></svg></div>
+            </div>
+            <div class="arch-side">
+                <div class="arch-layer infra"><div class="al-name">Infrastructure</div><div class="al-sub mono">EF · BCrypt · JWT · Redis</div></div>
+                <div class="arch-layer jobs"><div class="al-name">Jobs</div><div class="al-sub mono">Hangfire</div></div>
+            </div>
+        </div>
+        <div class="arch-map-note mono">@await Html.PartialAsync("_Icon", "check") Verified by the compiler — Domain references nothing outward. Adapters implement Domain ports; DI wires them at composition root.</div>
+    </div>
+
+    <div class="arch-2col">
+        <div class="reveal-region">
+            <div class="card arch-trace" data-trace>
+                <div class="reveal-tag" style="--lc:var(--app);top:-11px;right:12px">
+                    <span class="reveal-tag-dot"></span><span class="reveal-tag-label mono">One use case = one file</span>
+                    <div class="reveal-tag-pop card">
+                        <div class="reveal-tag-pop-layer mono" style="color:var(--app)"><span class="sq" style="background:var(--app)"></span>Application</div>
+                        <div class="reveal-tag-pop-body">CQRS via MediatR: <span class="code">Command</span>, <span class="code">Result</span> &amp; <span class="code">Validator</span> are nested sealed records inside the handler. No anemic DTO layer.</div>
+                    </div>
+                </div>
+                <div class="card-head">
+                    <div><div class="eyebrow">Request lifecycle</div><h3 class="card-title">Trace a write through the layers</h3></div>
+                    <button class="btn sm primary" data-trace-replay>@await Html.PartialAsync("_Icon", "bolt") Replay</button>
+                </div>
+                <div class="trace">
+                    @for (var i = 0; i < trace.Length; i++)
+                    {
+                        var (t, s, layer, d) = trace[i];
+                        <div class="trace-step on" style="--nc:var(--@layer)">
+                            <div class="trace-rail"><span class="trace-dot"></span>@(i < trace.Length - 1 ? Html.Raw("<span class=\"trace-line\"></span>") : null)</div>
+                            <div class="trace-body">
+                                <div class="trace-top">
+                                    <span class="trace-t mono">@t</span>
+                                    <span class="layer-pill" style="color:var(--@layer);border-color:var(--@layer)"><span class="sq" style="background:var(--@layer)"></span>@layerNames[layer]</span>
+                                </div>
+                                <div class="trace-s mono">@s</div>
+                                <div class="trace-d" style="display:none">@d</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="reveal-region">
+            <div class="card arch-ports">
+                <div class="reveal-tag" style="--lc:var(--dom);top:-11px;right:12px">
+                    <span class="reveal-tag-dot"></span><span class="reveal-tag-label mono">Dependency inversion</span>
+                    <div class="reveal-tag-pop card">
+                        <div class="reveal-tag-pop-layer mono" style="color:var(--dom)"><span class="sq" style="background:var(--dom)"></span>Domain</div>
+                        <div class="reveal-tag-pop-body">Ports are interfaces in <strong>Domain</strong>; adapters live in <strong>Infrastructure</strong>. Swap an adapter without touching a single domain type.</div>
+                    </div>
+                </div>
+                <div class="card-head"><div><div class="eyebrow">Ports &amp; adapters</div><h3 class="card-title">Contracts vs. implementations</h3></div></div>
+                <div class="ports">
+                    @foreach (var (port, adapter, layer, sub) in ports)
+                    {
+                        <div class="port-row">
+                            <span class="port-name mono"><span class="port-dot" style="background:var(--dom)"></span>@port</span>
+                            <span class="port-arrow">@await Html.PartialAsync("_Icon", "arrowR")</span>
+                            <div class="port-adapter"><span class="mono port-adapter-name">@adapter</span><span class="port-adapter-sub mono" style="color:var(--@layer)">@sub</span></div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section-title" style="margin-top:22px"><h3>Deliberate decisions</h3><span class="line"></span></div>
+    <div class="grid-3 arch-decisions">
+        @foreach (var (t, d, ic) in decisions)
+        {
+            <div class="card decision">
+                <span class="decision-ico">@await Html.PartialAsync("_Icon", ic)</span>
+                <div class="decision-t">@t</div>
+                <div class="decision-d">@d</div>
+            </div>
+        }
+    </div>
+</div>

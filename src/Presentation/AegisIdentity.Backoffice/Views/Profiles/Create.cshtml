@@ -1,38 +1,36 @@
 @using AegisIdentity.Backoffice.Controllers
 @model ProfilesController.CreateProfileFormModel
-
 @{
-    ViewData["Title"] = "Novo Perfil";
+    ViewData["Title"] = "New profile";
+    ViewData["Subtitle"] = "Create a role-like container";
+    Layout = "_Layout";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="mb-0">Novo Perfil</h2>
-    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">Voltar</a>
-</div>
+<div class="content-wrap">
+    <div class="card" style="max-width:560px;margin:0 auto;padding:26px">
+        <div class="card-head" style="padding:0 0 18px">
+            <div><div class="eyebrow">Profiles</div><h3 class="card-title">New profile</h3></div>
+            <a asp-action="Index" class="btn sm ghost">Back</a>
+        </div>
 
-<div class="card" style="max-width: 540px;">
-    <div class="card-body">
-        <form asp-action="Create" method="post">
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div asp-validation-summary="ModelOnly" class="login-error" style="margin:0 0 16px"></div>
+        }
+
+        <form asp-action="Create" method="post" class="login-form" style="margin:0">
             @Html.AntiForgeryToken()
-
-            <div class="mb-3">
-                <label asp-for="Name" class="form-label">Nome</label>
-                <input asp-for="Name" class="form-control" maxlength="128" />
-                <span asp-validation-for="Name" class="text-danger small"></span>
-            </div>
-
-            <div class="mb-3">
-                <label asp-for="Description" class="form-label">Descrição</label>
-                <input asp-for="Description" class="form-control" maxlength="512" />
-                <span asp-validation-for="Description" class="text-danger small"></span>
-            </div>
-
-            @if (!ViewData.ModelState.IsValid)
-            {
-                <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-3"></div>
-            }
-
-            <button type="submit" class="btn btn-primary">Criar</button>
+            <label class="field">
+                <span class="field-label">Name</span>
+                <div class="field-input"><input asp-for="Name" maxlength="128" placeholder="e.g. Security Auditor" /></div>
+                <span asp-validation-for="Name" class="faint mono" style="font-size:11px;color:var(--danger)"></span>
+            </label>
+            <label class="field">
+                <span class="field-label">Description</span>
+                <div class="field-input"><input asp-for="Description" maxlength="512" placeholder="What this profile is for" /></div>
+                <span asp-validation-for="Description" class="faint mono" style="font-size:11px;color:var(--danger)"></span>
+            </label>
+            <button type="submit" class="btn primary" style="align-self:flex-start;margin-top:6px">@await Html.PartialAsync("_Icon", "plus") Create profile</button>
         </form>
     </div>
 </div>

@@ -1,0 +1,37 @@
+@model string
+@{
+    // Minimal geometric line-icon set. Usage: <partial name="_Icon" model="grid" />
+    var sw = "1.7";
+    string Svg(string inner) =>
+        $"<svg viewBox=\"0 0 24 24\" width=\"1em\" height=\"1em\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"{sw}\" stroke-linecap=\"round\" stroke-linejoin=\"round\">{inner}</svg>";
+    var map = new Dictionary<string, string>
+    {
+        ["grid"]     = "<rect x='3' y='3' width='7' height='7' rx='1.5'/><rect x='14' y='3' width='7' height='7' rx='1.5'/><rect x='3' y='14' width='7' height='7' rx='1.5'/><rect x='14' y='14' width='7' height='7' rx='1.5'/>",
+        ["graph"]    = "<circle cx='6' cy='6' r='2.4'/><circle cx='18' cy='6' r='2.4'/><circle cx='12' cy='18' r='2.4'/><path d='M7.7 7.6 10.6 16M16.3 7.6 13.4 16M8 6h8'/>",
+        ["shieldKey"]= "<path d='M12 3 19 6v5c0 4.5-3 7.3-7 8.7C8 18.3 5 15.5 5 11V6Z'/><circle cx='12' cy='10' r='1.8'/><path d='M12 11.8V14'/>",
+        ["layers"]   = "<path d='M12 3 21 8l-9 5-9-5Z'/><path d='M3 13l9 5 9-5'/>",
+        ["users"]    = "<circle cx='9' cy='8' r='3.2'/><path d='M3.5 19a5.5 5.5 0 0 1 11 0M16 6.2a3.2 3.2 0 0 1 0 6M17.5 19a5.5 5.5 0 0 0-2.3-4.5'/>",
+        ["key"]      = "<circle cx='8' cy='8' r='3.4'/><path d='m10.5 10.5 8 8M15.5 15.5l2-2M17.5 17.5l2-2'/>",
+        ["user"]     = "<circle cx='12' cy='8' r='3.4'/><path d='M5 20a7 7 0 0 1 14 0'/>",
+        ["bolt"]     = "<path d='M13 2 4 14h7l-1 8 9-12h-7Z'/>",
+        ["search"]   = "<circle cx='11' cy='11' r='7'/><path d='m20 20-3.2-3.2'/>",
+        ["plus"]     = "<path d='M12 5v14M5 12h14'/>",
+        ["check"]    = "<path d='m4 12 5 5L20 6'/>",
+        ["x"]        = "<path d='M6 6 18 18M18 6 6 18'/>",
+        ["chevron"]  = "<path d='m9 6 6 6-6 6'/>",
+        ["arrowR"]   = "<path d='M5 12h14M13 6l6 6-6 6'/>",
+        ["lock"]     = "<rect x='5' y='11' width='14' height='9' rx='2'/><path d='M8 11V8a4 4 0 0 1 8 0v3'/>",
+        ["clock"]    = "<circle cx='12' cy='12' r='8'/><path d='M12 8v4l2.5 2'/>",
+        ["cache"]    = "<path d='M13 2 4 14h7l-1 8 9-12h-7Z'/>",
+        ["eye"]      = "<path d='M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12Z'/><circle cx='12' cy='12' r='2.6'/>",
+        ["sparkles"] = "<path d='M12 4v6M9 7h6M6 13v4M4 15h4M17 13v3M15.5 14.5h3'/>",
+        ["logout"]   = "<path d='M14 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-2M9 12h11M17 8l4 4-4 4'/>",
+        ["refresh"]  = "<path d='M3 12a9 9 0 0 1 15-6.7L21 8M21 4v4h-4M21 12a9 9 0 0 1-15 6.7L3 16M3 20v-4h4'/>",
+        ["link"]     = "<path d='M9 12h6M10 8H8a4 4 0 0 0 0 8h2M14 8h2a4 4 0 0 1 0 8h-2'/>",
+        ["shieldSm"] = "<path d='M12 3 19 6v5c0 4.5-3 7.3-7 8.7C8 18.3 5 15.5 5 11V6Z'/>",
+        ["trash"]    = "<path d='M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13'/>",
+        ["ghost"]    = "<path d='M5 20V10a7 7 0 0 1 14 0v10l-2.3-1.6L14.3 20 12 18.4 9.7 20 7.3 18.4Z'/><circle cx='9.5' cy='10' r='1' fill='currentColor' stroke='none'/><circle cx='14.5' cy='10' r='1' fill='currentColor' stroke='none'/>",
+    };
+    var inner = map.TryGetValue(Model ?? "dot", out var v) ? v : "<circle cx='12' cy='12' r='4' fill='currentColor' stroke='none'/>";
+}
+@Html.Raw(Svg(inner))

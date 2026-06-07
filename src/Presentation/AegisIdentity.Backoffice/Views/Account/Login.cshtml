@@ -1,51 +1,98 @@
 @model AegisIdentity.Backoffice.Controllers.AccountController.LoginFormModel
 @{
-    ViewData["Title"] = "Entrar";
+    ViewData["Title"] = "Sign in";
     Layout = "_Layout";
+    var hasErrors = !ViewData.ModelState.IsValid;
 }
 
-<div class="row justify-content-center mt-4">
-    <div class="col-md-5 col-lg-4">
-        <div class="card shadow-sm">
-            <div class="card-header bg-dark text-white text-center py-3">
-                <h4 class="mb-0">AegisIdentity Backoffice</h4>
-                <small class="text-secondary">Painel Administrativo</small>
+<div class="login-screen">
+    <div class="login-aurora"></div>
+    <div class="login-grid-bg"></div>
+
+    <div class="login-left">
+        <div class="login-brandrow">
+            <partial name="_AegisMark" />
+            <div>
+                <div class="login-brand-name">AegisIdentity</div>
+                <div class="login-brand-sub mono">IDENTITY &amp; AUTHORIZATION · .NET 8</div>
             </div>
-            <div class="card-body p-4">
-                <form asp-action="Login" asp-controller="Account" method="post">
-                    <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
-                    @Html.AntiForgeryToken()
+        </div>
 
-                    @if (!ViewData.ModelState.IsValid)
+        <div class="login-pitch">
+            <h1>The console for<br />permission-based identity.</h1>
+            <p>Clean Architecture · CQRS · ports &amp; adapters. Every endpoint is a discovered permission; every user resolves to a cached set of grants — and you can watch it happen.</p>
+        </div>
+
+        <div class="login-stack">
+            @foreach (var t in new[] { "Clean Architecture", "CQRS / MediatR", "JWT + Refresh", "Redis cache", "BCrypt", "HIBP k-anonymity", "Soft-delete", "Hangfire" })
+            {
+                <span class="login-tag mono">@t</span>
+            }
+        </div>
+    </div>
+
+    <div class="login-right">
+        <div class="login-card card">
+            <div class="login-card-head">
+                <h2>Sign in</h2>
+                <p class="muted">Backoffice · cookie session → API JWT</p>
+            </div>
+
+            @if (hasErrors)
+            {
+                <div class="login-error" role="alert">
+                    @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
                     {
-                        <div class="alert alert-danger py-2" role="alert">
-                            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
-                            {
-                                <div>@error.ErrorMessage</div>
-                            }
-                        </div>
+                        <div>@error.ErrorMessage</div>
                     }
+                </div>
+            }
 
-                    <div class="mb-3">
-                        <label asp-for="Identifier" class="form-label">Email ou Username</label>
-                        <input asp-for="Identifier"
-                               class="form-control"
-                               autocomplete="username"
-                               placeholder="seu@email.com ou username"
-                               required />
+            <form asp-action="Login" asp-controller="Account" method="post" class="login-form" data-login-form>
+                <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+                @Html.AntiForgeryToken()
+
+                <label class="field">
+                    <span class="field-label">Email or username</span>
+                    <div class="field-input">
+                        @await Html.PartialAsync("_Icon", "user")
+                        <input asp-for="Identifier" autocomplete="username" placeholder="you@@example.com or username" required />
                     </div>
+                </label>
 
-                    <div class="mb-4">
-                        <label asp-for="Password" class="form-label">Senha</label>
-                        <input asp-for="Password"
-                               type="password"
-                               class="form-control"
-                               autocomplete="current-password"
-                               required />
+                <label class="field">
+                    <span class="field-label">Password</span>
+                    <div class="field-input">
+                        @await Html.PartialAsync("_Icon", "lock")
+                        <input asp-for="Password" type="password" autocomplete="current-password" required />
                     </div>
+                </label>
 
-                    <button type="submit" class="btn btn-primary w-100">Entrar</button>
-                </form>
+                <button class="btn primary login-submit" type="submit">Sign in @await Html.PartialAsync("_Icon", "arrowR")</button>
+            </form>
+
+            <div class="login-stages" style="display:none">
+                @{
+                    var stages = new[]
+                    {
+                        ("Validating credentials", "ValidationBehavior · FluentValidation", "app"),
+                        ("Verifying BCrypt hash", "IPasswordHasher", "infra"),
+                        ("Issuing JWT (15m) + refresh (7d)", "IJwtService", "infra"),
+                        ("Resolving permission set", "Redis · user:permissions:{id}", "cache"),
+                    };
+                }
+                @foreach (var (txt, sub, layer) in stages)
+                {
+                    <div class="login-stage" style="--lc:var(--@layer)">
+                        <span class="login-stage-dot" style="--lc:var(--@layer)"><span class="spin"></span></span>
+                        <span class="login-stage-txt">@txt</span>
+                        <span class="login-stage-sub mono">@sub</span>
+                    </div>
+                }
+            </div>
+
+            <div class="login-note mono">
+                @await Html.PartialAsync("_Icon", "shieldSm") 401 if unauthenticated · 403 if missing permission · 423 if locked out
             </div>
         </div>
     </div>

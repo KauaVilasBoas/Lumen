@@ -1,56 +1,128 @@
+@{
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+    var action = ViewContext.RouteData.Values["action"]?.ToString();
+    bool IsActive(string c, string? a = null) =>
+        string.Equals(controller, c, StringComparison.OrdinalIgnoreCase)
+        && (a == null || string.Equals(action, a, StringComparison.OrdinalIgnoreCase));
+
+    string Cls(bool on) => on ? "navitem active" : "navitem";
+
+    var title = ViewData["Title"]?.ToString() ?? "Overview";
+    var subtitle = ViewData["Subtitle"]?.ToString() ?? "";
+    var authed = User.Identity?.IsAuthenticated == true;
+}
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@(ViewData["Title"] != null ? $"{ViewData["Title"]} — AegisIdentity Backoffice" : "AegisIdentity Backoffice")</title>
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-          integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
-          crossorigin="anonymous" />
+    <title>@title — AegisIdentity Console</title>
+    <link rel="stylesheet" href="~/css/aegis-console.css" asp-append-version="true" />
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
-        <div class="container">
-            <a class="navbar-brand fw-bold" asp-controller="Home" asp-action="Index">
-                AegisIdentity
-            </a>
+@if (!authed)
+{
+    @* Unauthenticated pages (e.g. Login) render full-bleed, no shell *@
+    @RenderBody()
+}
+else
+{
+    <div class="app">
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <partial name="_AegisMark" />
+                <div class="sidebar-brand-txt">
+                    <div class="sidebar-brand-name">AegisIdentity</div>
+                    <div class="sidebar-brand-sub mono">CONSOLE · v0.9</div>
+                </div>
+            </div>
 
-            @if (User.Identity?.IsAuthenticated == true)
-            {
-                <div class="navbar-nav ms-auto d-flex flex-row align-items-center gap-3">
-                    <span class="text-light small">
-                        Olá, <strong>@User.Identity.Name</strong>
-                    </span>
-                    @if (await Html.HasPermissionAsync("Profiles", "List"))
-                    {
-                        <a class="nav-link text-light small" asp-controller="Profiles" asp-action="Index">Perfis</a>
-                    }
-                    <a class="nav-link text-light small" href="/hangfire" target="_blank" rel="noopener">
-                        Jobs
-                    </a>
-                    <form asp-controller="Account" asp-action="Logout" method="post" class="m-0">
-                        @Html.AntiForgeryToken()
-                        <button type="submit" class="btn btn-outline-light btn-sm">Sair</button>
-                    </form>
+            <nav class="sidebar-nav">
+                <div class="sidebar-section eyebrow">Workspace</div>
+
+                <a class="@Cls(IsActive("Home", "Index"))" asp-controller="Home" asp-action="Index">
+                    <span class="navitem-ico">@await Html.PartialAsync("_Icon", "grid")</span>
+                    <span class="navitem-label">Overview</span>
+                </a>
+
+                <a class="@Cls(IsActive("AuthorizationGraph"))" asp-controller="AuthorizationGraph" asp-action="Index">
+                    <span class="navitem-ico">@await Html.PartialAsync("_Icon", "graph")</span>
+                    <span class="navitem-label">Authorization Graph</span>
+                    <span class="navitem-tag mono">LIVE</span>
+                </a>
+
+                <a class="@Cls(IsActive("Profiles"))" asp-controller="Profiles" asp-action="Index">
+                    <span class="navitem-ico">@await Html.PartialAsync("_Icon", "shieldKey")</span>
+                    <span class="navitem-label">Profiles</span>
+                </a>
+
+                <a class="@Cls(IsActive("Permissions"))" asp-controller="Permissions" asp-action="Index">
+                    <span class="navitem-ico">@await Html.PartialAsync("_Icon", "key")</span>
+                    <span class="navitem-label">Permissions</span>
+                </a>
+
+                <a class="@Cls(IsActive("Users"))" asp-controller="Users" asp-action="Index">
+                    <span class="navitem-ico">@await Html.PartialAsync("_Icon", "users")</span>
+                    <span class="navitem-label">Users</span>
+                </a>
+
+                <a class="@Cls(IsActive("Home", "Architecture"))" asp-controller="Home" asp-action="Architecture">
+                    <span class="navitem-ico">@await Html.PartialAsync("_Icon", "layers")</span>
+                    <span class="navitem-label">Architecture</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-foot">
+                <div class="health card">
+                    <div class="health-row"><span class="health-dot" style="background:var(--ok)"></span><span class="health-label mono">SQL Server</span><span class="health-val mono">healthy</span></div>
+                    <div class="health-row"><span class="health-dot" style="background:var(--ok)"></span><span class="health-label mono">Redis cache</span><span class="health-val mono">healthy</span></div>
+                    <div class="health-row"><span class="health-dot" style="background:var(--warn)"></span><span class="health-label mono">Hangfire</span><span class="health-val mono">1 queued</span></div>
                 </div>
-            }
-            else
-            {
-                <div class="navbar-nav ms-auto">
-                    <a class="nav-link text-light" asp-controller="Account" asp-action="Login">Entrar</a>
+            </div>
+        </aside>
+
+        <div class="main">
+            <header class="topbar">
+                <div class="topbar-titles">
+                    <h1 class="topbar-title">@title</h1>
+                    <span class="topbar-sub">@subtitle</span>
                 </div>
-            }
+
+                <div class="topbar-actions">
+                    <div class="search">
+                        @await Html.PartialAsync("_Icon", "search")
+                        <input placeholder="Search identities, profiles, permissions…" />
+                        <span class="search-kbd mono">⌘K</span>
+                    </div>
+
+                    <button type="button" class="reveal-toggle" data-reveal-toggle title="Reveal the architecture behind every screen">
+                        <span class="reveal-toggle-ico">@await Html.PartialAsync("_Icon", "layers")</span>
+                        <span class="reveal-toggle-txt">Reveal Architecture</span>
+                        <span class="reveal-toggle-switch"><span class="knob"></span></span>
+                    </button>
+
+                    <div class="topbar-user">
+                        <div class="avatar" style="background:linear-gradient(135deg,#9a7dff,#6b49f0)">@(User.Identity?.Name?.Substring(0, 1).ToUpper() ?? "A")</div>
+                        <div class="topbar-user-meta">
+                            <div class="topbar-user-name">@User.Identity?.Name</div>
+                            <div class="topbar-user-mail mono">admin@@aegisidentity.local</div>
+                        </div>
+                        <form asp-controller="Account" asp-action="Logout" method="post" class="m-0">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="iconbtn" title="Sign out">@await Html.PartialAsync("_Icon", "logout")</button>
+                        </form>
+                    </div>
+                </div>
+            </header>
+
+            <div class="content">
+                @RenderBody()
+            </div>
         </div>
-    </nav>
+    </div>
+}
 
-    <main class="container pb-5">
-        @RenderBody()
-    </main>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc4s9bIOgUxi8T/jzmtlZp4vOrTpnhA/lVAGfdn3bh9P"
-            crossorigin="anonymous"></script>
-    @await RenderSectionAsync("Scripts", required: false)
+<script src="~/js/aegis-console.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
