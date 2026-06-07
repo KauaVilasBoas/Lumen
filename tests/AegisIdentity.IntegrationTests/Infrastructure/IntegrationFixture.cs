@@ -166,6 +166,8 @@ public sealed class IntegrationFixture : WebApplicationFactory<Program>, IAsyncL
         await dbContext.Database.MigrateAsync();
     }
 
+    public string BuildJwtForUser(string userId) => BuildValidJwt(userId);
+
     private static string BuildValidJwt(string userId)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(TestJwtSecret));

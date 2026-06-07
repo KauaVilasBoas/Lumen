@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (API-AUTHZ-01)
+- `AuthorizationGraph.View` permission introduced in the `Authorization` group via the existing
+  `PermissionDiscoveryHostedService` auto-discovery mechanism.
+- `GET /api/authorization-graph` endpoint added to `AuthorizationGraphController` in the API,
+  protected by `[RequirePermission]` + `[Authorize(Policy = PermissionCodes.AuthorizationGraph.View)]`
+  + `[PermissionGroup(PermissionGroups.Authorization)]`; auto-registered in the permission catalogue
+  on startup (discovery produces code `"AuthorizationGraph.View"`, group `"Authorization"`).
+- `AuthorizationGraphHub` (SignalR) added at `/hubs/authorization-graph`, protected by
+  `[Authorize(Policy = PermissionCodes.AuthorizationGraph.View)]`; `OnConnectedAsync` re-validates
+  the permission via `IUserPermissionService` and calls `Context.Abort()` to reject connections
+  where the principal lacks the permission (defence-in-depth beyond the JWT policy gate).
+- `PermissionCodes.AuthorizationGraph.View` and `PermissionGroups.Authorization` constants added to
+  `AegisIdentity.SharedKernel.Constants.Permissions` — referenced by both API and Backoffice to
+  avoid hard-coded strings and enable find-usages refactoring.
+- Backoffice `AuthorizationGraphController.Index` now injects `IUserPermissionService` and returns
+  `Forbid()` for authenticated users who lack `AuthorizationGraph.View`, blocking direct URL access
+  even when the menu entry is suppressed.
+- Backoffice `_Layout.cshtml` sidebar entry for Authorization Graph now carries
+  `asp-require-permission-controller="AuthorizationGraph"` and `asp-require-permission-action="View"`,
+  causing the `RequirePermissionTagHelper` to suppress the nav item for users without the permission.
+- `AddSignalR()` registered in the API service collection; `MapHub<AuthorizationGraphHub>` added to
+  the middleware pipeline.
+- 3 unit tests added in `AuthorizationGraphPermissionDiscoveryTests` covering: correct code
+  (`AuthorizationGraph.View`), correct group (`Authorization`), and correct controller/action names.
+- 3 integration tests added in `AuthorizationGraphEndpointTests` covering 401 (anonymous), 403
+  (authenticated without permission), and 200 (authenticated with permission) for the API endpoint.
+- 2 integration tests added in `AuthorizationGraphHubTests` covering Hub connection rejection
+  (without permission) and successful connection (with permission); `IntegrationFixture.BuildJwtForUser`
+  exposed as a public method to support Hub connection tests with a custom bearer token.
+- `Microsoft.AspNetCore.SignalR.Client` (v8.0.15) added to `AegisIdentity.IntegrationTests` and
+  `Directory.Packages.props` to enable Hub connection testing in the integration test suite.
+
 ### Added (API-USERS-01)
 - `GET /api/users` endpoint — paginates and filters users with full state derivation:
   - `ListUsersQueryHandler` added to `AegisIdentity.ReadModels.Queries`; accepts `search`,

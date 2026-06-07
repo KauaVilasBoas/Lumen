@@ -1,5 +1,6 @@
 using AegisIdentity.Api.Authorization;
 using AegisIdentity.Api.ExceptionHandlers;
+using AegisIdentity.Api.Hubs;
 using AegisIdentity.Api.Middleware;
 using AegisIdentity.CommandHandlers.Auth.Register;
 using AegisIdentity.EventHandlers.Authorization;
@@ -75,6 +76,7 @@ try
     builder.Services.AddValidatorsFromAssemblyContaining<RegisterUserCommandHandler>();
 
     // ── Presentation ──────────────────────────────────────────────────────────
+    builder.Services.AddSignalR();
     builder.Services.AddControllers();
 
     builder.Services.AddExceptionHandler<BusinessExceptionHandler>();
@@ -158,6 +160,7 @@ try
     }).AllowAnonymous();
 
     app.MapControllers();
+    app.MapHub<AuthorizationGraphHub>("/hubs/authorization-graph");
 
     app.Run();
 }
