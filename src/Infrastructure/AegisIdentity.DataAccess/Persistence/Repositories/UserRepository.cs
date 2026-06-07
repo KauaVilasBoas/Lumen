@@ -51,6 +51,39 @@ internal sealed class UserRepository : IUserRepository
         await _dbContext.SaveChangesAsync(ct);
     }
 
+    public async Task<(IReadOnlyList<User> Items, int Total)> ListAsync(
+        string? search,
+        bool includeDeleted,
+        int page,
+        int pageSize,
+        CancellationToken ct = default)
+    {
+        // When includeDeleted is true we must bypass the global soft-delete filter
+        // so that deleted users are visible. The caller (handler) controls this flag
+        // based on the state filter requested by the API consumer.
+        var query = includeDeleted
+            ? _dbContext.Users.IgnoreQueryFilters()
+            : _dbContext.Users.AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim().ToLowerInvariant();
+            query = query.Where(u =>
+                u.Username.ToLower().Contains(term) ||
+                u.Email.ToLower().Contains(term));
+        }
+
+        var total = await query.CountAsync(ct);
+
+        var items = await query
+            .OrderBy(u => u.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        return (items, total);
+    }
+
     private static bool IsSqlUniqueViolation(DbUpdateException ex, out string message)
     {
         if (ex.InnerException is SqlException { Number: SqlServerUniqueConstraintViolation or SqlServerUniqueIndexViolation } sqlEx)
