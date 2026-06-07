@@ -16,14 +16,17 @@
         if (action is "Delete" or "Remove") return "DELETE";
         return "GET";
     }
+
     string MethodColor(string m) => m switch { "POST" => "var(--pres)", "PUT" => "var(--warn)", "DELETE" => "var(--danger)", _ => "var(--app)" };
+
     string RouteFor(string code)
     {
         var parts = code.Split('.');
         var ctrl = parts[0].ToLower();
         var action = parts.Length > 1 ? parts[1] : "";
         var b = "/api/" + ctrl;
-        return action switch {
+        return action switch
+        {
             "Get" or "Update" or "Delete" => b + "/{id}",
             "SetPermissions" => b + "/{id}/permissions",
             "Assign" or "Remove" => b + "/{userId}/{id}",
@@ -31,19 +34,48 @@
         };
     }
 
-    var pipeline = new[] {
-        ("Database.Migrate()","EF Core schema + data migrations","var(--infra)"),
-        ("PermissionDiscoveryService","scan [RequirePermission] · upsert","var(--pres)"),
-        ("AdministratorReconciler","additive grant to Administrator","var(--app)"),
+    var pipeline = new[]
+    {
+        ("Database.Migrate()", "EF Core schema + data migrations", "var(--infra)"),
+        ("PermissionDiscoveryService", "scan [RequirePermission] · upsert", "var(--pres)"),
+        ("AdministratorReconciler", "additive grant to Administrator", "var(--app)"),
     };
 }
 
 <div class="content-wrap">
     <div class="grid-4" style="margin-bottom:18px">
-        <div class="stat card"><div class="stat-top"><span class="stat-ico" style="color:var(--pres);background:color-mix(in srgb,var(--pres) 14%,transparent)">@await Html.PartialAsync("_Icon", "key")</span></div><div class="stat-value tnum">@all.Count</div><div class="stat-label">Discovered</div><div class="stat-sub mono">across @Model.Count groups</div></div>
-        <div class="stat card"><div class="stat-top"><span class="stat-ico" style="color:var(--app);background:color-mix(in srgb,var(--app) 14%,transparent)">@await Html.PartialAsync("_Icon", "shieldKey")</span></div><div class="stat-value tnum">@(all.Count - orphanCount)</div><div class="stat-label">Granted</div><div class="stat-sub mono">reachable actions</div></div>
-        <div class="stat card"><div class="stat-top"><span class="stat-ico" style="color:var(--warn);background:color-mix(in srgb,var(--warn) 14%,transparent)">@await Html.PartialAsync("_Icon", "ghost")</span></div><div class="stat-value tnum">@orphanCount</div><div class="stat-label">Orphans</div><div class="stat-sub mono">endpoint removed</div></div>
-        <div class="stat card"><div class="stat-top"><span class="stat-ico" style="color:var(--dom);background:color-mix(in srgb,var(--dom) 14%,transparent)">@await Html.PartialAsync("_Icon", "lock")</span></div><div class="stat-value tnum" style="font-size:24px">401 / 403</div><div class="stat-label">Enforcement</div><div class="stat-sub mono">dynamic policy provider</div></div>
+        <div class="stat card">
+            <div class="stat-top"><span class="stat-ico"
+                                        style="color:var(--pres);background:color-mix(in srgb,var(--pres) 14%,transparent)">@await Html.PartialAsync("_Icon", "key")</span>
+            </div>
+            <div class="stat-value tnum">@all.Count</div>
+            <div class="stat-label">Discovered</div>
+            <div class="stat-sub mono">across @Model.Count groups</div>
+        </div>
+        <div class="stat card">
+            <div class="stat-top"><span class="stat-ico"
+                                        style="color:var(--app);background:color-mix(in srgb,var(--app) 14%,transparent)">@await Html.PartialAsync("_Icon", "shieldKey")</span>
+            </div>
+            <div class="stat-value tnum">@(all.Count - orphanCount)</div>
+            <div class="stat-label">Granted</div>
+            <div class="stat-sub mono">reachable actions</div>
+        </div>
+        <div class="stat card">
+            <div class="stat-top"><span class="stat-ico"
+                                        style="color:var(--warn);background:color-mix(in srgb,var(--warn) 14%,transparent)">@await Html.PartialAsync("_Icon", "ghost")</span>
+            </div>
+            <div class="stat-value tnum">@orphanCount</div>
+            <div class="stat-label">Orphans</div>
+            <div class="stat-sub mono">endpoint removed</div>
+        </div>
+        <div class="stat card">
+            <div class="stat-top"><span class="stat-ico"
+                                        style="color:var(--dom);background:color-mix(in srgb,var(--dom) 14%,transparent)">@await Html.PartialAsync("_Icon", "lock")</span>
+            </div>
+            <div class="stat-value tnum" style="font-size:24px">401 / 403</div>
+            <div class="stat-label">Enforcement</div>
+            <div class="stat-sub mono">dynamic policy provider</div>
+        </div>
     </div>
 
     <div class="reveal-region">
@@ -51,43 +83,66 @@
             <div class="reveal-tag" style="--lc:var(--pres);top:-11px;right:12px">
                 <span class="reveal-tag-dot"></span><span class="reveal-tag-label mono">startup order</span>
                 <div class="reveal-tag-pop card">
-                    <div class="reveal-tag-pop-layer mono" style="color:var(--pres)"><span class="sq" style="background:var(--pres)"></span>Presentation</div>
-                    <div class="reveal-tag-pop-body">Runs once on boot. Discovery is <strong>additive</strong> — a removed endpoint is flagged <span class="code">IsOrphan</span>, never deleted.</div>
+                    <div class="reveal-tag-pop-layer mono" style="color:var(--pres)"><span class="sq"
+                                                                                           style="background:var(--pres)"></span>Presentation
+                    </div>
+                    <div class="reveal-tag-pop-body">Runs once on boot. Discovery is <strong>additive</strong> — a
+                        removed endpoint is flagged <span class="code">IsOrphan</span>, never deleted.
+                    </div>
                 </div>
             </div>
-            <div class="pipeline-head"><div class="eyebrow">Startup pipeline</div><h3 class="card-title">How permissions come to exist</h3></div>
+            <div class="pipeline-head">
+                <div class="eyebrow">Startup pipeline</div>
+                <h3 class="card-title">How permissions come to exist</h3></div>
             <div class="pipeline-flow">
                 @for (var i = 0; i < pipeline.Length; i++)
                 {
                     var (t, s, c) = pipeline[i];
-                    <div class="pipe-step" style="--nc:@c"><span class="pipe-num mono">@(i + 1)</span><div class="pipe-main"><div class="pipe-t mono">@t</div><div class="pipe-s">@s</div></div></div>
-                    @if (i < pipeline.Length - 1) { <div class="pipe-arrow">@await Html.PartialAsync("_Icon", "arrowR")</div> }
+                    <div class="pipe-step" style="--nc:@c"><span class="pipe-num mono">@(i + 1)</span>
+                        <div class="pipe-main">
+                            <div class="pipe-t mono">@t</div>
+                            <div class="pipe-s">@s</div>
+                        </div>
+                    </div>
+                    @if (i < pipeline.Length - 1)
+                    {
+                        <div class="pipe-arrow">@await Html.PartialAsync("_Icon", "arrowR")</div>
+                    }
                 }
             </div>
         </div>
     </div>
 
-    <div class="section-title" style="margin-top:22px"><h3>Permission catalogue</h3><span class="count mono">@all.Count</span><span class="line"></span></div>
+    <div class="section-title" style="margin-top:22px"><h3>Permission catalogue</h3><span
+            class="count mono">@all.Count</span><span class="line"></span></div>
 
     <div class="reveal-region">
         <div class="card perm-catalogue">
             <div class="reveal-tag" style="--lc:var(--dom);top:-11px;right:12px">
                 <span class="reveal-tag-dot"></span><span class="reveal-tag-label mono">Permission entity</span>
                 <div class="reveal-tag-pop card">
-                    <div class="reveal-tag-pop-layer mono" style="color:var(--dom)"><span class="sq" style="background:var(--dom)"></span>Domain</div>
-                    <div class="reveal-tag-pop-body"><span class="code">Code = Controller.Action</span>, built once by <span class="code">Permission.BuildCode</span> — shared by the API enforcement layer and Backoffice helpers.</div>
+                    <div class="reveal-tag-pop-layer mono" style="color:var(--dom)"><span class="sq"
+                                                                                          style="background:var(--dom)"></span>Domain
+                    </div>
+                    <div class="reveal-tag-pop-body"><span class="code">Code = Controller.Action</span>, built once by
+                        <span class="code">Permission.BuildCode</span> — shared by the API enforcement layer and
+                        Backoffice helpers.
+                    </div>
                 </div>
             </div>
             @foreach (var group in Model)
             {
                 <div class="perm-group">
-                    <div class="perm-group-head"><span class="perm-group-name mono">@group.GroupName<span class="faint">Controller</span></span><span class="perm-group-count mono">@group.Permissions.Count</span></div>
+                    <div class="perm-group-head"><span class="perm-group-name mono">@group.GroupName<span class="faint">Controller</span></span><span
+                            class="perm-group-count mono">@group.Permissions.Count</span></div>
                     @foreach (var p in group.Permissions)
                     {
                         var m = Method(p.Code);
                         <div class="perm-item @(p.IsOrphan ? "orphan" : "")">
-                            <span class="perm-method mono" style="color:@MethodColor(m);border-color:@MethodColor(m)">@m</span>
-                            <div class="perm-code-wrap"><span class="perm-code mono">@p.Code</span><span class="perm-route mono">@RouteFor(p.Code)</span></div>
+                            <span class="perm-method mono"
+                                  style="color:@MethodColor(m);border-color:@MethodColor(m)">@m</span>
+                            <div class="perm-code-wrap"><span class="perm-code mono">@p.Code</span><span
+                                    class="perm-route mono">@RouteFor(p.Code)</span></div>
                             <span class="perm-name">@p.DisplayName</span>
                             <div class="perm-grants">
                                 @if (p.IsOrphan)

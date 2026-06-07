@@ -1,5 +1,5 @@
 using System.Net;
-using System.Net.Http.Json;
+
 using AegisIdentity.Backoffice.Models;
 
 namespace AegisIdentity.Backoffice.Services;
@@ -20,11 +20,17 @@ public sealed class AuthApiClient
             public Success(LoginResponse response) => Response = response;
         }
 
-        public sealed class InvalidCredentials : LoginResult { }
+        public sealed class InvalidCredentials : LoginResult
+        {
+        }
 
-        public sealed class EmailNotConfirmed : LoginResult { }
+        public sealed class EmailNotConfirmed : LoginResult
+        {
+        }
 
-        public sealed class AccountLocked : LoginResult { }
+        public sealed class AccountLocked : LoginResult
+        {
+        }
 
         public sealed class ApiError : LoginResult
         {

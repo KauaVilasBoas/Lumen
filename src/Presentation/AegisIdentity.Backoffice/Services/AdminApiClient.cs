@@ -1,8 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using System.Security.Claims;
-using Microsoft.AspNetCore.Http;
 
 namespace AegisIdentity.Backoffice.Services;
 
@@ -126,7 +124,8 @@ public sealed class AdminApiClient
         return await response.Content.ReadFromJsonAsync<List<PermissionGroup>>(ct);
     }
 
-    public async Task<IReadOnlyList<UserProfileItem>?> ListUserProfilesAsync(Guid userId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<UserProfileItem>?> ListUserProfilesAsync(Guid userId,
+        CancellationToken ct = default)
     {
         using var request = BuildGet($"api/users/{userId}/profiles");
         using var response = await _http.SendAsync(request, ct);
