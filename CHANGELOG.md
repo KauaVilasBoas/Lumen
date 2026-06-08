@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (API-AUDIT-01)
+- `AuditEntry` entity added to `AegisIdentity.Domain.Audit` with fields `id`, `kind`, `actor`,
+  `target`, `message`, `occurredAt`; created via `AuditEntry.Create(kind, actor, target, message)`.
+- `IAuditRepository` (domain port) added with `InsertAsync` and `GetRecentAsync(take)`.
+- `AuditRepository` (infrastructure adapter) implemented in `AegisIdentity.DataAccess` — `GetRecentAsync`
+  queries ordered by `OccurredAt DESC`, bounded by `take`.
+- `DbSet<AuditEntry> AuditEntries` added to `AegisIdentityDbContext`; EF configuration
+  (`AuditEntryConfiguration`) maps to `AuditEntries` table with indices on `OccurredAt` and `Kind`.
+- `IAuditRepository` registered as `AuditRepository` (scoped) in `SqlServerServiceExtensions.AddRelationalDataAccess`.
+- EF Core migration `20260608005918_AddAuditEntries` created: `Up` adds `AuditEntries` table +
+  two indices; `Down` drops the table.
+- Six domain notification records added to `AegisIdentity.Domain.Audit`: `UserLoggedIn`,
+  `UserLockedOut`, `ProfilePermissionsSet`, `UserProfileAssigned`, `UserProfileRemoved`,
+  `CleanupJobExecuted` — each implements `INotification`.
+- Six dedicated audit `INotificationHandler` implementations added to `AegisIdentity.EventHandlers.Audit`
+  (one per notification), each inserting an `AuditEntry` with the appropriate `AuditEventKinds` constant.
+  MediatR allows multiple handlers for the same notification — audit handlers are fully decoupled from
+  the existing cache-invalidation handler.
+- `AuditEventKinds` constants class added to `AegisIdentity.SharedKernel.Constants` defining
+  `auth.login`, `auth.lockout`, `cache.invalidate`, `profile.permset`, `userprofile.assign`,
+  `userprofile.remove`, `job.cleanup`.
+- `PermissionCodes.Audit.Read` (`"Audit.Read"`) and `PermissionGroups.Audit` (`"Audit"`) constants
+  added to `AegisIdentity.SharedKernel.Constants.Permissions` — auto-discovered by
+  `PermissionDiscoveryHostedService` on startup.
+- `JobSchedules.CleanupJobName` constant (`"cleanup-expired-refresh-tokens"`) added to
+  `AegisIdentity.SharedKernel.Constants.JobSchedules`.
+- `LoginUserCommandHandler` now injects `IPublisher` and publishes `UserLoggedIn` on successful
+  authentication and `UserLockedOut` when the lockout threshold is reached.
+- `SetProfilePermissionsCommandHandler.Command` gains an optional `ActorUsername` field; publishes
+  `ProfilePermissionsSet` after applying permission changes. `ProfilesController.SetPermissions`
+  passes the current principal's identity as the actor.
+- `AssignUserProfileCommandHandler` publishes `UserProfileAssigned` after inserting the assignment.
+- `RemoveUserProfileCommandHandler` now resolves user and profile (for their names) and publishes
+  `UserProfileRemoved`; constructor gains `IUserRepository` and `IProfileRepository` parameters.
+- `CleanupExpiredRefreshTokensJob` injects `IPublisher` and publishes `CleanupJobExecuted` after
+  each cleanup run; `MediatR` package reference added to `AegisIdentity.Jobs.csproj`.
+- `GetRecentAuditFeedQueryHandler` added to `AegisIdentity.ReadModels.Queries`; accepts `take`
+  (clamped to 1–100, default 20) and returns `IReadOnlyList<AuditEntryResult>` ordered desc by
+  `OccurredAt`.
+- `GET /api/audit/recent?take=N` endpoint added to `AuditController` — protected by
+  `[RequirePermission]` + `[Authorize(Policy = PermissionCodes.Audit.Read)]` +
+  `[PermissionGroup(PermissionGroups.Audit)]`; returns `400` when `take` is out of [1,100].
+- 10 unit tests added in `GetRecentAuditFeedQueryHandlerTests` covering empty result, field
+  mapping, take clamping (4 boundary cases), valid take passthrough, and order preservation.
+- 7 unit tests added in `AuditEventHandlerTests` covering each audit handler's kind and field
+  mapping (one test per notification type).
+- 3 unit tests updated (`RemoveUserProfileCommandHandlerTests`) for the new constructor signature;
+  2 new test cases added covering user-not-found and profile-not-found paths.
+- `LoginUserCommandHandlerTests` and `CleanupExpiredRefreshTokensJobTests` updated to mock
+  the newly injected `IPublisher`.
+- 4 integration tests added in `AuditRecentEndpointTests` covering 401 (anonymous), 403
+  (authenticated without permission), 200 with expected JSON shape, take-limit respected, and
+  400 on invalid take.
+
 ### Added (API-AUTHZ-01)
 - `AuthorizationGraph.View` permission introduced in the `Authorization` group via the existing
   `PermissionDiscoveryHostedService` auto-discovery mechanism.
