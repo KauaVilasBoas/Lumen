@@ -7,7 +7,7 @@ using System.Security.Claims;
 namespace AegisIdentity.Api.Hubs;
 
 [Authorize(Policy = PermissionCodes.AuthorizationGraph.View)]
-public sealed class AuthorizationGraphHub : Hub
+public sealed class AuthorizationGraphHub : Hub<IAuthorizationGraphHubClient>
 {
     private readonly IUserPermissionService _permissionService;
 
