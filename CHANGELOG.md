@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (API-GRAPH-01)
+- `GetAuthorizationGraphQueryHandler` added to `AegisIdentity.ReadModels.Queries`; composes users,
+  profiles, permissions, and their relations (UserProfile/PermissionProfile) into a `GraphSnapshot`.
+  Returns `users[]` (with `id`, `username`, `email`, `state`, `profiles[]`), `profiles{}` (keyed by
+  profile id, with `name`, `isSystem`, `permissions[]`), and `permissions{}` (keyed by permission id,
+  with `code`, `name`, `group`, `orphan`). No `color` or `method` fields — both are presentation
+  concerns handled by the front end. Soft-deleted entities excluded via EF global query filters.
+- `GET /api/authorization-graph` wired to `GetAuthorizationGraphQueryHandler` in
+  `AuthorizationGraphController`; replaces stub `Ok()` with typed `GraphSnapshot` result.
+  Permission enforcement unchanged: `[RequirePermission(PermissionCodes.AuthorizationGraph.View)]` +
+  `[Authorize(Policy = PermissionCodes.AuthorizationGraph.View)]`. Explicit permission code passed
+  to `[RequirePermission]` so the discovery scanner resolves `AuthorizationGraph.View` independently
+  of the action method name.
+- 13 unit tests added in `GetAuthorizationGraphQueryHandlerTests` covering empty snapshot, user state
+  derivation (active/locked/pending), user-profile and profile-permission wiring, group name
+  resolution, orphan flag, and shape contract (no color/method fields).
+- 6 integration tests added in `AuthorizationGraphSnapshotTests` covering 401/403/200 enforcement,
+  response shape (users/profiles/permissions keys), user array field presence, and absence of
+  `color` from the payload.
+- `AuthorizationGraphPermissionDiscoveryTests` updated to reference the renamed action `Get`
+  (previously `View`); all 3 discovery tests continue passing.
+
 ### Added (API-AUDIT-01)
 - `AuditEntry` entity added to `AegisIdentity.Domain.Audit` with fields `id`, `kind`, `actor`,
   `target`, `message`, `occurredAt`; created via `AuditEntry.Create(kind, actor, target, message)`.
