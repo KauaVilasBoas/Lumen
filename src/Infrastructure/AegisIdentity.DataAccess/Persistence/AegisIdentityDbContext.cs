@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using AegisIdentity.Domain.Audit;
 using AegisIdentity.Domain.Authorization;
 using AegisIdentity.Domain.Tokens;
 using AegisIdentity.Domain.Users;
@@ -14,6 +15,8 @@ public sealed class AegisIdentityDbContext : DbContext
         : base(options)
     {
     }
+
+    public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
 
     public DbSet<User> Users => Set<User>();
 

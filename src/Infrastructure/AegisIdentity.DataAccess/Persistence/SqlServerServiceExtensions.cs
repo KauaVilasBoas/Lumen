@@ -1,4 +1,5 @@
 using AegisIdentity.DataAccess.Persistence.Repositories;
+using AegisIdentity.Domain.Audit;
 using AegisIdentity.Domain.Authorization;
 using AegisIdentity.Domain.Tokens;
 using AegisIdentity.Domain.Users;
@@ -32,6 +33,7 @@ public static class SqlServerServiceExtensions
         services.AddScoped<IGroupPermissionRepository, GroupPermissionRepository>();
         services.AddScoped<IProfileRepository, ProfileRepository>();
         services.AddScoped<IUserProfileRepository, UserProfileRepository>();
+        services.AddScoped<IAuditRepository, AuditRepository>();
 
         return services;
     }
