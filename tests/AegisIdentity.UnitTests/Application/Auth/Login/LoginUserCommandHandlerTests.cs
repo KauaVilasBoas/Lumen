@@ -6,6 +6,7 @@ using AegisIdentity.Domain.Users;
 using AegisIdentity.SharedKernel.Constants;
 using AegisIdentity.SharedKernel.Exceptions;
 using FluentAssertions;
+using MediatR;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;
@@ -27,6 +28,7 @@ public sealed class LoginUserCommandHandlerTests
     private readonly IPasswordHasher _passwordHasher = Substitute.For<IPasswordHasher>();
     private readonly IJwtService _jwtService = Substitute.For<IJwtService>();
     private readonly IAppSettings _appSettings = Substitute.For<IAppSettings>();
+    private readonly IPublisher _publisher = Substitute.For<IPublisher>();
 
     public LoginUserCommandHandlerTests()
     {
@@ -257,6 +259,7 @@ public sealed class LoginUserCommandHandlerTests
             _passwordHasher,
             _jwtService,
             _appSettings,
+            _publisher,
             NullLogger<LoginUserCommandHandler>.Instance);
 
     private static LoginUserCommandHandler.Command EmailCommand() =>

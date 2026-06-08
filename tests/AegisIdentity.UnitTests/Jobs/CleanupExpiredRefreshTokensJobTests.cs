@@ -1,6 +1,7 @@
 using AegisIdentity.Domain.Tokens;
 using AegisIdentity.Jobs.Jobs;
 using FluentAssertions;
+using MediatR;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -10,13 +11,16 @@ namespace AegisIdentity.UnitTests.Jobs;
 public sealed class CleanupExpiredRefreshTokensJobTests
 {
     private readonly IRefreshTokenRepository _repository;
+    private readonly IPublisher _publisher;
     private readonly CleanupExpiredRefreshTokensJob _sut;
 
     public CleanupExpiredRefreshTokensJobTests()
     {
         _repository = Substitute.For<IRefreshTokenRepository>();
+        _publisher = Substitute.For<IPublisher>();
         _sut = new CleanupExpiredRefreshTokensJob(
             _repository,
+            _publisher,
             NullLogger<CleanupExpiredRefreshTokensJob>.Instance);
     }
 
