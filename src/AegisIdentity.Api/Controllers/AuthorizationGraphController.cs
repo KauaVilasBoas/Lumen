@@ -21,7 +21,7 @@ public sealed class AuthorizationGraphController : ControllerBase
     }
 
     [HttpGet]
-    [RequirePermission]
+    [RequirePermission(PermissionCodes.AuthorizationGraph.View)]
     [Authorize(Policy = PermissionCodes.AuthorizationGraph.View)]
     [ProducesResponseType(typeof(GetAuthorizationGraphQueryHandler.GraphSnapshot), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
