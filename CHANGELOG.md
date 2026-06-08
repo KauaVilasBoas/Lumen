@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (BACKOFFICE-API-CLIENT-01)
+- `AdminApiClient` extended with four new methods consuming the recently added API endpoints:
+  `ListUsersAsync` (GET /api/users with search/state/page/pageSize), `GetUserAsync` (GET /api/users/{id},
+  returns `null` on 404), `GetAuthorizationGraphAsync` (GET /api/authorization-graph), and
+  `GetRecentActivityAsync` (GET /api/audit/recent with `take` param).
+- Response records added to `AdminApiClient`: `UsersPage`, `UserListItem`, `UserDetail`,
+  `ProfileMembership`, `GraphSnapshot`, `UserNode`, `ProfileNode`, `PermissionNode`, `AuditEntry`;
+  all aligned 1:1 with the API query handler contracts.
+
 ### Added (API-GRAPH-01)
 - `GetAuthorizationGraphQueryHandler` added to `AegisIdentity.ReadModels.Queries`; composes users,
   profiles, permissions, and their relations (UserProfile/PermissionProfile) into a `GraphSnapshot`.
