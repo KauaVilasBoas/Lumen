@@ -13,7 +13,7 @@ namespace AegisIdentity.IntegrationTests.Authorization;
 [Trait("Category", "Integration")]
 public sealed class AuthorizationGraphHubTests
 {
-    private const string HubPath = "/hubs/authorization-graph";
+    private static readonly string HubPath = HubRoutes.AuthorizationGraph;
 
     private readonly IntegrationFixture _fixture;
 

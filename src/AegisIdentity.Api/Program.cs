@@ -16,6 +16,7 @@ using AegisIdentity.Integration.Security;
 using AegisIdentity.Jobs.Configuration;
 using AegisIdentity.Jobs.Scheduling;
 using AegisIdentity.Migrations;
+using AegisIdentity.SharedKernel.Constants;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -160,7 +161,7 @@ try
     }).AllowAnonymous();
 
     app.MapControllers();
-    app.MapHub<AuthorizationGraphHub>("/hubs/authorization-graph");
+    app.MapHub<AuthorizationGraphHub>(HubRoutes.AuthorizationGraph);
 
     app.Run();
 }

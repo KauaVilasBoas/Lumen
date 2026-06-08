@@ -1,5 +1,6 @@
 using AegisIdentity.Domain.Security;
 using AegisIdentity.Infrastructure.Configuration;
+using AegisIdentity.SharedKernel.Constants;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,6 +29,23 @@ public static class SecurityServiceExtensions
                 var sp = services.BuildServiceProvider();
                 var jwtOptions = sp.GetRequiredService<IOptions<JwtOptions>>().Value;
                 options.TokenValidationParameters = JwtService.BuildValidationParameters(jwtOptions);
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+                        var path = context.HttpContext.Request.Path;
+
+                        if (!string.IsNullOrEmpty(accessToken) &&
+                            path.StartsWithSegments(HubRoutes.AuthorizationGraph))
+                        {
+                            context.Token = accessToken;
+                        }
+
+                        return Task.CompletedTask;
+                    }
+                };
             });
 
         services.AddAuthorization(options =>

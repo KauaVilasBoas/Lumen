@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (API-SIGNALR-01)
+- `AddSignalR()` registered in `Program.cs`; `MapHub<AuthorizationGraphHub>` wired to
+  `HubRoutes.AuthorizationGraph` (`/hubs/authorization-graph`).
+- `AuthorizationGraphHub` typed as `Hub<IAuthorizationGraphHubClient>`, enforcing the
+  server→client contract at compile time.
+- `IAuthorizationGraphHubClient` interface declares the two server-push methods:
+  `GraphUpdated(GraphSnapshot delta)` and `UserPermissionsInvalidated(Guid userId)`.
+- `HubRoutes` and `HubMethods.AuthorizationGraph` constants added to `AegisIdentity.SharedKernel.Constants`
+  to eliminate route/method name literals across hub, Program.cs, and tests.
+- `AuthorizationGraphHub` requires the `AuthorizationGraph.View` permission via
+  `[Authorize(Policy = PermissionCodes.AuthorizationGraph.View)]` and a secondary runtime
+  check in `OnConnectedAsync` that calls `IUserPermissionService.HasPermissionAsync` and
+  aborts the connection if the permission is absent.
+- `JwtBearer.OnMessageReceived` configured in `SecurityServiceExtensions` to extract the
+  bearer token from the `access_token` query parameter on requests targeting the hub path —
+  secondary fallback for SignalR negotiation flows; primary path remains the `Authorization`
+  header injected server-side by the Backoffice reverse-proxy.
+- Backplane Redis intentionally omitted; single-instance deployment does not require it.
+  Re-evaluate `AddStackExchangeRedis()` on the SignalR builder if horizontal scale-out is added.
+- 4 unit tests added in `AuthorizationGraphHubTests` covering: permission-granted connection,
+  permission-denied abort, missing NameIdentifier claim abort, and non-GUID subject abort.
+- `AuthorizationGraphHubTests` (integration) updated to reference `HubRoutes.AuthorizationGraph`
+  instead of a hardcoded path literal.
+
 ### Changed (BACKOFFICE-USERS-01)
 - `UsersController` no longer contains any mock data: `DemoUsers()` removed entirely.
   `AdminApiClient` injected via constructor; `Index(Guid? id)` calls `ListUsersAsync`
