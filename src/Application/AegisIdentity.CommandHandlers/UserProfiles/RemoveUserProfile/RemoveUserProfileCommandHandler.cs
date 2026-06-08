@@ -1,4 +1,6 @@
+using AegisIdentity.Domain.Audit;
 using AegisIdentity.Domain.Authorization;
+using AegisIdentity.Domain.Users;
 using AegisIdentity.SharedKernel.Exceptions;
 using FluentValidation;
 using MediatR;
@@ -22,19 +24,31 @@ public sealed class RemoveUserProfileCommandHandler
         }
     }
 
+    private readonly IUserRepository _userRepository;
+    private readonly IProfileRepository _profileRepository;
     private readonly IUserProfileRepository _userProfileRepository;
     private readonly IPublisher _publisher;
 
     public RemoveUserProfileCommandHandler(
+        IUserRepository userRepository,
+        IProfileRepository profileRepository,
         IUserProfileRepository userProfileRepository,
         IPublisher publisher)
     {
+        _userRepository = userRepository;
+        _profileRepository = profileRepository;
         _userProfileRepository = userProfileRepository;
         _publisher = publisher;
     }
 
     public async Task Handle(Command cmd, CancellationToken ct)
     {
+        var user = await _userRepository.FindByIdAsync(cmd.UserId, ct)
+            ?? throw new NotFoundException($"User '{cmd.UserId}' not found.");
+
+        var profile = await _profileRepository.FindByIdAsync(cmd.ProfileId, ct)
+            ?? throw new NotFoundException($"Profile '{cmd.ProfileId}' not found.");
+
         var userProfile = await _userProfileRepository.FindActiveAsync(cmd.UserId, cmd.ProfileId, ct)
             ?? throw new NotFoundException($"Active assignment of user '{cmd.UserId}' to profile '{cmd.ProfileId}' not found.");
 
@@ -43,5 +57,6 @@ public sealed class RemoveUserProfileCommandHandler
         await _userProfileRepository.UpdateAsync(userProfile, ct);
 
         await _publisher.Publish(new UserPermissionsChanged(cmd.UserId), ct);
+        await _publisher.Publish(new UserProfileRemoved(cmd.UserId, user.Username, cmd.ProfileId, profile.Name), ct);
     }
 }

@@ -1,3 +1,4 @@
+using AegisIdentity.Domain.Audit;
 using AegisIdentity.Domain.Authorization;
 using AegisIdentity.SharedKernel.Exceptions;
 using FluentValidation;
@@ -8,7 +9,7 @@ namespace AegisIdentity.CommandHandlers.Profiles.SetProfilePermissions;
 public sealed class SetProfilePermissionsCommandHandler
     : IRequestHandler<SetProfilePermissionsCommandHandler.Command>
 {
-    public sealed record Command(Guid ProfileId, IReadOnlyList<Guid> PermissionIds) : IRequest;
+    public sealed record Command(Guid ProfileId, IReadOnlyList<Guid> PermissionIds, string? ActorUsername = null) : IRequest;
 
     public sealed class Validator : AbstractValidator<Command>
     {
@@ -87,5 +88,7 @@ public sealed class SetProfilePermissionsCommandHandler
         var affectedUserIds = await _profileRepository.GetUserIdsByProfileIdAsync(cmd.ProfileId, ct);
         foreach (var userId in affectedUserIds)
             await _publisher.Publish(new UserPermissionsChanged(userId), ct);
+
+        await _publisher.Publish(new ProfilePermissionsSet(cmd.ProfileId, profile.Name, cmd.ActorUsername ?? "system"), ct);
     }
 }

@@ -1,3 +1,4 @@
+using AegisIdentity.Domain.Audit;
 using AegisIdentity.Domain.Authorization;
 using AegisIdentity.Domain.Users;
 using AegisIdentity.SharedKernel.Exceptions;
@@ -57,5 +58,6 @@ public sealed class AssignUserProfileCommandHandler
         await _userProfileRepository.InsertAsync(userProfile, ct);
 
         await _publisher.Publish(new UserPermissionsChanged(cmd.UserId), ct);
+        await _publisher.Publish(new UserProfileAssigned(cmd.UserId, user.Username, cmd.ProfileId, profile.Name), ct);
     }
 }

@@ -1,6 +1,8 @@
+using AegisIdentity.Domain.Audit;
 using AegisIdentity.Domain.Tokens;
 using AegisIdentity.Jobs.Contracts;
 using AegisIdentity.SharedKernel.Constants;
+using MediatR;
 using Microsoft.Extensions.Logging;
 
 namespace AegisIdentity.Jobs.Jobs;
@@ -8,6 +10,7 @@ namespace AegisIdentity.Jobs.Jobs;
 public sealed class CleanupExpiredRefreshTokensJob : IJobDefinition
 {
     private readonly IRefreshTokenRepository _repository;
+    private readonly IPublisher _publisher;
     private readonly ILogger<CleanupExpiredRefreshTokensJob> _logger;
 
     public string Name => "cleanup-expired-refresh-tokens";
@@ -15,9 +18,11 @@ public sealed class CleanupExpiredRefreshTokensJob : IJobDefinition
 
     public CleanupExpiredRefreshTokensJob(
         IRefreshTokenRepository repository,
+        IPublisher publisher,
         ILogger<CleanupExpiredRefreshTokensJob> logger)
     {
         _repository = repository;
+        _publisher  = publisher;
         _logger     = logger;
     }
 
@@ -32,5 +37,7 @@ public sealed class CleanupExpiredRefreshTokensJob : IJobDefinition
 
         _logger.LogInformation(
             "Finished cleanup of expired refresh tokens — {Count} document(s) deleted", deleted);
+
+        await _publisher.Publish(new CleanupJobExecuted(JobSchedules.CleanupJobName, deleted), cancellationToken);
     }
 }

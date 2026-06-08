@@ -1,3 +1,4 @@
+using AegisIdentity.Domain.Audit;
 using AegisIdentity.Domain.Configuration;
 using AegisIdentity.Domain.Security;
 using AegisIdentity.Domain.Tokens;
@@ -35,6 +36,7 @@ public sealed class LoginUserCommandHandler
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtService _jwtService;
     private readonly IAppSettings _appSettings;
+    private readonly IPublisher _publisher;
     private readonly ILogger<LoginUserCommandHandler> _logger;
 
     public LoginUserCommandHandler(
@@ -43,6 +45,7 @@ public sealed class LoginUserCommandHandler
         IPasswordHasher passwordHasher,
         IJwtService jwtService,
         IAppSettings appSettings,
+        IPublisher publisher,
         ILogger<LoginUserCommandHandler> logger)
     {
         _userRepository = userRepository;
@@ -50,6 +53,7 @@ public sealed class LoginUserCommandHandler
         _passwordHasher = passwordHasher;
         _jwtService = jwtService;
         _appSettings = appSettings;
+        _publisher = publisher;
         _logger = logger;
     }
 
@@ -83,6 +87,9 @@ public sealed class LoginUserCommandHandler
                 "Login failed — wrong password for user {UserId} (attempts: {Attempts})",
                 user.Id, user.FailedLoginAttempts);
 
+            if (user.IsLockedOut())
+                await _publisher.Publish(new UserLockedOut(user.Id, user.Username), ct);
+
             throw new UnauthorizedException("Invalid credentials.");
         }
 
@@ -113,6 +120,8 @@ public sealed class LoginUserCommandHandler
         await _refreshTokenRepository.InsertAsync(refreshToken, ct);
 
         _logger.LogInformation("User {UserId} logged in successfully", user.Id);
+
+        await _publisher.Publish(new UserLoggedIn(user.Id, user.Username), ct);
 
         return new Result(
             accessToken,

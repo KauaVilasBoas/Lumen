@@ -113,7 +113,8 @@ public sealed class ProfilesController : ControllerBase
         [FromBody] SetPermissionsRequest request,
         CancellationToken ct)
     {
-        var command = new SetProfilePermissionsCommandHandler.Command(id, request.PermissionIds);
+        var actorUsername = User.Identity?.Name ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var command = new SetProfilePermissionsCommandHandler.Command(id, request.PermissionIds, actorUsername);
         await _mediator.Send(command, ct);
         return NoContent();
     }
