@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (BACKOFFICE-USERS-01)
+- `UsersController` no longer contains any mock data: `DemoUsers()` removed entirely.
+  `AdminApiClient` injected via constructor; `Index(Guid? id)` calls `ListUsersAsync`
+  (page 1, size 100) then `GetUserAsync` for the selected identity.
+- Avatar gradient generated deterministically in the Backoffice from `Guid.GetHashCode()`
+  against a fixed 7-colour palette — consistent with the pattern used in `Profiles/Index.cshtml`.
+  No color field comes from the API.
+- Account lifecycle section built from real timestamps: `createdAt`, `emailConfirmedAt`,
+  `lastLoginAt`, `lockoutEndAt`. State variants active/locked/pending/deleted each produce
+  the appropriate final lifecycle step.
+- Profile accent colours follow the same deterministic `GetHashCode() % palette` logic as
+  `Profiles/Index.cshtml`; Administrator always `#8b6dff`, base User profile always `#5b6478`.
+- `Views/Users/Index.cshtml` updated: `UsersPageModel.Selected` is now nullable; the detail
+  panel renders a graceful empty state when the API is unreachable or returns no users.
+
 ### Added (BACKOFFICE-API-CLIENT-01)
 - `AdminApiClient` extended with four new methods consuming the recently added API endpoints:
   `ListUsersAsync` (GET /api/users with search/state/page/pageSize), `GetUserAsync` (GET /api/users/{id},

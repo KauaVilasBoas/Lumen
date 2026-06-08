@@ -14,10 +14,14 @@
         <div class="mng-list card">
             <div class="mng-list-head"><span class="eyebrow">Identities · @Model.Users.Count</span></div>
             <div class="mng-list-body">
+                @if (Model.Users.Count == 0)
+                {
+                    <div class="ud-empty mono" style="padding:16px">no users — API unavailable or empty</div>
+                }
                 @foreach (var item in Model.Users)
                 {
                     <a asp-action="Index" asp-route-id="@item.Id"
-                       class="urow @(item.Id == u.Id ? "active" : "") @(item.State == "deleted" ? "is-deleted" : "")"
+                       class="urow @(item.Id == u?.Id ? "active" : "") @(item.State == "deleted" ? "is-deleted" : "")"
                        style="text-decoration:none">
                         <div class="avatar"
                              style="background:@item.Color;width:32px;height:32px;font-size:13px">@item.Username.Substring(0, 1).ToUpper()</div>
@@ -33,95 +37,104 @@
         </div>
 
         <div class="mng-detail-wrap">
-            <div class="reveal-region">
-                <div class="card user-detail">
-                    <div class="reveal-tag" style="--lc:var(--dom);top:-11px;right:12px">
-                        <span class="reveal-tag-dot"></span><span class="reveal-tag-label mono">ISoftDeletable</span>
-                        <div class="reveal-tag-pop card">
-                            <div class="reveal-tag-pop-layer mono" style="color:var(--dom)"><span class="sq"
-                                                                                                  style="background:var(--dom)"></span>Domain
-                            </div>
-                            <div class="reveal-tag-pop-body">Nothing is physically deleted. A filtered unique index
-                                <span class="code">WHERE IsDeleted = 0</span> lets the same email re-register after a
-                                soft-delete.
+            @if (u is null)
+            {
+                <div class="card" style="padding:24px">
+                    <div class="ud-empty mono">select a user or check API connectivity</div>
+                </div>
+            }
+            else
+            {
+                <div class="reveal-region">
+                    <div class="card user-detail">
+                        <div class="reveal-tag" style="--lc:var(--dom);top:-11px;right:12px">
+                            <span class="reveal-tag-dot"></span><span class="reveal-tag-label mono">ISoftDeletable</span>
+                            <div class="reveal-tag-pop card">
+                                <div class="reveal-tag-pop-layer mono" style="color:var(--dom)"><span class="sq"
+                                                                                                      style="background:var(--dom)"></span>Domain
+                                </div>
+                                <div class="reveal-tag-pop-body">Nothing is physically deleted. A filtered unique index
+                                    <span class="code">WHERE IsDeleted = 0</span> lets the same email re-register after a
+                                    soft-delete.
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="user-detail-head">
-                        <div class="avatar"
-                             style="background:@u.Color;width:52px;height:52px;font-size:20px;border-radius:15px">@u.Username.Substring(0, 1).ToUpper()</div>
-                        <div class="user-detail-id"><h2>@u.Username</h2>
-                            <div class="mono user-detail-mail">@u.Email</div>
+                        <div class="user-detail-head">
+                            <div class="avatar"
+                                 style="background:@u.Color;width:52px;height:52px;font-size:20px;border-radius:15px">@u.Username.Substring(0, 1).ToUpper()</div>
+                            <div class="user-detail-id"><h2>@u.Username</h2>
+                                <div class="mono user-detail-mail">@u.Email</div>
+                            </div>
+                            <span class="badge @Badge(u.State)"
+                                  style="font-size:11px;padding:4px 9px">@Label(u.State)</span>
                         </div>
-                        <span class="badge @Badge(u.State)"
-                              style="font-size:11px;padding:4px 9px">@Label(u.State)</span>
-                    </div>
 
-                    <div class="user-id-row mono"><span class="faint">Id</span> @u.Id</div>
+                        <div class="user-id-row mono"><span class="faint">Id</span> @u.Id</div>
 
-                    <div class="user-detail-grid">
-                        <div class="reveal-region">
-                            <div class="udcard">
-                                <div class="reveal-tag" style="--lc:var(--dom);top:-11px;right:12px">
-                                    <span class="reveal-tag-dot"></span><span class="reveal-tag-label mono">UserProfile join</span>
-                                    <div class="reveal-tag-pop card">
-                                        <div class="reveal-tag-pop-layer mono" style="color:var(--dom)"><span class="sq"
-                                                                                                              style="background:var(--dom)"></span>Domain
-                                        </div>
-                                        <div class="reveal-tag-pop-body">Assigning or removing a profile publishes <span
-                                                class="code">UserPermissionsChanged</span> for this user, invalidating
-                                            their Redis cache entry.
+                        <div class="user-detail-grid">
+                            <div class="reveal-region">
+                                <div class="udcard">
+                                    <div class="reveal-tag" style="--lc:var(--dom);top:-11px;right:12px">
+                                        <span class="reveal-tag-dot"></span><span class="reveal-tag-label mono">UserProfile join</span>
+                                        <div class="reveal-tag-pop card">
+                                            <div class="reveal-tag-pop-layer mono" style="color:var(--dom)"><span class="sq"
+                                                                                                                  style="background:var(--dom)"></span>Domain
+                                            </div>
+                                            <div class="reveal-tag-pop-body">Assigning or removing a profile publishes <span
+                                                    class="code">UserPermissionsChanged</span> for this user, invalidating
+                                                their Redis cache entry.
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="udcard-head">@await Html.PartialAsync("_Icon", "shieldKey") Profile
-                                    memberships <span class="udcard-count mono">@u.Profiles.Count</span></div>
-                                <div class="udcard-body">
-                                    @if (u.Profiles.Count == 0)
-                                    {
-                                        <div class="ud-empty mono">no profiles — baseline identity only</div>
-                                    }
-                                    @foreach (var pr in u.Profiles)
-                                    {
-                                        <div class="ud-profile" style="--nc:@pr.Color">
-                                            <span class="ud-profile-bar"></span>
-                                            <div class="ud-profile-main">
-                                                <div
-                                                    class="ud-profile-name">@pr.Name @(pr.IsSystem ? Html.Raw("<span class=\"badge sys\" style=\"margin-left:6px\">SYS</span>") : null)</div>
-                                                <div class="ud-profile-sub mono">@pr.PermCount permissions</div>
+                                    <div class="udcard-head">@await Html.PartialAsync("_Icon", "shieldKey") Profile
+                                        memberships <span class="udcard-count mono">@u.Profiles.Count</span></div>
+                                    <div class="udcard-body">
+                                        @if (u.Profiles.Count == 0)
+                                        {
+                                            <div class="ud-empty mono">no profiles — baseline identity only</div>
+                                        }
+                                        @foreach (var pr in u.Profiles)
+                                        {
+                                            <div class="ud-profile" style="--nc:@pr.Color">
+                                                <span class="ud-profile-bar"></span>
+                                                <div class="ud-profile-main">
+                                                    <div
+                                                        class="ud-profile-name">@pr.Name @(pr.IsSystem ? Html.Raw("<span class=\"badge sys\" style=\"margin-left:6px\">SYS</span>") : null)</div>
+                                                    <div class="ud-profile-sub mono">@pr.PermCount permissions</div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    }
-                                </div>
-                                <div class="udcard-foot mono">@await Html.PartialAsync("_Icon", "bolt") resolves to
-                                    <strong style="margin:0 4px">@u.ResolvedPermissions</strong> permissions
+                                        }
+                                    </div>
+                                    <div class="udcard-foot mono">@await Html.PartialAsync("_Icon", "bolt") resolves to
+                                        <strong style="margin:0 4px">@u.ResolvedPermissions</strong> permissions
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="udcard">
-                            <div class="udcard-head">@await Html.PartialAsync("_Icon", "clock") Account lifecycle</div>
-                            <div class="udcard-body">
-                                <div class="lifecycle">
-                                    @foreach (var (t, d, on, c, note) in u.Lifecycle)
-                                    {
-                                        <div class="lc-step @(on ? "on" : "")" style="--nc:@c">
-                                            <span
-                                                class="lc-dot">@(on ? await Html.PartialAsync("_Icon", "check") : null)</span>
-                                            <div class="lc-main">
-                                                <div
-                                                    class="lc-t">@t</div>@(string.IsNullOrEmpty(note) ? null : Html.Raw($"<div class='lc-note mono'>{note}</div>"))
+                            <div class="udcard">
+                                <div class="udcard-head">@await Html.PartialAsync("_Icon", "clock") Account lifecycle</div>
+                                <div class="udcard-body">
+                                    <div class="lifecycle">
+                                        @foreach (var (t, d, on, c, note) in u.Lifecycle)
+                                        {
+                                            <div class="lc-step @(on ? "on" : "")" style="--nc:@c">
+                                                <span
+                                                    class="lc-dot">@(on ? await Html.PartialAsync("_Icon", "check") : null)</span>
+                                                <div class="lc-main">
+                                                    <div
+                                                        class="lc-t">@t</div>@(string.IsNullOrEmpty(note) ? null : Html.Raw($"<div class='lc-note mono'>{note}</div>"))
+                                                </div>
+                                                <div class="lc-d mono">@d</div>
                                             </div>
-                                            <div class="lc-d mono">@d</div>
-                                        </div>
-                                    }
+                                        }
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            }
         </div>
     </div>
 </div>
