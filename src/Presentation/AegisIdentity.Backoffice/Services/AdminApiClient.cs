@@ -32,6 +32,67 @@ public sealed class AdminApiClient
 
     public sealed record UserProfileItem(Guid AssignmentId, Guid ProfileId, string ProfileName, bool IsSystem);
 
+    public sealed record UserListItem(
+        Guid Id,
+        string Username,
+        string Email,
+        string State,
+        bool IsBootstrap,
+        DateTime CreatedAt,
+        DateTime? LastLoginAt,
+        DateTime? EmailConfirmedAt,
+        DateTime? LockoutEndAt,
+        int ProfileCount,
+        int ResolvedPermissionCount);
+
+    public sealed record UsersPage(
+        IReadOnlyList<UserListItem> Items,
+        int Page,
+        int PageSize,
+        int Total);
+
+    public sealed record ProfileMembership(
+        Guid ProfileId,
+        string Name,
+        bool IsSystem,
+        int PermissionCount);
+
+    public sealed record UserDetail(
+        Guid Id,
+        string Username,
+        string Email,
+        string State,
+        bool IsBootstrap,
+        DateTime CreatedAt,
+        DateTime? EmailConfirmedAt,
+        DateTime? LastLoginAt,
+        DateTime? LockoutEndAt,
+        IReadOnlyList<ProfileMembership> Profiles,
+        int ResolvedPermissionCount);
+
+    public sealed record PermissionNode(string Code, string Name, string Group, bool Orphan);
+
+    public sealed record ProfileNode(string Name, bool IsSystem, IReadOnlyList<string> Permissions);
+
+    public sealed record UserNode(
+        Guid Id,
+        string Username,
+        string Email,
+        string State,
+        IReadOnlyList<string> Profiles);
+
+    public sealed record GraphSnapshot(
+        IReadOnlyList<UserNode> Users,
+        IReadOnlyDictionary<string, ProfileNode> Profiles,
+        IReadOnlyDictionary<string, PermissionNode> Permissions);
+
+    public sealed record AuditEntry(
+        string Kind,
+        string? Actor,
+        string? Target,
+        string Message,
+        DateTime OccurredAt);
+
     public async Task<IReadOnlyList<ProfileItem>?> ListProfilesAsync(CancellationToken ct = default)
     {
         using var request = BuildGet("api/profiles");
@@ -164,6 +225,66 @@ public sealed class AdminApiClient
 
         var body = await response.Content.ReadAsStringAsync(ct);
         return (false, body);
+    }
+
+    public async Task<UsersPage?> ListUsersAsync(
+        string? search,
+        string? state,
+        int page,
+        int pageSize,
+        CancellationToken ct = default)
+    {
+        var query = $"api/users?page={page}&pageSize={pageSize}";
+
+        if (!string.IsNullOrEmpty(search))
+            query += $"&search={Uri.EscapeDataString(search)}";
+
+        if (!string.IsNullOrEmpty(state))
+            query += $"&state={Uri.EscapeDataString(state)}";
+
+        using var request = BuildGet(query);
+        using var response = await _http.SendAsync(request, ct);
+
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        return await response.Content.ReadFromJsonAsync<UsersPage>(ct);
+    }
+
+    public async Task<UserDetail?> GetUserAsync(Guid id, CancellationToken ct = default)
+    {
+        using var request = BuildGet($"api/users/{id}");
+        using var response = await _http.SendAsync(request, ct);
+
+        if (response.StatusCode == HttpStatusCode.NotFound)
+            return null;
+
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<UserDetail>(ct);
+    }
+
+    public async Task<GraphSnapshot?> GetAuthorizationGraphAsync(CancellationToken ct = default)
+    {
+        using var request = BuildGet("api/authorization-graph");
+        using var response = await _http.SendAsync(request, ct);
+
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        return await response.Content.ReadFromJsonAsync<GraphSnapshot>(ct);
+    }
+
+    public async Task<IReadOnlyList<AuditEntry>?> GetRecentActivityAsync(
+        int take,
+        CancellationToken ct = default)
+    {
+        using var request = BuildGet($"api/audit/recent?take={take}");
+        using var response = await _http.SendAsync(request, ct);
+
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        return await response.Content.ReadFromJsonAsync<List<AuditEntry>>(ct);
     }
 
     private HttpRequestMessage BuildGet(string path)
