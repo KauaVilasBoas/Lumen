@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using AegisIdentity.Backoffice.Configuration;
 using AegisIdentity.Backoffice.Services;
 using AegisIdentity.SharedKernel.Constants;
 using Microsoft.AspNetCore.Authentication;
@@ -11,7 +12,6 @@ namespace AegisIdentity.Backoffice.Controllers;
 
 public sealed class AccountController : Controller
 {
-    private const string AccessTokenClaimType = "access_token";
 
     private readonly AuthApiClient _authApiClient;
 
@@ -102,7 +102,7 @@ public sealed class AccountController : Controller
         if (usernameClaim is not null && claims.All(c => c.Type != ClaimTypes.Name))
             claims.Add(new Claim(ClaimTypes.Name, usernameClaim.Value));
 
-        claims.Add(new Claim(AccessTokenClaimType, rawJwt));
+        claims.Add(new Claim(BackofficeClaimTypes.AccessToken, rawJwt));
 
         var identity = new ClaimsIdentity(
             claims,

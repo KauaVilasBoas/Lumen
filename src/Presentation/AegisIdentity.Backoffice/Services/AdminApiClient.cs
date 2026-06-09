@@ -1,12 +1,12 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using AegisIdentity.Backoffice.Configuration;
 
 namespace AegisIdentity.Backoffice.Services;
 
 public sealed class AdminApiClient
 {
-    private const string AccessTokenClaimType = "access_token";
 
     private readonly HttpClient _http;
     private readonly IHttpContextAccessor _httpContextAccessor;
@@ -321,7 +321,7 @@ public sealed class AdminApiClient
     private void AttachBearerToken(HttpRequestMessage message)
     {
         var token = _httpContextAccessor.HttpContext?.User
-            .FindFirstValue(AccessTokenClaimType);
+            .FindFirstValue(BackofficeClaimTypes.AccessToken);
 
         if (token is not null)
             message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
