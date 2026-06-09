@@ -6,6 +6,12 @@
     var hasData = graphJson is not null;
 }
 
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"
+            integrity="sha512-sSSiRMVSxjYzFVNsGLFGAOKzC9Vc5RU3RWPEyXkXKxlb6z5GXMB8hhUw/W7r09kVTHMxBz8UB4Gy+MJkAng=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+}
+
 <div class="content-wrap graph-wrap" data-graph>
     @if (hasData)
     {
@@ -104,4 +110,9 @@
     <p class="graph-hint mono">
         @await Html.PartialAsync("_Icon", "eye") Hover a profile to isolate the access it grants · hover an endpoint to trace which profile grants it · pick any identity on the left.
     </p>
+
+    <div class="graph-live-status mono" data-live-status>
+        <span class="live-dot" data-live-dot></span>
+        <span class="live-label" data-live-label>connecting…</span>
+    </div>
 </div>
