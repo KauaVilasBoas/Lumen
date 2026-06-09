@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (BACKOFFICE-QA-01)
+- `_Layout.cshtml`: hardcoded `admin@aegisidentity.local` replaced with `User.FindFirstValue(ClaimTypes.Email)`
+  sourced from the authenticated cookie principal; email div is conditionally rendered and absent when the claim
+  is not present, ensuring no fake data is ever displayed.
+- `_Layout.cshtml`: sidebar health widget removed hardcoded status values ("healthy", "1 queued") that were
+  presented as real service state. Dots now use `--faint` colour and no status text is emitted until a real
+  `/api/diagnostics/health` integration is added in a future card.
+
 ### Added (API-SIGNALR-02)
 - `GraphLivePushHandler` added to `AegisIdentity.Api.Hubs`; implements `INotificationHandler<UserPermissionsChanged>`
   and pushes a `GraphSnapshot` delta to all connected clients of the affected user via
