@@ -24,7 +24,7 @@ public sealed class DiagnosticsController : ControllerBase
 
     [HttpGet("cache-stats")]
     [RequirePermission]
-    [Authorize(Policy = PermissionCodes.Diagnostics.Read)]
+    [Authorize(Policy = PermissionCodes.Diagnostics.GetCacheStats)]
     [ProducesResponseType(typeof(CacheStatsResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -60,7 +60,7 @@ public sealed class DiagnosticsController : ControllerBase
 
     [HttpGet("job-stats")]
     [RequirePermission]
-    [Authorize(Policy = PermissionCodes.Diagnostics.Read)]
+    [Authorize(Policy = PermissionCodes.Diagnostics.GetJobStats)]
     [ProducesResponseType(typeof(JobStatsResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

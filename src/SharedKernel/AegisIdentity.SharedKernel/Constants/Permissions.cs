@@ -20,7 +20,8 @@ public static class PermissionCodes
 
     public static class Diagnostics
     {
-        public const string Read = "Diagnostics.Read";
+        public const string GetCacheStats = "Diagnostics.GetCacheStats";
+        public const string GetJobStats   = "Diagnostics.GetJobStats";
     }
 }
 
