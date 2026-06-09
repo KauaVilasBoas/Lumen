@@ -180,13 +180,103 @@
     const btn = $('[data-trace-replay]'); if (btn) btn.addEventListener('click', play);
   }
 
-  /* ---------------- Authorization Graph ---------------- */
+  /* ---------------- Authorization Graph — SignalR live client ---------------- */
+  const HubPath = '/hubs/authorization-graph';
+
+  const LiveStatus = Object.freeze({
+    Connecting:    'connecting',
+    Connected:     'connected',
+    Reconnecting:  'reconnecting',
+    Disconnected:  'disconnected',
+  });
+
+  function initGraphLive(graphState) {
+    if (typeof signalR === 'undefined') return;
+
+    const statusRoot = document.querySelector('[data-live-status]');
+    const dot        = document.querySelector('[data-live-dot]');
+    const label      = document.querySelector('[data-live-label]');
+
+    function applyStatus(status) {
+      if (!statusRoot) return;
+      statusRoot.dataset.liveStatus = status;
+      const map = {
+        [LiveStatus.Connecting]:   { text: 'connecting…',   cls: 'connecting'  },
+        [LiveStatus.Connected]:    { text: 'live',          cls: 'connected'   },
+        [LiveStatus.Reconnecting]: { text: 'reconnecting…', cls: 'reconnecting'},
+        [LiveStatus.Disconnected]: { text: 'offline',       cls: 'disconnected'},
+      };
+      const entry = map[status] || map[LiveStatus.Disconnected];
+      if (label) label.textContent = entry.text;
+      if (dot) dot.className = 'live-dot ' + entry.cls;
+    }
+
+    function applyDelta(delta) {
+      if (!delta || !Array.isArray(delta.users)) return;
+
+      delta.users.forEach(incomingUser => {
+        const existing = graphState.users.find(u => u.id === incomingUser.id);
+        if (existing) {
+          existing.profiles = incomingUser.profiles;
+          existing.state    = incomingUser.state;
+          existing.username = incomingUser.username;
+          existing.email    = incomingUser.email;
+        }
+      });
+
+      if (delta.profiles) {
+        Object.entries(delta.profiles).forEach(([id, node]) => {
+          graphState.profiles[id] = node;
+        });
+      }
+
+      if (delta.permissions) {
+        Object.entries(delta.permissions).forEach(([id, node]) => {
+          graphState.permissions[id] = node;
+        });
+      }
+
+      graphState.onUpdate();
+    }
+
+    applyStatus(LiveStatus.Connecting);
+
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl(HubPath, { transport: signalR.HttpTransportType.WebSockets, skipNegotiation: true })
+      .withAutomaticReconnect()
+      .build();
+
+    connection.on('GraphUpdated', applyDelta);
+
+    connection.onreconnecting(() => applyStatus(LiveStatus.Reconnecting));
+    connection.onreconnected(() => applyStatus(LiveStatus.Connected));
+    connection.onclose(() => applyStatus(LiveStatus.Disconnected));
+
+    connection.start()
+      .then(() => applyStatus(LiveStatus.Connected))
+      .catch(() => applyStatus(LiveStatus.Disconnected));
+  }
+
+  /* ---------------- Authorization Graph (updated to expose state for live) --- */
   function initGraph() {
     const root = $('[data-graph]');
     if (!root) return;
     let data;
     try { data = JSON.parse($('#graph-data').textContent); } catch (e) { return; }
-    const { users, profiles, permissions } = data;
+
+    const graphState = {
+      users:       data.users,
+      profiles:    data.profiles,
+      permissions: data.permissions,
+      onUpdate:    () => {},
+    };
+
+    initGraphCanvas(root, graphState);
+    initGraphLive(graphState);
+  }
+
+  function initGraphCanvas(root, graphState) {
+    const { users, profiles, permissions } = graphState;
 
     const rail = $('[data-graph-rail]', root);
     const canvas = $('[data-graph-canvas]', root);
@@ -244,13 +334,11 @@
 
     function renderGraph() {
       const { u, prs, perms } = resolve(current);
-      // col 1
       colUser.innerHTML = `<div class="gnode unode" data-ref="user">
         <div class="avatar" style="background:${userColor(u.id)};width:44px;height:44px;font-size:16px;border-radius:13px">${u.username[0].toUpperCase()}</div>
         <div class="unode-name">${u.username}</div>
         <div class="unode-mail mono">${u.email}</div>
         <div class="unode-state"><span class="badge ${badgeFor(u.state)}">${stateLabel(u.state)}</span></div></div>`;
-      // col 2
       colProfiles.innerHTML = prs.length ? '' : '<div class="gcol-empty mono">no profiles assigned</div>';
       prs.forEach(pr => {
         const d = document.createElement('div');
@@ -264,7 +352,6 @@
         d.addEventListener('mouseleave', () => { hoverProfile = null; highlight(); });
         colProfiles.appendChild(d);
       });
-      // col 3
       colPerms.innerHTML = perms.length ? '' : '<div class="gcol-empty mono">no grants — 403 on every protected route</div>';
       const wrap = document.createElement('div'); wrap.className = 'gperm-list';
       perms.forEach(({ perm }) => {
@@ -279,10 +366,8 @@
         wrap.appendChild(d);
       });
       if (perms.length) colPerms.appendChild(wrap);
-      // refs
       Object.keys(nodeRefs).forEach(k => delete nodeRefs[k]);
       $$('[data-ref]', canvas).forEach(el => nodeRefs[el.dataset.ref] = el);
-      // summary
       if (summary.p) summary.p.textContent = prs.length;
       if (summary.e) summary.e.textContent = perms.length;
       if (summary.r) summary.r.textContent = revoked.length;
@@ -369,7 +454,8 @@
 
     function renderAll() { renderRail(); renderGraph(); }
 
-    // actions
+    graphState.onUpdate = () => renderAll();
+
     const revokeBtn = $('[data-graph-revoke]', root);
     const resetBtn = $('[data-graph-reset]', root);
     if (revokeBtn) revokeBtn.addEventListener('click', () => {
