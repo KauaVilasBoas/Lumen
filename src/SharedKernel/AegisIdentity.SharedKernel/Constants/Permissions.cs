@@ -17,6 +17,11 @@ public static class PermissionCodes
     {
         public const string Read = "Audit.Read";
     }
+
+    public static class Diagnostics
+    {
+        public const string Read = "Diagnostics.Read";
+    }
 }
 
 public static class PermissionGroups
@@ -24,4 +29,5 @@ public static class PermissionGroups
     public const string Authorization = "Authorization";
     public const string Users         = "Users";
     public const string Audit         = "Audit";
+    public const string Diagnostics   = "Diagnostics";
 }
