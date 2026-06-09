@@ -1,4 +1,5 @@
 using AegisIdentity.Backoffice.Configuration;
+using AegisIdentity.Backoffice.Middleware;
 using AegisIdentity.Backoffice.Services;
 using AegisIdentity.DataAccess.Cache;
 using AegisIdentity.DataAccess.Persistence;
@@ -109,10 +110,12 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+app.UseWebSockets();
 
 // Order matters: Authentication must precede Authorization.
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<AuthorizationGraphProxyMiddleware>();
 
 // ── Hangfire Dashboard ────────────────────────────────────────────────────────
 // Mounts the dashboard at the path defined in Hangfire:Dashboard:Path
