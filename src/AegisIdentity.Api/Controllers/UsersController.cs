@@ -71,7 +71,7 @@ public sealed class UsersController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetDetail(Guid id, CancellationToken ct = default)
+    public async Task<IActionResult> Get(Guid id, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new GetUserDetailQueryHandler.Query(id), ct);
         return Ok(result);
