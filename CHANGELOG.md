@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (authorization mismatches — convention vs. policy code)
+- `UsersController`: action `GetDetail` renamed to `Get` so the convention `Controller.Action`
+  produces `"Users.Get"`, matching `PermissionCodes.Users.Get` used by the `[Authorize]` policy.
+  The route `[HttpGet("{id:guid}")]` is unchanged; only the C# method name was corrected.
+- `AuditController`: action `Recent` renamed to `Read` so the convention produces `"Audit.Read"`,
+  matching `PermissionCodes.Audit.Read`. The route `[HttpGet("recent")]` is unchanged.
+- `DiagnosticsController`: `GetCacheStats` and `GetJobStats` were both referencing the removed
+  `PermissionCodes.Diagnostics.Read` (`"Diagnostics.Read"`), which never matched their
+  convention-generated codes. The shared constant was replaced with two per-endpoint constants:
+  `PermissionCodes.Diagnostics.GetCacheStats` (`"Diagnostics.GetCacheStats"`) and
+  `PermissionCodes.Diagnostics.GetJobStats` (`"Diagnostics.GetJobStats"`). Each action now
+  declares the matching `[Authorize(Policy = ...)]`.
+- Migration `20260609010000_SeedConventionPermissionFixes` seeds all four permission rows
+  (`Users.Get`, `Audit.Read`, `Diagnostics.GetCacheStats`, `Diagnostics.GetJobStats`) and
+  their respective groups idempotently before the discovery service runs. Existing rows
+  created by previous discovery boots (e.g. `Users.GetDetail`, `Audit.Recent`,
+  `Diagnostics.Read`) are not deleted; they are marked as orphan by the sync service.
+- 4 regression unit tests added in `ConventionPermissionRegressionTests` to assert that the
+  scanner produces the exact convention code for each corrected action.
+
 ### Fixed (boot crash — AuthorizationGraph.View permission)
 - `AuthorizationGraphController`: action renamed from `Get` to `View` so the convention
   `Controller.Action` produces `"AuthorizationGraph.View"`, matching `PermissionCodes.AuthorizationGraph.View`
