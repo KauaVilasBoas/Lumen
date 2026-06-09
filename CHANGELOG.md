@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (boot crash — AuthorizationGraph.View permission)
+- `AuthorizationGraphController`: action renamed from `Get` to `View` so the convention
+  `Controller.Action` produces `"AuthorizationGraph.View"`, matching `PermissionCodes.AuthorizationGraph.View`
+  used by the Authorize policy, the hub, and the Backoffice proxy. The bare `[RequirePermission]`
+  attribute (no argument) ensures the discovery scanner operates on the renamed action via convention,
+  eliminating the code-divergence that caused a unique-index violation on `ix_permissions_code_unique`
+  at the second boot.
+- Migration `20260609000000_SeedAuthorizationGraphPermission` seeds the `GroupPermissions` row
+  for `"Authorization"` and the `Permissions` row for `"AuthorizationGraph.View"` with deterministic
+  GUIDs before the `PermissionDiscoveryHostedService` runs. On subsequent boots the discovery scanner
+  finds the pre-existing row by code and performs an UPDATE instead of INSERT — no collision, no crash.
+  The previous erroneous `"AuthorizationGraph.Get"` row (if present) is marked as orphan by the sync
+  service without being deleted.
+
 ### Fixed (BACKOFFICE-QA-01)
 - `_Layout.cshtml`: hardcoded `admin@aegisidentity.local` replaced with `User.FindFirstValue(ClaimTypes.Email)`
   sourced from the authenticated cookie principal; email div is conditionally rendered and absent when the claim
