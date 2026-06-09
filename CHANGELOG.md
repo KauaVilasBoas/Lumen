@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (API-SIGNALR-02)
+- `GraphLivePushHandler` added to `AegisIdentity.Api.Hubs`; implements `INotificationHandler<UserPermissionsChanged>`
+  and pushes a `GraphSnapshot` delta to all connected clients of the affected user via
+  `IHubContext<AuthorizationGraphHub, IAuthorizationGraphHubClient>.Clients.User(userId)`.
+- Handler is independent of `UserPermissionsChangedHandler` (cache invalidation) and
+  `UserPermissionsChangedAuditHandler`; MediatR fans out to all three on each notification.
+- Delta payload recomputes the user's active profile memberships and resolved permission IDs
+  using `IUserProfileRepository` and `IProfileRepository`, keeping the push lean (single-user
+  sub-graph, not the full snapshot).
+- User not found at push time is treated as a no-op with a warning log; push errors propagate
+  to let the MediatR pipeline decide retry semantics.
+- `RegisterServicesFromAssemblyContaining<GraphLivePushHandler>()` added to the MediatR
+  registration in `Program.cs` so the Api assembly is scanned alongside CommandHandlers,
+  QueryHandlers, and EventHandlers.
+- 4 unit tests added in `GraphLivePushHandlerTests` covering: push to correct user group,
+  user-not-found no-op, empty-profiles snapshot, and multi-profile snapshot composition.
+
 ### Added (API-SIGNALR-01)
 - `AddSignalR()` registered in `Program.cs`; `MapHub<AuthorizationGraphHub>` wired to
   `HubRoutes.AuthorizationGraph` (`/hubs/authorization-graph`).
