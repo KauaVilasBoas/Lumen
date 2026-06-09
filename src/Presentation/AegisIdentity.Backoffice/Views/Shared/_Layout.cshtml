@@ -1,3 +1,4 @@
+@using System.Security.Claims
 @{
     var controller = ViewContext.RouteData.Values["controller"]?.ToString();
     var action = ViewContext.RouteData.Values["action"]?.ToString();
@@ -11,6 +12,7 @@
     var title = ViewData["Title"]?.ToString() ?? "Overview";
     var subtitle = ViewData["Subtitle"]?.ToString() ?? "";
     var authed = User.Identity?.IsAuthenticated == true;
+    var userEmail = User.FindFirstValue(ClaimTypes.Email);
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -76,14 +78,15 @@ else
 
             <div class="sidebar-foot">
                 <div class="health card">
-                    <div class="health-row"><span class="health-dot" style="background:var(--ok)"></span><span
-                            class="health-label mono">SQL Server</span><span class="health-val mono">healthy</span>
+                    <div class="health-row"><span class="health-dot" style="background:var(--faint)"></span><span
+                            class="health-label mono">SQL Server</span>
                     </div>
-                    <div class="health-row"><span class="health-dot" style="background:var(--ok)"></span><span
-                            class="health-label mono">Redis cache</span><span class="health-val mono">healthy</span>
+                    <div class="health-row"><span class="health-dot" style="background:var(--faint)"></span><span
+                            class="health-label mono">Redis cache</span>
                     </div>
-                    <div class="health-row"><span class="health-dot" style="background:var(--warn)"></span><span
-                            class="health-label mono">Hangfire</span><span class="health-val mono">1 queued</span></div>
+                    <div class="health-row"><span class="health-dot" style="background:var(--faint)"></span><span
+                            class="health-label mono">Hangfire</span>
+                    </div>
                 </div>
             </div>
         </aside>
@@ -114,7 +117,10 @@ else
                              style="background:linear-gradient(135deg,#9a7dff,#6b49f0)">@(User.Identity?.Name?.Substring(0, 1).ToUpper() ?? "A")</div>
                         <div class="topbar-user-meta">
                             <div class="topbar-user-name">@User.Identity?.Name</div>
-                            <div class="topbar-user-mail mono">admin@@aegisidentity.local</div>
+                            @if (userEmail is not null)
+                            {
+                                <div class="topbar-user-mail mono">@userEmail</div>
+                            }
                         </div>
                         <form asp-controller="Account" asp-action="Logout" method="post" class="m-0">
                             @Html.AntiForgeryToken()
