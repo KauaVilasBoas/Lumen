@@ -26,7 +26,7 @@ public sealed class AuditController : ControllerBase
     [ProducesResponseType(typeof(IReadOnlyList<GetRecentAuditFeedQueryHandler.AuditEntryResult>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> Recent(
+    public async Task<IActionResult> Read(
         [FromQuery] int take = 20,
         CancellationToken ct = default)
     {
