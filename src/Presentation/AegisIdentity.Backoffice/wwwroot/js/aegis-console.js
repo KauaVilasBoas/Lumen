@@ -18,6 +18,39 @@
   const METHOD_COLOR = { GET: 'var(--app)', POST: 'var(--pres)', PUT: 'var(--warn)', DELETE: 'var(--danger)' };
   const LAYER_COLORS = { pres: 'var(--pres)', app: 'var(--app)', dom: 'var(--dom)', infra: 'var(--infra)', jobs: 'var(--jobs)', cache: 'var(--cache)' };
 
+  const USER_PALETTE = [
+    'linear-gradient(135deg,#9a7dff,#6b49f0)',
+    'linear-gradient(135deg,#4c8dff,#2a5fd6)',
+    'linear-gradient(135deg,#2bd4a0,#159e78)',
+    'linear-gradient(135deg,#f5a623,#d4830a)',
+    'linear-gradient(135deg,#ff5d73,#c83a52)',
+    'linear-gradient(135deg,#7b86a0,#525c74)',
+    'linear-gradient(135deg,#38bdf8,#0369a1)',
+    'linear-gradient(135deg,#a78bfa,#7c3aed)',
+  ];
+
+  const PROFILE_PALETTE = [
+    '#8b6dff', '#5b6478', '#4c8dff', '#2bd4a0',
+    '#f5a623', '#ff5d73', '#38bdf8', '#a78bfa',
+  ];
+
+  function deterministicIndex(str, length) {
+    let h = 0;
+    for (let i = 0; i < str.length; i++) { h = (Math.imul(31, h) + str.charCodeAt(i)) | 0; }
+    return Math.abs(h) % length;
+  }
+
+  function userColor(id) { return USER_PALETTE[deterministicIndex(id, USER_PALETTE.length)]; }
+  function profileColor(id) { return PROFILE_PALETTE[deterministicIndex(id, PROFILE_PALETTE.length)]; }
+
+  function methodFromCode(code) {
+    const action = (code.split('.')[1] || '').toLowerCase();
+    if (action === 'create' || action === 'assign') return 'POST';
+    if (action === 'update' || action === 'setpermissions') return 'PUT';
+    if (action === 'delete' || action === 'remove') return 'DELETE';
+    return 'GET';
+  }
+
   function routeFor(code) {
     const [ctrl, action] = code.split('.');
     const base = '/api/' + ctrl.toLowerCase();
@@ -147,13 +180,103 @@
     const btn = $('[data-trace-replay]'); if (btn) btn.addEventListener('click', play);
   }
 
-  /* ---------------- Authorization Graph ---------------- */
+  /* ---------------- Authorization Graph — SignalR live client ---------------- */
+  const HubPath = '/hubs/authorization-graph';
+
+  const LiveStatus = Object.freeze({
+    Connecting:    'connecting',
+    Connected:     'connected',
+    Reconnecting:  'reconnecting',
+    Disconnected:  'disconnected',
+  });
+
+  function initGraphLive(graphState) {
+    if (typeof signalR === 'undefined') return;
+
+    const statusRoot = document.querySelector('[data-live-status]');
+    const dot        = document.querySelector('[data-live-dot]');
+    const label      = document.querySelector('[data-live-label]');
+
+    function applyStatus(status) {
+      if (!statusRoot) return;
+      statusRoot.dataset.liveStatus = status;
+      const map = {
+        [LiveStatus.Connecting]:   { text: 'connecting…',   cls: 'connecting'  },
+        [LiveStatus.Connected]:    { text: 'live',          cls: 'connected'   },
+        [LiveStatus.Reconnecting]: { text: 'reconnecting…', cls: 'reconnecting'},
+        [LiveStatus.Disconnected]: { text: 'offline',       cls: 'disconnected'},
+      };
+      const entry = map[status] || map[LiveStatus.Disconnected];
+      if (label) label.textContent = entry.text;
+      if (dot) dot.className = 'live-dot ' + entry.cls;
+    }
+
+    function applyDelta(delta) {
+      if (!delta || !Array.isArray(delta.users)) return;
+
+      delta.users.forEach(incomingUser => {
+        const existing = graphState.users.find(u => u.id === incomingUser.id);
+        if (existing) {
+          existing.profiles = incomingUser.profiles;
+          existing.state    = incomingUser.state;
+          existing.username = incomingUser.username;
+          existing.email    = incomingUser.email;
+        }
+      });
+
+      if (delta.profiles) {
+        Object.entries(delta.profiles).forEach(([id, node]) => {
+          graphState.profiles[id] = node;
+        });
+      }
+
+      if (delta.permissions) {
+        Object.entries(delta.permissions).forEach(([id, node]) => {
+          graphState.permissions[id] = node;
+        });
+      }
+
+      graphState.onUpdate();
+    }
+
+    applyStatus(LiveStatus.Connecting);
+
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl(HubPath, { transport: signalR.HttpTransportType.WebSockets, skipNegotiation: true })
+      .withAutomaticReconnect()
+      .build();
+
+    connection.on('GraphUpdated', applyDelta);
+
+    connection.onreconnecting(() => applyStatus(LiveStatus.Reconnecting));
+    connection.onreconnected(() => applyStatus(LiveStatus.Connected));
+    connection.onclose(() => applyStatus(LiveStatus.Disconnected));
+
+    connection.start()
+      .then(() => applyStatus(LiveStatus.Connected))
+      .catch(() => applyStatus(LiveStatus.Disconnected));
+  }
+
+  /* ---------------- Authorization Graph (updated to expose state for live) --- */
   function initGraph() {
     const root = $('[data-graph]');
     if (!root) return;
     let data;
     try { data = JSON.parse($('#graph-data').textContent); } catch (e) { return; }
-    const { users, profiles, permissions } = data;
+
+    const graphState = {
+      users:       data.users,
+      profiles:    data.profiles,
+      permissions: data.permissions,
+      onUpdate:    () => {},
+    };
+
+    initGraphCanvas(root, graphState);
+    initGraphLive(graphState);
+  }
+
+  function initGraphCanvas(root, graphState) {
+    const { users, profiles, permissions } = graphState;
 
     const rail = $('[data-graph-rail]', root);
     const canvas = $('[data-graph-canvas]', root);
@@ -164,7 +287,8 @@
     const cacheCard = $('[data-cache]', root);
     const summary = { p: $('[data-sum-profiles]', root), e: $('[data-sum-endpoints]', root), r: $('[data-sum-revoked]', root) };
 
-    let current = users[0].id;
+    let current = users[0]?.id;
+    if (!current) return;
     let revoked = [];
     let hoverProfile = null, hoverPerm = null;
     const nodeRefs = {};
@@ -173,7 +297,9 @@
 
     function resolve(userId) {
       const u = users.find(x => x.id === userId);
-      const prs = u.profiles.map(pid => profiles[pid]).filter(Boolean);
+      const prs = u.profiles
+        .filter(pid => profiles[pid])
+        .map(pid => ({ id: pid, ...profiles[pid] }));
       const m = new Map();
       prs.forEach(pr => pr.permissions.forEach(permId => {
         const perm = permissions[permId];
@@ -181,7 +307,7 @@
         if (!m.has(permId)) m.set(permId, new Set());
         m.get(permId).add(pr.id);
       }));
-      const perms = [...m.entries()].map(([permId, set]) => ({ perm: permissions[permId], from: [...set] }))
+      const perms = [...m.entries()].map(([permId, set]) => ({ perm: { id: permId, ...permissions[permId] }, from: [...set] }))
         .sort((a, b) => a.perm.code.localeCompare(b.perm.code));
       return { u, prs, perms };
     }
@@ -191,7 +317,7 @@
       liveUsers.forEach(u => {
         const b = document.createElement('button');
         b.className = 'grail-item' + (u.id === current ? ' active' : '');
-        b.innerHTML = `<div class="avatar" style="background:${u.color};width:30px;height:30px;font-size:12px">${u.username[0].toUpperCase()}</div>
+        b.innerHTML = `<div class="avatar" style="background:${userColor(u.id)};width:30px;height:30px;font-size:12px">${u.username[0].toUpperCase()}</div>
           <div class="grail-meta"><div class="grail-name">${u.username}</div><div class="grail-sub mono">${u.profiles.length} profile${u.profiles.length !== 1 ? 's' : ''}</div></div>
           ${u.state !== 'active' ? `<span class="statedot ${u.state}"></span>` : ''}`;
         b.addEventListener('click', () => { current = u.id; revoked = []; setCache('miss'); renderAll(); setTimeout(() => setCache('hit'), 1000); });
@@ -208,19 +334,17 @@
 
     function renderGraph() {
       const { u, prs, perms } = resolve(current);
-      // col 1
       colUser.innerHTML = `<div class="gnode unode" data-ref="user">
-        <div class="avatar" style="background:${u.color};width:44px;height:44px;font-size:16px;border-radius:13px">${u.username[0].toUpperCase()}</div>
+        <div class="avatar" style="background:${userColor(u.id)};width:44px;height:44px;font-size:16px;border-radius:13px">${u.username[0].toUpperCase()}</div>
         <div class="unode-name">${u.username}</div>
         <div class="unode-mail mono">${u.email}</div>
         <div class="unode-state"><span class="badge ${badgeFor(u.state)}">${stateLabel(u.state)}</span></div></div>`;
-      // col 2
       colProfiles.innerHTML = prs.length ? '' : '<div class="gcol-empty mono">no profiles assigned</div>';
       prs.forEach(pr => {
         const d = document.createElement('div');
         d.className = 'gnode pnode';
         d.dataset.ref = 'profile:' + pr.id;
-        d.style.setProperty('--nc', pr.color);
+        d.style.setProperty('--nc', profileColor(pr.id));
         d.innerHTML = `<span class="pnode-bar"></span><div class="pnode-main">
           <div class="pnode-name">${pr.name}${pr.isSystem ? '<span class="badge sys" style="margin-left:7px">SYS</span>' : ''}</div>
           <div class="pnode-sub mono">${pr.permissions.filter(x => permissions[x] && !permissions[x].orphan).length} permissions</div></div>`;
@@ -228,24 +352,22 @@
         d.addEventListener('mouseleave', () => { hoverProfile = null; highlight(); });
         colProfiles.appendChild(d);
       });
-      // col 3
       colPerms.innerHTML = perms.length ? '' : '<div class="gcol-empty mono">no grants — 403 on every protected route</div>';
       const wrap = document.createElement('div'); wrap.className = 'gperm-list';
       perms.forEach(({ perm }) => {
         const d = document.createElement('div');
         d.className = 'gnode knode';
         d.dataset.ref = 'perm:' + perm.id;
-        d.innerHTML = `<span class="knode-method mono" style="color:${METHOD_COLOR[perm.method]};border-color:${METHOD_COLOR[perm.method]}">${perm.method}</span>
+        const method = methodFromCode(perm.code);
+        d.innerHTML = `<span class="knode-method mono" style="color:${METHOD_COLOR[method]};border-color:${METHOD_COLOR[method]}">${method}</span>
           <div class="knode-main"><div class="knode-code mono">${perm.code}</div><div class="knode-route mono">${routeFor(perm.code)}</div></div>`;
         d.addEventListener('mouseenter', () => { hoverPerm = perm.id; highlight(); });
         d.addEventListener('mouseleave', () => { hoverPerm = null; highlight(); });
         wrap.appendChild(d);
       });
       if (perms.length) colPerms.appendChild(wrap);
-      // refs
       Object.keys(nodeRefs).forEach(k => delete nodeRefs[k]);
       $$('[data-ref]', canvas).forEach(el => nodeRefs[el.dataset.ref] = el);
-      // summary
       if (summary.p) summary.p.textContent = prs.length;
       if (summary.e) summary.e.textContent = perms.length;
       if (summary.r) summary.r.textContent = revoked.length;
@@ -256,8 +378,8 @@
     function currentEdges() {
       const { prs, perms } = resolve(current);
       const e = [];
-      prs.forEach(pr => e.push({ from: 'user', to: 'profile:' + pr.id, profile: pr.id, color: pr.color }));
-      perms.forEach(({ perm, from }) => from.forEach(pid => e.push({ from: 'profile:' + pid, to: 'perm:' + perm.id, profile: pid, perm: perm.id, color: profiles[pid].color })));
+      prs.forEach(pr => e.push({ from: 'user', to: 'profile:' + pr.id, profile: pr.id, color: profileColor(pr.id) }));
+      perms.forEach(({ perm, from }) => from.forEach(pid => e.push({ from: 'profile:' + pid, to: 'perm:' + perm.id, profile: pid, perm: perm.id, color: profileColor(pid) })));
       return e;
     }
 
@@ -332,7 +454,8 @@
 
     function renderAll() { renderRail(); renderGraph(); }
 
-    // actions
+    graphState.onUpdate = () => renderAll();
+
     const revokeBtn = $('[data-graph-revoke]', root);
     const resetBtn = $('[data-graph-reset]', root);
     if (revokeBtn) revokeBtn.addEventListener('click', () => {

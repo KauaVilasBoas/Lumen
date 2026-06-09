@@ -71,6 +71,7 @@ try
         cfg.RegisterServicesFromAssemblyContaining<RegisterUserCommandHandler>();
         cfg.RegisterServicesFromAssemblyContaining<GetCurrentUserQueryHandler>();
         cfg.RegisterServicesFromAssemblyContaining<UserPermissionsChangedHandler>();
+        cfg.RegisterServicesFromAssemblyContaining<GraphLivePushHandler>();
         cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
     });
 

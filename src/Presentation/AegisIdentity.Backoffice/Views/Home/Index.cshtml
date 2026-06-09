@@ -1,13 +1,17 @@
+@using AegisIdentity.Backoffice.Services
 @{
     ViewData["Title"] = "Overview";
     ViewData["Subtitle"] = "System state at a glance";
     Layout = "_Layout";
 
-    // Counts come from the controller via ViewBag when available; sensible fallbacks otherwise.
-    var userCount = ViewBag.UserCount as int? ?? 6;
-    var profileCount = ViewBag.ProfileCount as int? ?? 5;
-    var permissionCount = ViewBag.PermissionCount as int? ?? 15;
-    var orphanCount = ViewBag.OrphanCount as int? ?? 1;
+    var userCount       = ViewBag.UserCount as int?;
+    var profileCount    = ViewBag.ProfileCount as int?;
+    var permissionCount = ViewBag.PermissionCount as int?;
+    var orphanCount     = ViewBag.OrphanCount as int?;
+    var cacheHitRate    = ViewBag.CacheHitRate as double?;
+
+    var activity = ViewBag.Activity as IReadOnlyList<AdminApiClient.AuditEntry>;
+    var jobStats = ViewBag.JobStats as AdminApiClient.JobStats;
 
     var chain = new[]
     {
@@ -16,17 +20,6 @@
         ("Profile", "Administrator · User · custom", "shieldKey", "var(--dom)", "Profiles", "Role-like container. System profiles (IsSystem) cannot be deleted."),
         ("UserProfile", "join", "link", "var(--app)", "UserProfiles", "Join entity assigning a profile to a user. Change publishes UserPermissionsChanged."),
         ("User", "identity", "user", "var(--violet)", "Users", "The authenticated identity. Permissions resolved as the union over assigned profiles."),
-    };
-
-    var activity = new[]
-    {
-        ("cache.invalidate", "cache", "var(--jobs)", "UserPermissionsChanged → cache invalidated", "user:permissions:a1b2…0003", "2m ago"),
-        ("profile.permset", "shieldKey", "var(--app)", "Permission set updated on Profile Manager", "+ Profiles.SetPermissions", "2m ago"),
-        ("auth.login", "lock", "var(--pres)", "Login succeeded · JWT issued (15m)", "admin@aegisidentity.local", "4m ago"),
-        ("userprofile.assign", "link", "var(--app)", "Profile assigned to user", "Security Auditor → lfischer", "38m ago"),
-        ("auth.lockout", "lock", "var(--danger)", "Account locked after 5 failed logins", "tbecker · 15m lockout", "2d ago"),
-        ("job.cleanup", "clock", "var(--jobs)", "CleanupExpiredRefreshTokens ran", "cron 03:00 UTC · 12 rows", "1d ago"),
-        ("permission.discover", "sparkles", "var(--pres)", "Permission discovery upserted 14 actions", "1 orphan flagged: Reports.Export", "3d ago"),
     };
 }
 
@@ -44,38 +37,50 @@
     </div>
 
     <div class="grid-4" style="margin-bottom:18px">
-        <div class="stat card">
-            <div class="stat-top"><span class="stat-ico"
-                                        style="color:var(--violet);background:color-mix(in srgb, var(--violet) 14%, transparent)">@await Html.PartialAsync("_Icon", "users")</span><span
-                    class="badge muted">Users</span></div>
-            <div class="stat-value tnum">@userCount</div>
-            <div class="stat-label">Identities</div>
-            <div class="stat-sub mono">across the directory</div>
-        </div>
-        <div class="stat card">
-            <div class="stat-top"><span class="stat-ico"
-                                        style="color:var(--dom);background:color-mix(in srgb, var(--dom) 14%, transparent)">@await Html.PartialAsync("_Icon", "shieldKey")</span><span
-                    class="badge muted">Profiles</span></div>
-            <div class="stat-value tnum">@profileCount</div>
-            <div class="stat-label">Profiles</div>
-            <div class="stat-sub mono">2 system · custom</div>
-        </div>
-        <div class="stat card">
-            <div class="stat-top"><span class="stat-ico"
-                                        style="color:var(--pres);background:color-mix(in srgb, var(--pres) 14%, transparent)">@await Html.PartialAsync("_Icon", "key")</span><span
-                    class="badge muted">discovered</span></div>
-            <div class="stat-value tnum">@permissionCount</div>
-            <div class="stat-label">Permissions</div>
-            <div class="stat-sub mono">@orphanCount orphan flagged</div>
-        </div>
-        <div class="stat card">
-            <div class="stat-top"><span class="stat-ico"
-                                        style="color:var(--ok);background:color-mix(in srgb, var(--ok) 14%, transparent)">@await Html.PartialAsync("_Icon", "bolt")</span><span
-                    class="badge muted">Redis</span></div>
-            <div class="stat-value tnum">98.6%</div>
-            <div class="stat-label">Cache hit rate</div>
-            <div class="stat-sub mono"><span style="color:var(--ok)">▲ </span>5m TTL safety net</div>
-        </div>
+        @if (userCount.HasValue)
+        {
+            <div class="stat card">
+                <div class="stat-top"><span class="stat-ico"
+                                            style="color:var(--violet);background:color-mix(in srgb, var(--violet) 14%, transparent)">@await Html.PartialAsync("_Icon", "users")</span><span
+                        class="badge muted">Users</span></div>
+                <div class="stat-value tnum">@userCount</div>
+                <div class="stat-label">Identities</div>
+                <div class="stat-sub mono">across the directory</div>
+            </div>
+        }
+        @if (profileCount.HasValue)
+        {
+            <div class="stat card">
+                <div class="stat-top"><span class="stat-ico"
+                                            style="color:var(--dom);background:color-mix(in srgb, var(--dom) 14%, transparent)">@await Html.PartialAsync("_Icon", "shieldKey")</span><span
+                        class="badge muted">Profiles</span></div>
+                <div class="stat-value tnum">@profileCount</div>
+                <div class="stat-label">Profiles</div>
+                <div class="stat-sub mono">2 system · custom</div>
+            </div>
+        }
+        @if (permissionCount.HasValue)
+        {
+            <div class="stat card">
+                <div class="stat-top"><span class="stat-ico"
+                                            style="color:var(--pres);background:color-mix(in srgb, var(--pres) 14%, transparent)">@await Html.PartialAsync("_Icon", "key")</span><span
+                        class="badge muted">discovered</span></div>
+                <div class="stat-value tnum">@permissionCount</div>
+                <div class="stat-label">Permissions</div>
+                <div class="stat-sub mono">@(orphanCount ?? 0) orphan flagged</div>
+            </div>
+        }
+        @if (cacheHitRate.HasValue)
+        {
+            <div class="stat card">
+                <div class="stat-top"><span class="stat-ico"
+                                            style="color:var(--ok);background:color-mix(in srgb, var(--ok) 14%, transparent)">@await Html.PartialAsync("_Icon", "bolt")</span><span
+                        class="badge muted">Redis</span></div>
+                <div class="stat-value tnum">@(cacheHitRate.Value.ToString("P1"))</div>
+                <div class="stat-label">Cache hit rate</div>
+                <div class="stat-sub mono"><span style="color:var(--ok)">▲ </span>5m TTL safety net</div>
+            </div>
+        }
     </div>
 
     <div class="dash-grid">
@@ -148,23 +153,40 @@
                         <div>
                             <div class="eyebrow">Live feed</div>
                             <h3 class="card-title">Recent activity</h3></div>
-                        <span class="chip"><span class="dot" style="color:var(--ok)"></span>streaming</span>
+                        <span class="chip"><span class="dot" style="color:var(--ok)"></span>audit log</span>
                     </div>
-                    <div class="activity-list">
-                        @foreach (var (kind, ic, color, text, detail, ago) in activity)
-                        {
-                            <div class="activity-item">
-                                <span class="activity-ico"
-                                      style="color:@color;background:color-mix(in srgb, @color 13%, transparent)">@await Html.PartialAsync("_Icon", ic)</span>
-                                <div class="activity-body">
-                                    <div class="activity-text">@text</div>
-                                    <div class="activity-detail mono">@detail</div>
+                    @if (activity is { Count: > 0 })
+                    {
+                        <div class="activity-list">
+                            @foreach (var entry in activity)
+                            {
+                                <div class="activity-item">
+                                    <span class="activity-ico"
+                                          style="color:var(--app);background:color-mix(in srgb, var(--app) 13%, transparent)">@await Html.PartialAsync("_Icon", "clock")</span>
+                                    <div class="activity-body">
+                                        <div class="activity-text">@entry.Message</div>
+                                        <div class="activity-detail mono">@(entry.Actor ?? entry.Target ?? string.Empty)</div>
+                                    </div>
+                                    <div class="activity-meta">
+                                        <span class="activity-kind mono">@entry.Kind</span>
+                                        <span class="activity-time mono">@entry.OccurredAt.ToString("yyyy-MM-dd HH:mm")</span>
+                                    </div>
                                 </div>
-                                <div class="activity-meta"><span class="activity-kind mono">@kind</span><span
-                                        class="activity-time mono">@ago</span></div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="activity-list">
+                            <div class="activity-item">
+                                <span class="activity-ico" style="color:var(--faint);background:color-mix(in srgb, var(--faint) 13%, transparent)">@await Html.PartialAsync("_Icon", "clock")</span>
+                                <div class="activity-body">
+                                    <div class="activity-text" style="color:var(--faint)">No recent activity</div>
+                                    <div class="activity-detail mono" style="color:var(--faint)">Events appear here as they occur</div>
+                                </div>
                             </div>
-                        }
-                    </div>
+                        </div>
+                    }
                 </div>
             </div>
         </div>
@@ -202,42 +224,58 @@
                 </div>
             </div>
 
-            <div class="reveal-region">
-                <div class="card jobs-card">
-                    <div class="reveal-tag" style="--lc:var(--jobs);top:-11px;right:12px">
-                        <span class="reveal-tag-dot"></span><span class="reveal-tag-label mono">Hangfire</span>
-                        <div class="reveal-tag-pop card">
-                            <div class="reveal-tag-pop-layer mono" style="color:var(--jobs)"><span class="sq"
-                                                                                                   style="background:var(--jobs)"></span>Jobs
-                            </div>
-                            <div class="reveal-tag-pop-body">The API hosts the Hangfire server. <span class="code">CleanupExpiredRefreshTokensJob</span>
-                                runs daily via the same repository port.
+            @if (jobStats is not null)
+            {
+                <div class="reveal-region">
+                    <div class="card jobs-card">
+                        <div class="reveal-tag" style="--lc:var(--jobs);top:-11px;right:12px">
+                            <span class="reveal-tag-dot"></span><span class="reveal-tag-label mono">Hangfire</span>
+                            <div class="reveal-tag-pop card">
+                                <div class="reveal-tag-pop-layer mono" style="color:var(--jobs)"><span class="sq"
+                                                                                                       style="background:var(--jobs)"></span>Jobs
+                                </div>
+                                <div class="reveal-tag-pop-body">The API hosts the Hangfire server. <span class="code">CleanupExpiredRefreshTokensJob</span>
+                                    runs daily via the same repository port.
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="card-head">
-                        <div>
-                            <div class="eyebrow">Background work</div>
-                            <h3 class="card-title">Recurring jobs</h3></div>
-                        <span class="chip">@await Html.PartialAsync("_Icon", "clock") cron</span></div>
-                    <div class="job-row">
-                        <div class="job-main">
-                            <div class="job-name mono">CleanupExpiredRefreshTokens</div>
-                            <div class="job-sub">Removes expired refresh tokens</div>
+                        <div class="card-head">
+                            <div>
+                                <div class="eyebrow">Background work</div>
+                                <h3 class="card-title">Recurring jobs</h3></div>
+                            <span class="chip">@await Html.PartialAsync("_Icon", "clock") cron</span></div>
+                        <div class="job-row">
+                            <div class="job-main">
+                                <div class="job-name mono">CleanupExpiredRefreshTokens</div>
+                                <div class="job-sub">Removes expired refresh tokens</div>
+                            </div>
+                            <div class="job-meta">
+                                <span class="chip"><span class="dot" style="color:var(--ok)"></span>03:00 UTC</span>
+                                @if (jobStats.NextRunUtc.HasValue)
+                                {
+                                    var timeUntilNext = jobStats.NextRunUtc.Value - DateTime.UtcNow;
+                                    var nextLabel = timeUntilNext.TotalHours >= 1
+                                        ? $"next in {(int)timeUntilNext.TotalHours}h"
+                                        : $"next in {(int)timeUntilNext.TotalMinutes}m";
+                                    <span class="faint mono" style="font-size:11px">@nextLabel</span>
+                                }
+                            </div>
                         </div>
-                        <div class="job-meta"><span class="chip"><span class="dot" style="color:var(--ok)"></span>03:00 UTC</span><span
-                                class="faint mono" style="font-size:11px">next in 18h</span></div>
-                    </div>
-                    <div class="job-spark">
-                        @{ var bars = new[] { 8, 6, 11, 4, 9, 12, 7, 10, 5, 9, 12, 8, 6, 11 }; }
-                        @for (var i = 0; i < bars.Length; i++)
+                        @if (jobStats.DailySeries.Count > 0)
                         {
-                            <span
-                                style="height:@(bars[i] * 4)px;background:@(i == bars.Length - 1 ? "var(--jobs)" : "var(--raised-2)")"></span>
+                            var maxVal = jobStats.DailySeries.Max();
+                            var scale  = maxVal > 0 ? 48.0 / maxVal : 0;
+                            <div class="job-spark">
+                                @for (var i = 0; i < jobStats.DailySeries.Count; i++)
+                                {
+                                    var height = maxVal > 0 ? (int)(jobStats.DailySeries[i] * scale) : 4;
+                                    <span style="height:@(height)px;background:@(i == jobStats.DailySeries.Count - 1 ? "var(--jobs)" : "var(--raised-2)")"></span>
+                                }
+                            </div>
                         }
                     </div>
                 </div>
-            </div>
+            }
         </div>
     </div>
 </div>

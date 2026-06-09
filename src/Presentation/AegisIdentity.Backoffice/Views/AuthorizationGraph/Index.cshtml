@@ -2,11 +2,28 @@
     ViewData["Title"] = "Authorization Graph";
     ViewData["Subtitle"] = "How one identity resolves to reachable endpoints";
     Layout = "_Layout";
-    var graphJson = ViewBag.GraphJson as string ?? "{\"users\":[],\"profiles\":{},\"permissions\":{}}";
+    var graphJson = ViewBag.GraphJson as string;
+    var hasData = graphJson is not null;
+}
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"
+            integrity="sha512-sSSiRMVSxjYzFVNsGLFGAOKzC9Vc5RU3RWPEyXkXKxlb6z5GXMB8hhUw/W7r09kVTHMxBz8UB4Gy+MJkAng=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 }
 
 <div class="content-wrap graph-wrap" data-graph>
-    <script type="application/json" id="graph-data">@Html.Raw(graphJson)</script>
+    @if (hasData)
+    {
+        <script type="application/json" id="graph-data">@Html.Raw(graphJson)</script>
+    }
+    else
+    {
+        <script type="application/json" id="graph-data">{"users":[],"profiles":{},"permissions":{}}</script>
+        <div class="alert-banner mono" data-graph-load-error>
+            Authorization graph data is temporarily unavailable. The view below shows an empty state.
+        </div>
+    }
 
     <div class="reveal-banner">
         <span class="reveal-banner-ico">@await Html.PartialAsync("_Icon", "eye")</span>
@@ -68,6 +85,7 @@
                 <div class="gr-cache-body">
                     <div class="gr-cache-key mono" data-cache-key>user:permissions:…</div>
                     <div class="gr-cache-state mono" data-cache-state><span class="d ok"></span>CACHE HIT</div>
+                    <div class="gr-cache-demo-badge mono">Demonstrativo</div>
                 </div>
             </div>
         </div>
@@ -81,7 +99,10 @@
         </div>
 
         <div class="gr-actions">
-            <button class="btn sm danger" data-graph-revoke>@await Html.PartialAsync("_Icon", "bolt") Simulate revoke</button>
+            <button class="btn sm danger" data-graph-revoke>
+                @await Html.PartialAsync("_Icon", "bolt") Simulate revoke
+                <span class="badge sim-badge">Simulação</span>
+            </button>
             <button class="btn sm ghost" data-graph-reset>@await Html.PartialAsync("_Icon", "refresh") Reset</button>
         </div>
     </div>
@@ -89,4 +110,9 @@
     <p class="graph-hint mono">
         @await Html.PartialAsync("_Icon", "eye") Hover a profile to isolate the access it grants · hover an endpoint to trace which profile grants it · pick any identity on the left.
     </p>
+
+    <div class="graph-live-status mono" data-live-status>
+        <span class="live-dot" data-live-dot></span>
+        <span class="live-label" data-live-label>connecting…</span>
+    </div>
 </div>

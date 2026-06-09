@@ -1,12 +1,12 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using AegisIdentity.Backoffice.Configuration;
 
 namespace AegisIdentity.Backoffice.Services;
 
 public sealed class AdminApiClient
 {
-    private const string AccessTokenClaimType = "access_token";
 
     private readonly HttpClient _http;
     private readonly IHttpContextAccessor _httpContextAccessor;
@@ -274,6 +274,12 @@ public sealed class AdminApiClient
         return await response.Content.ReadFromJsonAsync<GraphSnapshot>(ct);
     }
 
+    public async Task<int?> GetUserCountAsync(CancellationToken ct = default)
+    {
+        var page = await ListUsersAsync(search: null, state: null, page: 1, pageSize: 1, ct);
+        return page?.Total;
+    }
+
     public async Task<IReadOnlyList<AuditEntry>?> GetRecentActivityAsync(
         int take,
         CancellationToken ct = default)
@@ -285,6 +291,34 @@ public sealed class AdminApiClient
             return null;
 
         return await response.Content.ReadFromJsonAsync<List<AuditEntry>>(ct);
+    }
+
+    public sealed record CacheStats(double? HitRate);
+
+    public sealed record JobStats(
+        IReadOnlyList<long> DailySeries,
+        DateTime? NextRunUtc);
+
+    public async Task<CacheStats?> GetCacheStatsAsync(CancellationToken ct = default)
+    {
+        using var request = BuildGet("api/diagnostics/cache-stats");
+        using var response = await _http.SendAsync(request, ct);
+
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        return await response.Content.ReadFromJsonAsync<CacheStats>(ct);
+    }
+
+    public async Task<JobStats?> GetJobStatsAsync(CancellationToken ct = default)
+    {
+        using var request = BuildGet("api/diagnostics/job-stats");
+        using var response = await _http.SendAsync(request, ct);
+
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        return await response.Content.ReadFromJsonAsync<JobStats>(ct);
     }
 
     private HttpRequestMessage BuildGet(string path)
@@ -321,7 +355,7 @@ public sealed class AdminApiClient
     private void AttachBearerToken(HttpRequestMessage message)
     {
         var token = _httpContextAccessor.HttpContext?.User
-            .FindFirstValue(AccessTokenClaimType);
+            .FindFirstValue(BackofficeClaimTypes.AccessToken);
 
         if (token is not null)
             message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);

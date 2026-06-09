@@ -5,6 +5,7 @@ using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using StackExchange.Redis;
 
 namespace AegisIdentity.DataAccess.Cache;
 
@@ -26,6 +27,12 @@ public static class RedisServiceExtensions
             });
 
         services.AddStackExchangeRedisCache(_ => { });
+
+        services.AddSingleton<IConnectionMultiplexer>(sp =>
+        {
+            var redisOptions = sp.GetRequiredService<IOptions<RedisOptions>>().Value;
+            return ConnectionMultiplexer.Connect(redisOptions.ConnectionString);
+        });
 
         services.AddScoped<IUserPermissionCache, UserPermissionCache>();
         services.AddScoped<IUserPermissionService, UserPermissionService>();

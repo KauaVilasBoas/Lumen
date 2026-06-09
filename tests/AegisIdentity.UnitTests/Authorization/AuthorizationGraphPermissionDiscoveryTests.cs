@@ -13,9 +13,9 @@ namespace AegisIdentity.UnitTests.Authorization;
 public sealed class AuthorizationGraphPermissionDiscoveryTests
 {
     [Fact]
-    public void Scan_AuthorizationGraphController_DiscoverGetPermissionWithCorrectCode()
+    public void Scan_AuthorizationGraphController_ViewAction_ProducesViewCode()
     {
-        var descriptor = BuildDescriptor<AuthorizationGraphController>(nameof(AuthorizationGraphController.Get));
+        var descriptor = BuildDescriptor<AuthorizationGraphController>(nameof(AuthorizationGraphController.View));
         var provider = BuildProvider([descriptor]);
         var scanner = new PermissionDiscoveryScanner(provider);
 
@@ -26,9 +26,9 @@ public sealed class AuthorizationGraphPermissionDiscoveryTests
     }
 
     [Fact]
-    public void Scan_AuthorizationGraphController_DiscoverGetPermissionWithAuthorizationGroup()
+    public void Scan_AuthorizationGraphController_ViewAction_UsesAuthorizationGroup()
     {
-        var descriptor = BuildDescriptor<AuthorizationGraphController>(nameof(AuthorizationGraphController.Get));
+        var descriptor = BuildDescriptor<AuthorizationGraphController>(nameof(AuthorizationGraphController.View));
         var provider = BuildProvider([descriptor]);
         var scanner = new PermissionDiscoveryScanner(provider);
 
@@ -39,9 +39,9 @@ public sealed class AuthorizationGraphPermissionDiscoveryTests
     }
 
     [Fact]
-    public void Scan_AuthorizationGraphController_DiscoverGetPermissionWithCorrectControllerAndAction()
+    public void Scan_AuthorizationGraphController_ViewAction_ControllerAndActionMatchConvention()
     {
-        var descriptor = BuildDescriptor<AuthorizationGraphController>(nameof(AuthorizationGraphController.Get));
+        var descriptor = BuildDescriptor<AuthorizationGraphController>(nameof(AuthorizationGraphController.View));
         var provider = BuildProvider([descriptor]);
         var scanner = new PermissionDiscoveryScanner(provider);
 
@@ -49,7 +49,7 @@ public sealed class AuthorizationGraphPermissionDiscoveryTests
 
         result.Should().HaveCount(1);
         result[0].Controller.Should().Be("AuthorizationGraph");
-        result[0].Action.Should().Be("Get");
+        result[0].Action.Should().Be("View");
     }
 
     private static IActionDescriptorCollectionProvider BuildProvider(IReadOnlyList<ActionDescriptor> descriptors)

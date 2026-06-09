@@ -21,12 +21,12 @@ public sealed class AuthorizationGraphController : ControllerBase
     }
 
     [HttpGet]
-    [RequirePermission(PermissionCodes.AuthorizationGraph.View)]
+    [RequirePermission]
     [Authorize(Policy = PermissionCodes.AuthorizationGraph.View)]
     [ProducesResponseType(typeof(GetAuthorizationGraphQueryHandler.GraphSnapshot), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> Get(CancellationToken ct = default)
+    public async Task<IActionResult> View(CancellationToken ct = default)
     {
         var snapshot = await _mediator.Send(new GetAuthorizationGraphQueryHandler.Query(), ct);
         return Ok(snapshot);

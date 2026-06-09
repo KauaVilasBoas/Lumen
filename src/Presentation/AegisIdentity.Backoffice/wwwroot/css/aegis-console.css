@@ -968,3 +968,22 @@ body.reveal-on .reveal-banner { display: flex; }
 
 /* sidebar nav uses <a> instead of <button> in Razor */
 a.navitem { text-decoration: none; }
+
+/* live status indicator */
+.graph-live-status {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--text-dim); margin-top: 10px; padding: 0 2px;
+}
+.live-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+  background: var(--text-ghost);
+}
+.live-dot.connecting  { background: var(--warn);   animation: pulse-dot 1.4s ease-in-out infinite; }
+.live-dot.connected   { background: var(--ok); }
+.live-dot.reconnecting{ background: var(--warn);   animation: pulse-dot 0.8s ease-in-out infinite; }
+.live-dot.disconnected{ background: var(--danger); }
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}

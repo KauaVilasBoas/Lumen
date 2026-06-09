@@ -7,6 +7,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (authorization mismatches — convention vs. policy code)
+- `UsersController`: action `GetDetail` renamed to `Get` so the convention `Controller.Action`
+  produces `"Users.Get"`, matching `PermissionCodes.Users.Get` used by the `[Authorize]` policy.
+  The route `[HttpGet("{id:guid}")]` is unchanged; only the C# method name was corrected.
+- `AuditController`: action `Recent` renamed to `Read` so the convention produces `"Audit.Read"`,
+  matching `PermissionCodes.Audit.Read`. The route `[HttpGet("recent")]` is unchanged.
+- `DiagnosticsController`: `GetCacheStats` and `GetJobStats` were both referencing the removed
+  `PermissionCodes.Diagnostics.Read` (`"Diagnostics.Read"`), which never matched their
+  convention-generated codes. The shared constant was replaced with two per-endpoint constants:
+  `PermissionCodes.Diagnostics.GetCacheStats` (`"Diagnostics.GetCacheStats"`) and
+  `PermissionCodes.Diagnostics.GetJobStats` (`"Diagnostics.GetJobStats"`). Each action now
+  declares the matching `[Authorize(Policy = ...)]`.
+- Migration `20260609010000_SeedConventionPermissionFixes` seeds all four permission rows
+  (`Users.Get`, `Audit.Read`, `Diagnostics.GetCacheStats`, `Diagnostics.GetJobStats`) and
+  their respective groups idempotently before the discovery service runs. Existing rows
+  created by previous discovery boots (e.g. `Users.GetDetail`, `Audit.Recent`,
+  `Diagnostics.Read`) are not deleted; they are marked as orphan by the sync service.
+- 4 regression unit tests added in `ConventionPermissionRegressionTests` to assert that the
+  scanner produces the exact convention code for each corrected action.
+
+### Fixed (boot crash — AuthorizationGraph.View permission)
+- `AuthorizationGraphController`: action renamed from `Get` to `View` so the convention
+  `Controller.Action` produces `"AuthorizationGraph.View"`, matching `PermissionCodes.AuthorizationGraph.View`
+  used by the Authorize policy, the hub, and the Backoffice proxy. The bare `[RequirePermission]`
+  attribute (no argument) ensures the discovery scanner operates on the renamed action via convention,
+  eliminating the code-divergence that caused a unique-index violation on `ix_permissions_code_unique`
+  at the second boot.
+- Migration `20260609000000_SeedAuthorizationGraphPermission` seeds the `GroupPermissions` row
+  for `"Authorization"` and the `Permissions` row for `"AuthorizationGraph.View"` with deterministic
+  GUIDs before the `PermissionDiscoveryHostedService` runs. On subsequent boots the discovery scanner
+  finds the pre-existing row by code and performs an UPDATE instead of INSERT — no collision, no crash.
+  The previous erroneous `"AuthorizationGraph.Get"` row (if present) is marked as orphan by the sync
+  service without being deleted.
+
+### Fixed (BACKOFFICE-QA-01)
+- `_Layout.cshtml`: hardcoded `admin@aegisidentity.local` replaced with `User.FindFirstValue(ClaimTypes.Email)`
+  sourced from the authenticated cookie principal; email div is conditionally rendered and absent when the claim
+  is not present, ensuring no fake data is ever displayed.
+- `_Layout.cshtml`: sidebar health widget removed hardcoded status values ("healthy", "1 queued") that were
+  presented as real service state. Dots now use `--faint` colour and no status text is emitted until a real
+  `/api/diagnostics/health` integration is added in a future card.
+
+### Added (API-SIGNALR-02)
+- `GraphLivePushHandler` added to `AegisIdentity.Api.Hubs`; implements `INotificationHandler<UserPermissionsChanged>`
+  and pushes a `GraphSnapshot` delta to all connected clients of the affected user via
+  `IHubContext<AuthorizationGraphHub, IAuthorizationGraphHubClient>.Clients.User(userId)`.
+- Handler is independent of `UserPermissionsChangedHandler` (cache invalidation) and
+  `UserPermissionsChangedAuditHandler`; MediatR fans out to all three on each notification.
+- Delta payload recomputes the user's active profile memberships and resolved permission IDs
+  using `IUserProfileRepository` and `IProfileRepository`, keeping the push lean (single-user
+  sub-graph, not the full snapshot).
+- User not found at push time is treated as a no-op with a warning log; push errors propagate
+  to let the MediatR pipeline decide retry semantics.
+- `RegisterServicesFromAssemblyContaining<GraphLivePushHandler>()` added to the MediatR
+  registration in `Program.cs` so the Api assembly is scanned alongside CommandHandlers,
+  QueryHandlers, and EventHandlers.
+- 4 unit tests added in `GraphLivePushHandlerTests` covering: push to correct user group,
+  user-not-found no-op, empty-profiles snapshot, and multi-profile snapshot composition.
+
 ### Added (API-SIGNALR-01)
 - `AddSignalR()` registered in `Program.cs`; `MapHub<AuthorizationGraphHub>` wired to
   `HubRoutes.AuthorizationGraph` (`/hubs/authorization-graph`).
