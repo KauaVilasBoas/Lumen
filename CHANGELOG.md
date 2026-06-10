@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (integration tests — first CI run on a clean database)
+- `AuthorizationSeeder` added to the integration test infrastructure; it creates the `Users` row
+  (with a deterministic id) before inserting `UserProfiles`, fixing the
+  `FK_UserProfiles_Users_UserId` violation that broke 31 tests on a clean SQL Server container.
+  The seven copy-pasted `SeedUserWithPermissionAsync` helpers were replaced by the shared seeder.
+- `PermissionEnforcementTests.AuthenticatedUser_WithoutRequiredPermission_Returns403` now sends an
+  authenticated request via `CreateProbeClientWithUser`; it previously used an anonymous client,
+  which can only ever produce `401`.
+- `ProfileManagementTests` seeds the referenced user before creating `UserProfile` join rows in the
+  five tests that used orphan `Guid.NewGuid()` user ids.
+- `DefaultProfilesTests.AdministratorPermissionReconciliation_IsAdditive` no longer calls
+  FluentAssertions `Contain` with an empty expected collection (which throws `ArgumentException`)
+  and now asserts directly that the extra permission was granted after reconciliation.
+
 ## [0.2.0] - 2026-06-09
 
 ### Added (OPS-01)
