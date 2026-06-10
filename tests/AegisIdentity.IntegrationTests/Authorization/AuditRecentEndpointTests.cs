@@ -59,7 +59,7 @@ public sealed class AuditRecentEndpointTests
 
         await using var scope = _fixture.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
-        await SeedUserWithPermissionAsync(db, Guid.Parse(requestingUserId), "Audit.Read");
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, Guid.Parse(requestingUserId), "Audit.Read");
         await SeedAuditEntryAsync(db);
 
         var client = _fixture.CreateAuthenticatedClient(requestingUserId);
@@ -86,7 +86,7 @@ public sealed class AuditRecentEndpointTests
 
         await using var scope = _fixture.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
-        await SeedUserWithPermissionAsync(db, Guid.Parse(requestingUserId), "Audit.Read");
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, Guid.Parse(requestingUserId), "Audit.Read");
         await SeedAuditEntryAsync(db);
         await SeedAuditEntryAsync(db);
         await SeedAuditEntryAsync(db);
@@ -107,7 +107,7 @@ public sealed class AuditRecentEndpointTests
 
         await using var scope = _fixture.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
-        await SeedUserWithPermissionAsync(db, Guid.Parse(requestingUserId), "Audit.Read");
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, Guid.Parse(requestingUserId), "Audit.Read");
 
         var client = _fixture.CreateAuthenticatedClient(requestingUserId);
         var response = await client.GetAsync($"{BaseEndpoint}?take=0");
@@ -118,45 +118,6 @@ public sealed class AuditRecentEndpointTests
     // ──────────────────────────────────────────────────────────────────────────
     // Helpers
     // ──────────────────────────────────────────────────────────────────────────
-
-    private static async Task SeedUserWithPermissionAsync(
-        AegisIdentityDbContext db,
-        Guid userId,
-        string permissionCode)
-    {
-        if (!db.Permissions.Any(p => p.Code == permissionCode))
-        {
-            var parts = permissionCode.Split('.');
-            db.Permissions.Add(Permission.Create(parts[0], parts[1], permissionCode));
-            await db.SaveChangesAsync();
-        }
-
-        var permission = db.Permissions.First(p => p.Code == permissionCode);
-
-        var profileName = $"test-audit-profile-{userId}";
-        var profile = db.Profiles
-            .IgnoreQueryFilters()
-            .FirstOrDefault(p => p.Name == profileName);
-
-        if (profile is null)
-        {
-            profile = Profile.Create(profileName, profileName);
-            db.Profiles.Add(profile);
-            await db.SaveChangesAsync();
-        }
-
-        if (!db.PermissionProfiles.Any(pp => pp.ProfileId == profile.Id && pp.PermissionId == permission.Id))
-        {
-            db.PermissionProfiles.Add(PermissionProfile.Create(permission.Id, profile.Id));
-            await db.SaveChangesAsync();
-        }
-
-        if (!db.UserProfiles.Any(up => up.UserId == userId && up.ProfileId == profile.Id))
-        {
-            db.UserProfiles.Add(UserProfile.Create(userId, profile.Id));
-            await db.SaveChangesAsync();
-        }
-    }
 
     private static async Task SeedAuditEntryAsync(AegisIdentityDbContext db)
     {

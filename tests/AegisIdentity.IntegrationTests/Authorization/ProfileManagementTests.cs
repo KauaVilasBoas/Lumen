@@ -48,6 +48,7 @@ public sealed class ProfileManagementTests
         db.Profiles.Add(profile);
 
         var userId = Guid.NewGuid();
+        await AuthorizationSeeder.EnsureUserAsync(db, userId);
         var userProfile = UserProfile.Create(userId, profile.Id);
         db.UserProfiles.Add(userProfile);
 
@@ -153,6 +154,7 @@ public sealed class ProfileManagementTests
         await db.SaveChangesAsync();
 
         var userId = Guid.NewGuid();
+        await AuthorizationSeeder.EnsureUserAsync(db, userId);
         var userProfile = UserProfile.Create(userId, profile.Id);
         db.UserProfiles.Add(userProfile);
         await db.SaveChangesAsync();
@@ -174,6 +176,7 @@ public sealed class ProfileManagementTests
         await db.SaveChangesAsync();
 
         var userId = Guid.NewGuid();
+        await AuthorizationSeeder.EnsureUserAsync(db, userId);
         var userProfile = UserProfile.Create(userId, profile.Id);
         db.UserProfiles.Add(userProfile);
         await db.SaveChangesAsync();
@@ -211,6 +214,7 @@ public sealed class ProfileManagementTests
         var profile = Domain.Authorization.Profile.Create("Readers", "Readers profile");
         db.Profiles.Add(profile);
 
+        await AuthorizationSeeder.EnsureUserAsync(db, userGuid);
         db.UserProfiles.Add(UserProfile.Create(userGuid, profile.Id));
         await db.SaveChangesAsync();
 
@@ -265,6 +269,7 @@ public sealed class ProfileManagementTests
         db.Profiles.Add(profile);
 
         var userId = Guid.NewGuid();
+        await AuthorizationSeeder.EnsureUserAsync(db, userId);
         var userProfile = UserProfile.Create(userId, profile.Id);
         db.UserProfiles.Add(userProfile);
 

@@ -26,9 +26,9 @@ public sealed class PermissionEnforcementTests
     {
         await using var scope = _fixture.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
-        await SeedPermissionAsync(db, PermissionProbeController.ProbePermissionCode);
+        await AuthorizationSeeder.EnsurePermissionAsync(db, PermissionProbeController.ProbePermissionCode);
 
-        var client = _fixture.CreateProbeClient();
+        var client = _fixture.CreateProbeClientWithUser("00000000-0000-0000-0000-000000000005");
         var response = await client.GetAsync(PermissionProbeController.ProtectedPath);
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
@@ -50,7 +50,7 @@ public sealed class PermissionEnforcementTests
 
         await using var scope = _fixture.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
-        await SeedUserWithPermissionAsync(db, Guid.Parse(userId), PermissionProbeController.ProbePermissionCode);
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, Guid.Parse(userId), PermissionProbeController.ProbePermissionCode);
 
         var client = _fixture.CreateProbeClientWithUser(userId);
         var response = await client.GetAsync(PermissionProbeController.ProtectedPath);
@@ -68,14 +68,14 @@ public sealed class PermissionEnforcementTests
         var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
         var cache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
 
-        await SeedPermissionAsync(db, PermissionProbeController.ProbePermissionCode);
+        await AuthorizationSeeder.EnsurePermissionAsync(db, PermissionProbeController.ProbePermissionCode);
 
         var client = _fixture.CreateProbeClientWithUser(userId);
 
         var firstResponse = await client.GetAsync(PermissionProbeController.ProtectedPath);
         firstResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        await SeedUserWithPermissionAsync(db, userGuid, PermissionProbeController.ProbePermissionCode);
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, userGuid, PermissionProbeController.ProbePermissionCode);
         await cache.InvalidateAsync(userGuid);
 
         var secondResponse = await client.GetAsync(PermissionProbeController.ProtectedPath);
@@ -89,7 +89,7 @@ public sealed class PermissionEnforcementTests
 
         await using var scope = _fixture.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
-        await SeedUserWithPermissionAsync(db, Guid.Parse(userId), PermissionProbeController.ProbePermissionCode);
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, Guid.Parse(userId), PermissionProbeController.ProbePermissionCode);
 
         var client = _fixture.CreateProbeClientWithBrokenRedis(userId);
         var response = await client.GetAsync(PermissionProbeController.ProtectedPath);
@@ -98,47 +98,6 @@ public sealed class PermissionEnforcementTests
             "authorization must fall back to the database when Redis is unavailable");
     }
 
-    private static async Task SeedPermissionAsync(AegisIdentityDbContext db, string code)
-    {
-        if (!db.Permissions.Any(p => p.Code == code))
-        {
-            var parts = code.Split('.');
-            db.Permissions.Add(Permission.Create(parts[0], parts[1], code));
-            await db.SaveChangesAsync();
-        }
-    }
-
-    private static async Task SeedUserWithPermissionAsync(
-        AegisIdentityDbContext db,
-        Guid userId,
-        string permissionCode)
-    {
-        await SeedPermissionAsync(db, permissionCode);
-
-        var permission = db.Permissions.First(p => p.Code == permissionCode);
-
-        var profileName = $"test-profile-{userId}";
-        var profile = db.Profiles.FirstOrDefault(p => p.Name == profileName);
-
-        if (profile is null)
-        {
-            profile = Profile.Create(profileName, profileName);
-            db.Profiles.Add(profile);
-            await db.SaveChangesAsync();
-        }
-
-        if (!db.PermissionProfiles.Any(pp => pp.ProfileId == profile.Id && pp.PermissionId == permission.Id))
-        {
-            db.PermissionProfiles.Add(PermissionProfile.Create(permission.Id, profile.Id));
-            await db.SaveChangesAsync();
-        }
-
-        if (!db.UserProfiles.Any(up => up.UserId == userId && up.ProfileId == profile.Id))
-        {
-            db.UserProfiles.Add(UserProfile.Create(userId, profile.Id));
-            await db.SaveChangesAsync();
-        }
-    }
 }
 
 [ApiController]

@@ -109,12 +109,19 @@ public sealed class DefaultProfilesTests
             .Select(pp => pp.Id)
             .ToListAsync();
 
-        updatedAssignmentIds.Should().Contain(existingAssignmentIds,
-            "reconciliation must be additive and never remove pre-existing assignments");
+        if (existingAssignmentIds.Count > 0)
+        {
+            updatedAssignmentIds.Should().Contain(existingAssignmentIds,
+                "reconciliation must be additive and never remove pre-existing assignments");
+        }
 
-        updatedAssignmentIds.Should().Contain(
-            updatedAssignmentIds.Except(existingAssignmentIds),
-            "the new permission must have been granted");
+        var extraPermissionGranted = await db.PermissionProfiles
+            .AnyAsync(pp =>
+                pp.ProfileId == SystemProfiles.AdministratorId &&
+                pp.PermissionId == extraPermission.Id &&
+                !pp.IsDeleted);
+
+        extraPermissionGranted.Should().BeTrue("the new permission must have been granted");
     }
 
     [Fact]
