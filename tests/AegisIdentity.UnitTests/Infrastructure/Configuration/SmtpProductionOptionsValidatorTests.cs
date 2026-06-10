@@ -24,6 +24,8 @@ public sealed class SmtpProductionOptionsValidatorTests
 
     [Theory]
     [InlineData("REPLACE_ME")]
+    [InlineData("replace_me")]
+    [InlineData("Replace_Me")]
     [InlineData("")]
     [InlineData("   ")]
     public void Validate_WhenHostIsUnset_FailsNamingTheEnvironmentVariable(string host)
@@ -69,10 +71,13 @@ public sealed class SmtpProductionOptionsValidatorTests
         result.FailureMessage.Should().Contain("Smtp__Pass");
     }
 
-    [Fact]
-    public void Validate_WhenFromIsUnset_FailsNamingTheEnvironmentVariable()
+    [Theory]
+    [InlineData("REPLACE_ME")]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Validate_WhenFromIsUnset_FailsNamingTheEnvironmentVariable(string from)
     {
-        var result = Validator.Validate(null, ValidOptions(from: "REPLACE_ME"));
+        var result = Validator.Validate(null, ValidOptions(from: from));
 
         result.Failed.Should().BeTrue();
         result.FailureMessage.Should().Contain("Smtp__From");

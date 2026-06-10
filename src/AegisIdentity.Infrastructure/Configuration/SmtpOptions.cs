@@ -12,7 +12,10 @@ public sealed class SmtpOptions
     [Range(1, 65535, ErrorMessage = "Smtp:Port must be between 1 and 65535.")]
     public int Port { get; init; } = 587;
 
-    // Not [Required]: anonymous SMTP relays are valid in dev (e.g. Mailpit on localhost).
+    /// <summary>
+    /// Not <c>[Required]</c>: anonymous SMTP relays are valid in dev (e.g. Mailpit on localhost).
+    /// Production requires it via <see cref="SmtpProductionOptionsValidator"/>.
+    /// </summary>
     public string User { get; init; } = string.Empty;
 
     public string Pass { get; init; } = string.Empty;
@@ -21,6 +24,8 @@ public sealed class SmtpOptions
     [EmailAddress(ErrorMessage = "Smtp:From must be a valid e-mail address.")]
     public string From { get; init; } = string.Empty;
 
-    // Secure by default: dev relays without STARTTLS (e.g. Mailpit) opt out explicitly.
+    /// <summary>
+    /// Secure by default: dev relays without STARTTLS (e.g. Mailpit) opt out explicitly.
+    /// </summary>
     public bool UseStartTls { get; init; } = true;
 }

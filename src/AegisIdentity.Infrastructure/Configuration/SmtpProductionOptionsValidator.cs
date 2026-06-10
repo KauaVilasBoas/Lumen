@@ -53,7 +53,8 @@ public sealed class SmtpProductionOptionsValidator : IValidateOptions<SmtpOption
     }
 
     private static bool IsUnset(string value)
-        => string.IsNullOrWhiteSpace(value) || value == ConfigurationPlaceholders.ReplaceMe;
+        => string.IsNullOrWhiteSpace(value)
+           || string.Equals(value, ConfigurationPlaceholders.ReplaceMe, StringComparison.OrdinalIgnoreCase);
 
     private static string UnsetMessage(string variableName)
         => $"{variableName} is required in Production and is missing or still set to the " +
