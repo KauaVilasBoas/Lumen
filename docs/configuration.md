@@ -25,22 +25,6 @@ misconfiguration crashes the app on boot, never silently in production.
 | `Cors__AllowedOrigins__0` | `Cors:AllowedOrigins[0]` | Allowed CORS origin | `https://yourdomain.com` |
 | `App__BaseUrl` | `App:BaseUrl` | Public API base URL (no trailing slash) — used in outbound email links | `https://api.yourdomain.com` |
 
-## Backoffice — required environment variables
-
-The Backoffice (`src/Presentation/AegisIdentity.Backoffice`) depends on three infrastructure
-services, all validated on startup.
-
-| Variable (env var format) | Section : Key | Description | Example |
-|---|---|---|---|
-| `Api__BaseUrl` | `Api:BaseUrl` | Base URL of the AegisIdentity API (no trailing slash) | `https://api.aegisidentity.io` |
-| `SqlServer__ConnectionString` | `SqlServer:ConnectionString` | SQL Server connection string — same database as the API | `Server=localhost,1433;...` |
-| `Redis__ConnectionString` | `Redis:ConnectionString` | Redis connection string — required for the permission cache (`IUserPermissionCache`) | `localhost:6379` |
-
-> **Redis is a required dependency of the Backoffice** (introduced in FIX-04 / INFRA-07).
-> The permission cache used by `RequirePermissionTagHelper` and `HasPermissionAsync` reads
-> from Redis on every request. Start Redis with `docker compose up -d redis` before running
-> the Backoffice locally.
-
 ### Production SMTP — fail-fast validation
 
 The app is **SMTP-provider agnostic**: all email configuration is read from the `Smtp__*`
@@ -67,6 +51,22 @@ Error messages name the offending variable but never echo its value.
 
 > For the portfolio MVP, any reliable SMTP provider works. Postal self-host is the fully
 > open-source path. The deploy epic (DEPLOY-07) decides and provisions the production provider.
+
+## Backoffice — required environment variables
+
+The Backoffice (`src/Presentation/AegisIdentity.Backoffice`) depends on three infrastructure
+services, all validated on startup.
+
+| Variable (env var format) | Section : Key | Description | Example |
+|---|---|---|---|
+| `Api__BaseUrl` | `Api:BaseUrl` | Base URL of the AegisIdentity API (no trailing slash) | `https://api.aegisidentity.io` |
+| `SqlServer__ConnectionString` | `SqlServer:ConnectionString` | SQL Server connection string — same database as the API | `Server=localhost,1433;...` |
+| `Redis__ConnectionString` | `Redis:ConnectionString` | Redis connection string — required for the permission cache (`IUserPermissionCache`) | `localhost:6379` |
+
+> **Redis is a required dependency of the Backoffice** (introduced in FIX-04 / INFRA-07).
+> The permission cache used by `RequirePermissionTagHelper` and `HasPermissionAsync` reads
+> from Redis on every request. Start Redis with `docker compose up -d redis` before running
+> the Backoffice locally.
 
 ## Local development via User Secrets
 
@@ -103,7 +103,7 @@ ASP.NET Core maps `Section__Key` to `Section:Key` automatically:
 SqlServer__ConnectionString=Server=<railway-sqlserver-host>;Database=AegisIdentity;User Id=sa;Password=<secret>;TrustServerCertificate=True
 Redis__ConnectionString=<railway-redis-host>:6379,password=<secret>
 Jwt__Secret=your-strong-production-key-min-32-chars
-Smtp__Host=smtp.sendgrid.net
+Smtp__Host=smtp-relay.brevo.com
 Smtp__Pass=SG.xxxxxxxxxxxxxxxxxxxxx
 
 # Alternative: Azure SQL Database (serverless/free tier)
