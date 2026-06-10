@@ -72,18 +72,22 @@ public sealed class GetUserDetailQueryHandler
         if (profiles.Count == 0)
             return [];
 
-        var tasks = profiles.Select(async profile =>
+        // Sequential on purpose: every repository in the request scope shares one
+        // DbContext, which does not allow concurrent operations.
+        var summaries = new List<ProfileSummary>(profiles.Count);
+
+        foreach (var profile in profiles)
         {
             var permissionProfiles = await _profileRepository
                 .GetActivePermissionProfilesByProfileIdAsync(profile.Id, ct);
 
-            return new ProfileSummary(
+            summaries.Add(new ProfileSummary(
                 ProfileId: profile.Id,
                 Name: profile.Name,
                 IsSystem: profile.IsSystem,
-                PermissionCount: permissionProfiles.Count);
-        });
+                PermissionCount: permissionProfiles.Count));
+        }
 
-        return await Task.WhenAll(tasks);
+        return summaries;
     }
 }
