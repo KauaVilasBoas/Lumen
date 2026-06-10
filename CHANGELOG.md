@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (concurrent DbContext access — 500 on Users endpoints)
+- `ListUsersQueryHandler` resolved profile and permission counts with `Task.WhenAll` over
+  repositories that share the request-scoped `DbContext`; EF Core forbids concurrent operations
+  on one context, so any page with more than one user returned `500`. Both batch helpers now
+  iterate sequentially (≤ page size queries per request).
+- `GetUserDetailQueryHandler.BuildProfileSummariesAsync` had the same latent pattern, triggered
+  for any user with two or more profiles; also made sequential.
+
 ### Fixed (integration tests — first CI run on a clean database)
 - `AuthorizationSeeder` added to the integration test infrastructure; it creates the `Users` row
   (with a deterministic id) before inserting `UserProfiles`, fixing the
