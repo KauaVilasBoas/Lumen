@@ -21,5 +21,6 @@ public sealed class SmtpOptions
     [EmailAddress(ErrorMessage = "Smtp:From must be a valid e-mail address.")]
     public string From { get; init; } = string.Empty;
 
-    public bool UseStartTls { get; init; } = false;
+    // Secure by default: dev relays without STARTTLS (e.g. Mailpit) opt out explicitly.
+    public bool UseStartTls { get; init; } = true;
 }

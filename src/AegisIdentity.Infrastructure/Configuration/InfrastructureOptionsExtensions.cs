@@ -1,6 +1,7 @@
 using AegisIdentity.Domain.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 namespace AegisIdentity.Infrastructure.Configuration;
 
@@ -8,8 +9,12 @@ public static class InfrastructureOptionsExtensions
 {
     public static IServiceCollection AddInfrastructureOptions(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        bool isProduction = false)
     {
+        if (isProduction)
+            services.AddSingleton<IValidateOptions<SmtpOptions>, SmtpProductionOptionsValidator>();
+
         services
             .AddOptions<JwtOptions>()
             .Bind(configuration.GetSection(JwtOptions.SectionName))
