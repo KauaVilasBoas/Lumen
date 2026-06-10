@@ -14,16 +14,43 @@ misconfiguration crashes the app on boot, never silently in production.
 | `Jwt__Secret` | `Jwt:Secret` | HMAC-SHA256 signing key (min 32 chars) | `<strong-random-key>` |
 | `Jwt__ExpirationMinutes` | `Jwt:ExpirationMinutes` | Access token lifetime, in minutes | `15` |
 | `Jwt__RefreshExpirationDays` | `Jwt:RefreshExpirationDays` | Refresh token lifetime, in days | `7` |
-| `Smtp__Host` | `Smtp:Host` | SMTP server | `smtp.sendgrid.net` |
+| `Smtp__Host` | `Smtp:Host` | SMTP server | `smtp-relay.brevo.com` |
 | `Smtp__Port` | `Smtp:Port` | SMTP port | `587` |
 | `Smtp__User` | `Smtp:User` | SMTP user | `apikey` |
-| `Smtp__Pass` | `Smtp:Pass` | SMTP password / API key | `<secret>` |
+| `Smtp__Pass` | `Smtp:Pass` | SMTP password / API key — **secret**, inject via the host's secret store, never as plain config | `<secret>` |
 | `Smtp__From` | `Smtp:From` | Sender address | `no-reply@yourdomain.com` |
-| `Smtp__UseStartTls` | `Smtp:UseStartTls` | Enable STARTTLS | `true` |
+| `Smtp__UseStartTls` | `Smtp:UseStartTls` | Enable STARTTLS (defaults to `true`; dev relays without TLS opt out explicitly) | `true` |
 | `Hibp__UserAgent` | `Hibp:UserAgent` | User-Agent for the HIBP API | `YourApp/1.0 (contact@yourdomain.com)` |
 | `Hibp__ApiBaseUrl` | `Hibp:ApiBaseUrl` | HIBP API base URL | `https://api.pwnedpasswords.com` |
 | `Cors__AllowedOrigins__0` | `Cors:AllowedOrigins[0]` | Allowed CORS origin | `https://yourdomain.com` |
 | `App__BaseUrl` | `App:BaseUrl` | Public API base URL (no trailing slash) — used in outbound email links | `https://api.yourdomain.com` |
+
+### Production SMTP — fail-fast validation
+
+The app is **SMTP-provider agnostic**: all email configuration is read from the `Smtp__*`
+variables above and MailKit speaks plain SMTP — switching providers is a config change,
+never a code change.
+
+In `Production`, `SmtpProductionOptionsValidator` runs on startup (in addition to the
+data-annotation rules) and **fails the boot** when:
+
+- `Smtp__Host`, `Smtp__User`, `Smtp__Pass` or `Smtp__From` is missing or still set to the
+  committed `REPLACE_ME` placeholder;
+- `Smtp__Host` points to a loopback address (`localhost`, `127.0.0.1`, `::1`) — a dev relay
+  in production would silently discard every outbound email.
+
+Error messages name the offending variable but never echo its value.
+
+#### Provider options
+
+| Option | Cost | Notes |
+|---|---|---|
+| Generic free-tier SMTP (e.g. [Brevo](https://www.brevo.com) ~300 emails/day, SendGrid) | Free | Not open source, but free and operational in minutes — fine for the portfolio MVP |
+| [Postal](https://docs.postalserver.io/) self-hosted in Docker | Free (infra only) | 100% open source; requires DNS control (SPF/DKIM/DMARC) and an IP with good sending reputation |
+| Mailpit (already in `docker-compose.yml`) | Free | Dev/staging only — catches every message in a local inbox UI, nothing leaves the machine |
+
+> For the portfolio MVP, any reliable SMTP provider works. Postal self-host is the fully
+> open-source path. The deploy epic (DEPLOY-07) decides and provisions the production provider.
 
 ## Backoffice — required environment variables
 
@@ -76,7 +103,7 @@ ASP.NET Core maps `Section__Key` to `Section:Key` automatically:
 SqlServer__ConnectionString=Server=<railway-sqlserver-host>;Database=AegisIdentity;User Id=sa;Password=<secret>;TrustServerCertificate=True
 Redis__ConnectionString=<railway-redis-host>:6379,password=<secret>
 Jwt__Secret=your-strong-production-key-min-32-chars
-Smtp__Host=smtp.sendgrid.net
+Smtp__Host=smtp-relay.brevo.com
 Smtp__Pass=SG.xxxxxxxxxxxxxxxxxxxxx
 
 # Alternative: Azure SQL Database (serverless/free tier)

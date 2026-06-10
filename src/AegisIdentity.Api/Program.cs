@@ -20,7 +20,6 @@ using AegisIdentity.SharedKernel.Constants;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.Extensions.Options;
 using Serilog;
 using Serilog.Events;
 
@@ -42,7 +41,7 @@ try
            .Enrich.FromLogContext());
 
     // ── Infrastructure ────────────────────────────────────────────────────────
-    builder.Services.AddInfrastructureOptions(builder.Configuration);
+    builder.Services.AddInfrastructureOptions(builder.Configuration, builder.Environment.IsProduction());
     builder.Services.AddRelationalDataAccess();
     builder.Services.AddRedisCache(builder.Configuration);
     builder.Services.AddSecurity();
@@ -101,21 +100,6 @@ try
     // To add a new job: implement IJobDefinition.  No changes here required.
     if (!app.Environment.IsEnvironment("Testing"))
         app.ScheduleRecurringJobs();
-
-    // Reject loopback SMTP in Production — would silently discard all outbound emails.
-    if (app.Environment.IsProduction())
-    {
-        var smtpOptions = app.Services.GetRequiredService<IOptions<SmtpOptions>>().Value;
-        var localhostAliases = new[] { "localhost", "127.0.0.1", "::1" };
-
-        if (localhostAliases.Contains(smtpOptions.Host, StringComparer.OrdinalIgnoreCase))
-        {
-            throw new InvalidOperationException(
-                $"Smtp:Host is set to '{smtpOptions.Host}' which resolves to localhost. " +
-                "Configuring a loopback SMTP relay in Production will silently discard all outbound emails. " +
-                "Set Smtp:Host to a real SMTP server (e.g. smtp.sendgrid.net) before deploying.");
-        }
-    }
 
     // ── Middleware pipeline ───────────────────────────────────────────────────
 

@@ -308,6 +308,12 @@ profiles `Administrator` / `User`, and the admin binding — see
 Connection strings, JWT settings, SMTP and all other options (with `dotnet user-secrets`
 examples) are documented in **[docs/configuration.md](docs/configuration.md)**.
 
+Production email is **SMTP-provider agnostic** — any provider (Brevo/SendGrid free tier,
+self-hosted [Postal](https://docs.postalserver.io/), or any plain SMTP relay) plugs in via
+`Smtp__*` environment variables, and a startup validator fails the boot in Production if
+the SMTP config is missing, still a placeholder, or pointing at localhost. See the
+[provider options](docs/configuration.md#production-smtp--fail-fast-validation).
+
 ### Tests
 
 ```powershell
