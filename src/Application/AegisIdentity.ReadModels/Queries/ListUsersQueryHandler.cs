@@ -137,17 +137,12 @@ public sealed class ListUsersQueryHandler
 
         // GetProfilesByUserIdAsync already filters at the database level per user.
         // We call it once per user in the current page — typically ≤ 20 calls for
-        // the default page size. A future optimisation could add a batch overload to
+        // the default page size. Calls are sequential because every repository in
+        // the request scope shares one DbContext, which does not allow concurrent
+        // operations. A future optimisation could add a batch overload to
         // IProfileRepository, but at this scale the per-user approach is acceptable.
-        var tasks = userIds
-            .Select(async userId =>
-            {
-                var profiles = await _profileRepository.GetProfilesByUserIdAsync(userId, ct);
-                return (userId, profiles);
-            });
-
-        foreach (var (userId, profiles) in await Task.WhenAll(tasks))
-            result[userId] = profiles;
+        foreach (var userId in userIds)
+            result[userId] = await _profileRepository.GetProfilesByUserIdAsync(userId, ct);
 
         return result;
     }
@@ -163,20 +158,19 @@ public sealed class ListUsersQueryHandler
     {
         var result = new Dictionary<Guid, int>(profilesByUser.Count);
 
-        var tasks = profilesByUser
-            .Where(kv => kv.Value.Count > 0)
-            .Select(async kv =>
+        // Sequential for the same reason as BatchProfilesByUserAsync: the shared
+        // request-scoped DbContext forbids concurrent operations.
+        foreach (var (userId, profiles) in profilesByUser)
+        {
+            if (profiles.Count == 0)
             {
-                var codes = await _profileRepository.GetPermissionCodesByUserIdAsync(kv.Key, ct);
-                return (userId: kv.Key, count: codes.Count);
-            });
+                result[userId] = 0;
+                continue;
+            }
 
-        foreach (var (userId, count) in await Task.WhenAll(tasks))
-            result[userId] = count;
-
-        // Users with no profiles get 0 permissions (already the default).
-        foreach (var userId in profilesByUser.Where(kv => kv.Value.Count == 0).Select(kv => kv.Key))
-            result[userId] = 0;
+            var codes = await _profileRepository.GetPermissionCodesByUserIdAsync(userId, ct);
+            result[userId] = codes.Count;
+        }
 
         return result;
     }

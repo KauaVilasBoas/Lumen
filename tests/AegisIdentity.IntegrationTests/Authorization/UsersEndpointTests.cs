@@ -56,7 +56,7 @@ public sealed class UsersEndpointTests
 
         await using var scope = _fixture.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
-        await SeedUserWithPermissionAsync(db, Guid.Parse(userId), "Users.List");
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, Guid.Parse(userId), "Users.List");
 
         var client = _fixture.CreateAuthenticatedClient(userId);
 
@@ -76,7 +76,7 @@ public sealed class UsersEndpointTests
 
         await using var scope = _fixture.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
-        await SeedUserWithPermissionAsync(db, Guid.Parse(userId), "Users.List");
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, Guid.Parse(userId), "Users.List");
 
         var client = _fixture.CreateAuthenticatedClient(userId);
         var response = await client.GetAsync(Endpoint);
@@ -104,7 +104,7 @@ public sealed class UsersEndpointTests
 
         await using var scope = _fixture.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
-        await SeedUserWithPermissionAsync(db, Guid.Parse(userId), "Users.List");
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, Guid.Parse(userId), "Users.List");
 
         var client = _fixture.CreateAuthenticatedClient(userId);
         var response = await client.GetAsync(Endpoint + queryString);
@@ -119,7 +119,7 @@ public sealed class UsersEndpointTests
 
         await using var scope = _fixture.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
-        await SeedUserWithPermissionAsync(db, Guid.Parse(userId), "Users.List");
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, Guid.Parse(userId), "Users.List");
 
         var client = _fixture.CreateAuthenticatedClient(userId);
         var response = await client.GetAsync(Endpoint + "?state=invalid_value");
@@ -138,7 +138,7 @@ public sealed class UsersEndpointTests
 
         await using var scope = _fixture.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
-        await SeedUserWithPermissionAsync(db, Guid.Parse(requestingUserId), "Users.List");
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, Guid.Parse(requestingUserId), "Users.List");
 
         // Seed a deleted user
         var deletedUser = User.Create(
@@ -169,7 +169,7 @@ public sealed class UsersEndpointTests
 
         await using var scope = _fixture.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
-        await SeedUserWithPermissionAsync(db, Guid.Parse(requestingUserId), "Users.List");
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, Guid.Parse(requestingUserId), "Users.List");
 
         // Seed a deleted user with a unique email so it's identifiable.
         var marker = $"shouldbehidden-{Guid.NewGuid():N}";
@@ -200,42 +200,4 @@ public sealed class UsersEndpointTests
     // Helpers
     // ──────────────────────────────────────────────────────────────────────────
 
-    private static async Task SeedUserWithPermissionAsync(
-        AegisIdentityDbContext db,
-        Guid userId,
-        string permissionCode)
-    {
-        if (!db.Permissions.Any(p => p.Code == permissionCode))
-        {
-            var parts = permissionCode.Split('.');
-            db.Permissions.Add(Permission.Create(parts[0], parts[1], permissionCode));
-            await db.SaveChangesAsync();
-        }
-
-        var permission = db.Permissions.First(p => p.Code == permissionCode);
-
-        var profileName = $"test-users-profile-{userId}";
-        var profile = db.Profiles
-            .IgnoreQueryFilters()
-            .FirstOrDefault(p => p.Name == profileName);
-
-        if (profile is null)
-        {
-            profile = Profile.Create(profileName, profileName);
-            db.Profiles.Add(profile);
-            await db.SaveChangesAsync();
-        }
-
-        if (!db.PermissionProfiles.Any(pp => pp.ProfileId == profile.Id && pp.PermissionId == permission.Id))
-        {
-            db.PermissionProfiles.Add(PermissionProfile.Create(permission.Id, profile.Id));
-            await db.SaveChangesAsync();
-        }
-
-        if (!db.UserProfiles.Any(up => up.UserId == userId && up.ProfileId == profile.Id))
-        {
-            db.UserProfiles.Add(UserProfile.Create(userId, profile.Id));
-            await db.SaveChangesAsync();
-        }
-    }
 }
