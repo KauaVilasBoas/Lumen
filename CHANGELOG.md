@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-09
+
+### Added (OPS-01)
+- GitHub Actions CI pipeline (`.github/workflows/ci.yml`): build with `TreatWarningsAsErrors`,
+  unit tests and Testcontainers integration tests on every push and pull request to `main`.
+
+### Changed (DOC-02)
+- README rewritten as a portfolio-grade document: dynamic release badge, updated architecture
+  diagram (SignalR hub, audit, refresh/logout), consolidated engineering decisions, screenshots
+  and demo sections, and an engineering workflow section.
+- Operational reference moved out of the README into `docs/configuration.md` (environment
+  variables, user secrets, logging, correlation IDs) and `docs/security.md` (password policy,
+  HIBP k-anonymity, login semantics).
+
 ### Fixed (authorization mismatches — convention vs. policy code)
 - `UsersController`: action `GetDetail` renamed to `Get` so the convention `Controller.Action`
   produces `"Users.Get"`, matching `PermissionCodes.Users.Get` used by the `[Authorize]` policy.
