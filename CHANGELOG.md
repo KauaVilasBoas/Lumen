@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (EMAIL-02 — production SMTP fail-fast validation)
+- `SmtpProductionOptionsValidator` registered only in `Production` and executed on startup:
+  the boot fails when `Smtp__Host`, `Smtp__User`, `Smtp__Pass` or `Smtp__From` is missing or
+  still the committed `REPLACE_ME` placeholder, or when `Smtp__Host` points at a loopback
+  address. Failure messages name the offending env var without echoing its value.
+- `ConfigurationPlaceholders` constants (`REPLACE_ME`, loopback host aliases) in SharedKernel.
+- `docs/configuration.md`: SMTP provider options (Brevo/SendGrid free tier, self-hosted Postal,
+  Mailpit for dev), `Smtp__Pass` marked as secret, fail-fast behavior documented; README links
+  the provider-agnostic SMTP setup.
+
+### Changed (EMAIL-02)
+- `SmtpOptions.UseStartTls` now defaults to `true` (secure by default); dev relays without TLS
+  (Mailpit) opt out explicitly in `appsettings.Development.json`.
+- The inline loopback-SMTP check in `Program.cs` moved into the options validator, so all SMTP
+  misconfiguration is reported in one pass by `ValidateOnStart`.
+
 ### Changed (README — recruiter-focused improvements)
 - Opening section rewritten problem-first (who is the user, what can they do, who changed it);
   the portfolio/process framing moved into the Engineering workflow section.
