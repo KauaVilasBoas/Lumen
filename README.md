@@ -24,17 +24,15 @@
 
 ## What is this?
 
-AegisIdentity is a standalone **Identity & Access Management (IAM)** service: user registration with
-breached-password screening, JWT authentication with refresh-token rotation, and a
-**permission-based authorization model** where permissions are discovered from code, grouped into
-profiles, cached in Redis, and administered through a backoffice — including a **live authorization
-graph** pushed over SignalR whenever a user's permissions change.
+Every multi-product company eventually rebuilds the same three answers: **who is this user**,
+**what are they allowed to do**, and **who changed that permission, and when**. AegisIdentity is a
+standalone **Identity & Access Management (IAM)** service that answers all three — with an audit
+trail and a **live authorization graph** that updates in real time as permissions change.
 
-It is a portfolio project built to demonstrate **end-to-end architectural decision-making on a
-non-trivial domain** — not another tutorial CRUD. Every significant decision was planned as a card on a
-[public Trello board](https://trello.com/b/2ZZ0yCf8/portifolio-projects), implemented in an atomic
-Conventional-Commits branch, delivered by PR, and recorded in the
-[CHANGELOG](CHANGELOG.md) and [ADRs](docs/adr/).
+Under the hood: user registration with breached-password screening, JWT authentication with
+refresh-token rotation, and a **permission-based authorization model** where permissions are
+discovered from code, grouped into profiles, cached in Redis, and administered through an admin
+console that pushes graph updates over SignalR the moment a user's permissions change.
 
 ### Highlights
 
@@ -209,10 +207,11 @@ dedicated [ADR](docs/adr/).
 | Decision | Rationale |
 |---|---|
 | **Multi-solution Clean Architecture** | Six layer solutions (`Domain` · `Application` · `Infrastructure` · `Presentation` · `Jobs` · `SharedKernel`) aggregated by a root `.sln`. Each layer can be opened, built and reasoned about in isolation. |
-| **CQRS via MediatR with nested types** | `Command`, `Result`, `Validator` are `sealed record`s nested inside the handler. One file = one use case, fully self-contained. No anemic DTO layer between Controller and Handler. |
+| **CQRS via MediatR with nested types** | `Command`, `Result`, `Validator` are `sealed record`s nested inside the handler. One file = one use case, fully self-contained. No anemic DTO layer between Controller and Handler. Both sides hit the same SQL Server on purpose: what CQRS buys here is per-use-case isolation, pipeline behaviors scoped to commands, and read models free to shape responses without touching the domain — a separate read store is deliberately deferred until a measured load justifies its consistency cost. |
 | **Ports & Adapters (Dependency Inversion)** | All infrastructure contracts (`IUserRepository`, `IJwtService`, `IEmailService`, `IPasswordHasher`…) live in **Domain**. Adapters are wired by DI — Domain has zero external references, verified by the compiler. |
 | **SQL Server + EF Core (relational authz)** | Migrated from MongoDB to SQL Server with EF Core 8 once the authorization model demanded relational integrity between User, Profile, Permission and token entities. The trade-off is documented in [ADR-0001](docs/adr/0001-mongodb-to-relational-efcore.md). |
 | **Permission-based authorization, discovered from code** | `[RequirePermission]` on an API action derives a `Controller.Action` permission code, registers it at startup, and enforces it via a dynamic `IAuthorizationPolicyProvider`. Adding an endpoint never requires a manual permission insert. See [docs/authz.md](docs/authz.md). |
+| **Profiles instead of roles** | The project started with classic RBAC roles baked into the JWT and deliberately migrated away from them: role claims are frozen at token issue time, so revocation only takes effect at expiry. Profiles are database-backed permission groupings resolved per request (Redis-cached), which makes permission changes — and revocations — effective immediately, without re-issuing tokens. |
 | **Curated permissions via EF data migrations** | Initial business data (admin user, system profiles, seeded permissions) arrives exclusively through version-controlled data migrations — no runtime seed scripts. See [ADR-0002](docs/adr/0002-admin-bootstrap-credential.md). |
 | **Redis distributed permission cache** | Permission sets cached per user with event-driven invalidation (`UserPermissionsChanged`). When Redis is down, enforcement falls back to the database — authorization never fails open. |
 | **Real-time authorization graph (SignalR)** | A typed hub (`Hub<IAuthorizationGraphHubClient>`) pushes per-user graph deltas to the backoffice when permissions change. MediatR fans the same notification out to cache invalidation, audit and graph push handlers independently. |
@@ -323,7 +322,10 @@ dotnet test --filter "Category=ExternalApi"
 
 ## Engineering workflow
 
-This repository is run like a production codebase:
+This repository is run like a production codebase — every significant decision was planned as a
+card on a [public Trello board](https://trello.com/b/2ZZ0yCf8/portifolio-projects), implemented in
+an atomic Conventional-Commits branch, delivered by PR, and recorded in the
+[CHANGELOG](CHANGELOG.md) and [ADRs](docs/adr/):
 
 - **[Semantic Versioning](https://semver.org/)** — releases are tagged (`vMAJOR.MINOR.PATCH`)
   and published on the [Releases page](https://github.com/KauaVilasBoas/AegisIdentity/releases).
@@ -367,6 +369,27 @@ This repository is run like a production codebase:
 
 The live backlog — including every completed card — is on the
 [Trello board](https://trello.com/b/2ZZ0yCf8/portifolio-projects).
+
+---
+
+## Author
+
+**Kauã Vilas Boas** — Backend / Full-Stack Developer (.NET · C#)
+
+<p>
+  <a href="https://www.linkedin.com/in/kauavilasboas/">
+    <img src="https://img.shields.io/badge/LinkedIn-kauavilasboas-0A66C2?logo=linkedin&logoColor=white" alt="LinkedIn"/>
+  </a>
+  <a href="https://github.com/KauaVilasBoas">
+    <img src="https://img.shields.io/badge/GitHub-KauaVilasBoas-181717?logo=github&logoColor=white" alt="GitHub"/>
+  </a>
+  <a href="mailto:kauavboas@gmail.com">
+    <img src="https://img.shields.io/badge/Email-kauavboas%40gmail.com-EA4335?logo=gmail&logoColor=white" alt="Email"/>
+  </a>
+</p>
+
+Based in Brazil (UTC−3) — full overlap with US East Coast and European afternoon working hours.
+Open to remote opportunities.
 
 ---
 

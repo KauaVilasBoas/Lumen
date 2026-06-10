@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (README — recruiter-focused improvements)
+- Opening section rewritten problem-first (who is the user, what can they do, who changed it);
+  the portfolio/process framing moved into the Engineering workflow section.
+- Engineering decisions table: added the rationale for using database-backed Profiles instead of
+  JWT role claims (immediate revocation) and the justification for CQRS over a single store.
+- Author/contact footer added (LinkedIn, GitHub, email, timezone overlap).
+
 ## [0.2.1] - 2026-06-10
 
 ### Fixed (concurrent DbContext access — 500 on Users endpoints)
