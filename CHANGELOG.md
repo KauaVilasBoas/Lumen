@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-06-10
+
 ### Fixed (concurrent DbContext access — 500 on Users endpoints)
 - `ListUsersQueryHandler` resolved profile and permission counts with `Task.WhenAll` over
   repositories that share the request-scoped `DbContext`; EF Core forbids concurrent operations
