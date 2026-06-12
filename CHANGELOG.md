@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (USER-03 — PUT /api/users/{id} update endpoint)
+- `PUT /api/users/{id}` in `UsersController` protected by `[RequirePermission]` + `Users.Update` policy.
+- `UpdateUserCommandHandler` (CQRS/MediatR): updates `Username` and/or `Email`; no-ops when nothing changes.
+- Domain methods `User.ChangeEmail` and `User.ChangeUsername` encapsulate mutation rules; `ChangeEmail` sets `IsActive = false` and normalises the address.
+- Email change triggers a new `EmailConfirmationToken` (SHA-256, 24 h lifetime) and sends the confirmation email via the existing template pipeline.
+- Duplicate detection done in-band before `UpdateAsync` and re-caught from `DuplicateEmailException` / `DuplicateUsernameException` raised by the repository — both surface as `409 Conflict`.
+- Audit trail written to `AuditEntries` (`user.updated` kind) with actor, target user id and changed fields list.
+- `PermissionCodes.Users.Update` constant added to `SharedKernel`.
+- `AuditEventKinds.UserUpdated` constant added to `SharedKernel`.
+- `AuthErrorMessages.UserNotFound` constant added to `SharedKernel`.
+- EF data migration `20260611000000_SeedUsersUpdatePermission` seeds the `Users.Update` permission row with deterministic id `40000000-0000-0000-0000-000000000024`.
+- 29 new tests (14 unit handler, 10 unit validator, 5 integration endpoint).
+
 ### Added (EMAIL-02 — production SMTP fail-fast validation)
 - `SmtpProductionOptionsValidator` registered only in `Production` and executed on startup:
   the boot fails when `Smtp__Host`, `Smtp__User`, `Smtp__Pass` or `Smtp__From` is missing or
