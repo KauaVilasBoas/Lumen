@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using AegisIdentity.CommandHandlers.Auth.ForgotPassword;
 using AegisIdentity.CommandHandlers.Auth.Login;
 using AegisIdentity.CommandHandlers.Auth.Logout;
 using AegisIdentity.CommandHandlers.Auth.Refresh;
@@ -18,11 +19,26 @@ public sealed class AuthController : ControllerBase
 
     public AuthController(IMediator mediator) => _mediator = mediator;
 
+    public sealed record ForgotPasswordRequest(string Email);
+
     public sealed record LoginRequest(string Identifier, string Password);
 
     public sealed record RefreshRequest(string RefreshToken);
 
     public sealed record LogoutRequest(string? RefreshToken);
+
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ForgotPassword(
+        [FromBody] ForgotPasswordRequest request,
+        CancellationToken ct)
+    {
+        var command = new ForgotPasswordCommandHandler.Command(request.Email);
+        await _mediator.Send(command, ct);
+        return Ok();
+    }
 
     [HttpPost("register")]
     [AllowAnonymous]
