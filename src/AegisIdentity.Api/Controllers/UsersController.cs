@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using AegisIdentity.CommandHandlers.Users.Update;
 using AegisIdentity.ReadModels.Queries;
 using AegisIdentity.SharedKernel.Authorization;
 using AegisIdentity.SharedKernel.Constants;
@@ -13,6 +15,8 @@ namespace AegisIdentity.Api.Controllers;
 [PermissionGroup(PermissionGroups.Users)]
 public sealed class UsersController : ControllerBase
 {
+    public sealed record UpdateUserRequest(string? Email, string? Username);
+
     private readonly IMediator _mediator;
 
     public UsersController(IMediator mediator)
@@ -74,6 +78,29 @@ public sealed class UsersController : ControllerBase
     public async Task<IActionResult> Get(Guid id, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new GetUserDetailQueryHandler.Query(id), ct);
+        return Ok(result);
+    }
+
+    [HttpPut("{id:guid}")]
+    [RequirePermission]
+    [Authorize(Policy = PermissionCodes.Users.Update)]
+    [ProducesResponseType(typeof(UpdateUserCommandHandler.Result), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateUserRequest request, CancellationToken ct = default)
+    {
+        var actorId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+
+        var command = new UpdateUserCommandHandler.Command(
+            UserId: id,
+            NewEmail: request.Email,
+            NewUsername: request.Username,
+            ActorId: actorId);
+
+        var result = await _mediator.Send(command, ct);
         return Ok(result);
     }
 

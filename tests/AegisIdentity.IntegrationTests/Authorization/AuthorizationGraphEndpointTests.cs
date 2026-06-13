@@ -49,7 +49,8 @@ public sealed class AuthorizationGraphEndpointTests
 
         await using var scope = _fixture.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
-        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, Guid.Parse(userId), PermissionCodes.AuthorizationGraph.View);
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(userId), PermissionCodes.AuthorizationGraph.View);
 
         var client = _fixture.CreateAuthenticatedClient(userId);
 

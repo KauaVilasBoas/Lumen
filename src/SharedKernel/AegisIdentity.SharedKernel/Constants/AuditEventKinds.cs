@@ -9,4 +9,5 @@ public static class AuditEventKinds
     public const string UserProfileAssign  = "userprofile.assign";
     public const string UserProfileRemove  = "userprofile.remove";
     public const string JobCleanup       = "job.cleanup";
+    public const string UserUpdated      = "user.updated";
 }

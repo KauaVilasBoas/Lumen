@@ -56,7 +56,8 @@ public sealed class UsersEndpointTests
 
         await using var scope = _fixture.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
-        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, Guid.Parse(userId), "Users.List");
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(userId), "Users.List");
 
         var client = _fixture.CreateAuthenticatedClient(userId);
 
@@ -76,7 +77,8 @@ public sealed class UsersEndpointTests
 
         await using var scope = _fixture.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
-        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, Guid.Parse(userId), "Users.List");
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(userId), "Users.List");
 
         var client = _fixture.CreateAuthenticatedClient(userId);
         var response = await client.GetAsync(Endpoint);
@@ -104,7 +106,8 @@ public sealed class UsersEndpointTests
 
         await using var scope = _fixture.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
-        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, Guid.Parse(userId), "Users.List");
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(userId), "Users.List");
 
         var client = _fixture.CreateAuthenticatedClient(userId);
         var response = await client.GetAsync(Endpoint + queryString);
@@ -119,7 +122,8 @@ public sealed class UsersEndpointTests
 
         await using var scope = _fixture.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
-        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, Guid.Parse(userId), "Users.List");
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(userId), "Users.List");
 
         var client = _fixture.CreateAuthenticatedClient(userId);
         var response = await client.GetAsync(Endpoint + "?state=invalid_value");
@@ -138,7 +142,8 @@ public sealed class UsersEndpointTests
 
         await using var scope = _fixture.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
-        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, Guid.Parse(requestingUserId), "Users.List");
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(requestingUserId), "Users.List");
 
         // Seed a deleted user
         var deletedUser = User.Create(
@@ -169,7 +174,8 @@ public sealed class UsersEndpointTests
 
         await using var scope = _fixture.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
-        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, Guid.Parse(requestingUserId), "Users.List");
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(requestingUserId), "Users.List");
 
         // Seed a deleted user with a unique email so it's identifiable.
         var marker = $"shouldbehidden-{Guid.NewGuid():N}";

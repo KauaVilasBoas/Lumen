@@ -50,7 +50,8 @@ public sealed class PermissionEnforcementTests
 
         await using var scope = _fixture.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
-        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, Guid.Parse(userId), PermissionProbeController.ProbePermissionCode);
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(userId), PermissionProbeController.ProbePermissionCode);
 
         var client = _fixture.CreateProbeClientWithUser(userId);
         var response = await client.GetAsync(PermissionProbeController.ProtectedPath);
@@ -75,8 +76,7 @@ public sealed class PermissionEnforcementTests
         var firstResponse = await client.GetAsync(PermissionProbeController.ProtectedPath);
         firstResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, userGuid, PermissionProbeController.ProbePermissionCode);
-        await cache.InvalidateAsync(userGuid);
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, cache, userGuid, PermissionProbeController.ProbePermissionCode);
 
         var secondResponse = await client.GetAsync(PermissionProbeController.ProtectedPath);
         secondResponse.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -89,7 +89,8 @@ public sealed class PermissionEnforcementTests
 
         await using var scope = _fixture.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
-        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, Guid.Parse(userId), PermissionProbeController.ProbePermissionCode);
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(userId), PermissionProbeController.ProbePermissionCode);
 
         var client = _fixture.CreateProbeClientWithBrokenRedis(userId);
         var response = await client.GetAsync(PermissionProbeController.ProtectedPath);

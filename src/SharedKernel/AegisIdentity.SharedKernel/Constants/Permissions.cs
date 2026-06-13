@@ -9,8 +9,9 @@ public static class PermissionCodes
 
     public static class Users
     {
-        public const string List = "Users.List";
-        public const string Get  = "Users.Get";
+        public const string List   = "Users.List";
+        public const string Get    = "Users.Get";
+        public const string Update = "Users.Update";
     }
 
     public static class Audit

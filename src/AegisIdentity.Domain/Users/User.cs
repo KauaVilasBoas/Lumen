@@ -65,6 +65,23 @@ public sealed class User : ISoftDeletable
 
     public bool IsLockedOut() => LockedUntil.HasValue && LockedUntil.Value > DateTime.UtcNow;
 
+    public void ChangeEmail(string newEmail)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(newEmail);
+
+        Email     = NormalizeEmail(newEmail);
+        IsActive  = false;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void ChangeUsername(string newUsername)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(newUsername);
+
+        Username  = newUsername;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     public void SoftDelete()
     {
         IsDeleted = true;
