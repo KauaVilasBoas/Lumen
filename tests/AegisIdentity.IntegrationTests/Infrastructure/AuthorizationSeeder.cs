@@ -36,6 +36,7 @@ internal static class AuthorizationSeeder
 
     internal static async Task SeedUserWithPermissionAsync(
         AegisIdentityDbContext db,
+        IUserPermissionCache permissionCache,
         Guid userId,
         string permissionCode)
     {
@@ -67,5 +68,7 @@ internal static class AuthorizationSeeder
             db.UserProfiles.Add(UserProfile.Create(userId, profile.Id));
             await db.SaveChangesAsync();
         }
+
+        await permissionCache.InvalidateAsync(userId);
     }
 }

@@ -55,7 +55,8 @@ public sealed class UserDetailEndpointTests
 
         await using var scope = _fixture.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
-        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, Guid.Parse(requestingUserId), "Users.Get");
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(requestingUserId), "Users.Get");
 
         var client = _fixture.CreateAuthenticatedClient(requestingUserId);
         var response = await client.GetAsync($"{BaseEndpoint}/{Guid.NewGuid()}");
@@ -74,7 +75,8 @@ public sealed class UserDetailEndpointTests
 
         await using var scope = _fixture.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
-        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, Guid.Parse(requestingUserId), "Users.Get");
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(requestingUserId), "Users.Get");
 
         var targetUser = User.Create(
             $"detail-target-{Guid.NewGuid():N}@test.com",
@@ -107,7 +109,8 @@ public sealed class UserDetailEndpointTests
 
         await using var scope = _fixture.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
-        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, Guid.Parse(requestingUserId), "Users.Get");
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(requestingUserId), "Users.Get");
 
         var targetUser = User.Create(
             $"active-{Guid.NewGuid():N}@test.com",
@@ -135,7 +138,8 @@ public sealed class UserDetailEndpointTests
 
         await using var scope = _fixture.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
-        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, Guid.Parse(requestingUserId), "Users.Get");
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(requestingUserId), "Users.Get");
 
         var deletedUser = User.Create(
             $"deleted-detail-{Guid.NewGuid():N}@test.com",

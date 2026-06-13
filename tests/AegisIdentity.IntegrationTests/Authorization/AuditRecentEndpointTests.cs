@@ -59,7 +59,8 @@ public sealed class AuditRecentEndpointTests
 
         await using var scope = _fixture.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
-        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, Guid.Parse(requestingUserId), "Audit.Read");
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(requestingUserId), "Audit.Read");
         await SeedAuditEntryAsync(db);
 
         var client = _fixture.CreateAuthenticatedClient(requestingUserId);
@@ -86,7 +87,8 @@ public sealed class AuditRecentEndpointTests
 
         await using var scope = _fixture.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
-        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, Guid.Parse(requestingUserId), "Audit.Read");
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(requestingUserId), "Audit.Read");
         await SeedAuditEntryAsync(db);
         await SeedAuditEntryAsync(db);
         await SeedAuditEntryAsync(db);
@@ -107,7 +109,8 @@ public sealed class AuditRecentEndpointTests
 
         await using var scope = _fixture.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
-        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, Guid.Parse(requestingUserId), "Audit.Read");
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(requestingUserId), "Audit.Read");
 
         var client = _fixture.CreateAuthenticatedClient(requestingUserId);
         var response = await client.GetAsync($"{BaseEndpoint}?take=0");
