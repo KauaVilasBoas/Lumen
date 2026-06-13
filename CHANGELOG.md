@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (AUTH-17 — POST /api/auth/forgot-password)
+- `POST /api/auth/forgot-password` in `AuthController` with `[AllowAnonymous]`; always returns `200 OK` regardless of whether the email exists (prevents user enumeration).
+- `ForgotPasswordCommandHandler` (CQRS/MediatR): looks up user by normalised email, generates a cryptographically-random raw token (32 bytes, Base64Url), persists `PasswordResetToken` with SHA-256 hash and 30-minute expiry, then dispatches the password-reset email.
+- Timing-attack mitigation: when the email is not found, a dummy token derivation + 50 ms delay runs to equalise the response time with the happy path.
+- Reuses the existing `PasswordResetToken` aggregate, `IPasswordResetTokenRepository`, `EmailTemplateNames.PasswordReset`, `EmailPlaceholderKeys.ResetUrl`, `EmailSubjects.PasswordReset`, and `TokenSizes.RawTokenBytes` — no new constants needed.
+- 13 new tests (9 unit handler, 4 unit validator) and 6 integration endpoint tests.
+
 ### Added (USER-03 — PUT /api/users/{id} update endpoint)
 - `PUT /api/users/{id}` in `UsersController` protected by `[RequirePermission]` + `Users.Update` policy.
 - `UpdateUserCommandHandler` (CQRS/MediatR): updates `Username` and/or `Email`; no-ops when nothing changes.
