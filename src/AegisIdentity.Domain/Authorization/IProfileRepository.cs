@@ -14,6 +14,18 @@ public interface IProfileRepository
     /// </summary>
     Task<IReadOnlyList<Profile>> GetProfilesByUserIdAsync(Guid userId, CancellationToken ct = default);
 
+    Task<IReadOnlyDictionary<Guid, IReadOnlyList<Profile>>> GetProfilesByUserIdsAsync(
+        IReadOnlyList<Guid> userIds,
+        CancellationToken ct = default);
+
+    Task<IReadOnlyDictionary<Guid, int>> GetPermissionCountsByUserIdsAsync(
+        IReadOnlyList<Guid> userIds,
+        CancellationToken ct = default);
+
+    Task<IReadOnlyDictionary<Guid, int>> GetPermissionCountsByProfileIdsAsync(
+        IReadOnlyList<Guid> profileIds,
+        CancellationToken ct = default);
+
     /// <summary>
     /// Returns the <see cref="Profile"/> records whose <see cref="Profile.Id"/> is in
     /// <paramref name="ids"/>. Profiles not found are silently omitted.
