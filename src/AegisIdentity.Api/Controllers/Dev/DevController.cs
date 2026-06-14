@@ -7,11 +7,6 @@ using Microsoft.Extensions.Options;
 
 namespace AegisIdentity.Api.Controllers.Dev;
 
-/// <summary>
-/// Development-only controller that exercises internal infrastructure pipelines.
-/// Each action verifies the environment at runtime and returns 404 in non-Development
-/// environments, mirroring the fail-safe behaviour of the original Minimal Endpoint.
-/// </summary>
 [ApiController]
 [Route("dev")]
 [Produces("application/json")]
@@ -36,14 +31,6 @@ public sealed class DevController : ControllerBase
         _env = env;
     }
 
-    /// <summary>
-    /// Dev: send a smoke-test email via Mailpit.
-    /// </summary>
-    /// <remarks>
-    /// Renders the EmailConfirmation template and dispatches it through IEmailService.
-    /// Available only in Development.
-    /// Open http://localhost:8025 after calling this endpoint to inspect the message.
-    /// </remarks>
     [HttpGet("email-test")]
     public async Task<IActionResult> EmailTest(
         [FromQuery] string to,
@@ -71,8 +58,6 @@ public sealed class DevController : ControllerBase
             HtmlBody: html,
             TextBody: text);
 
-        // IEmailService is fail-open: transport errors are logged and swallowed.
-        // The endpoint always reports 200 — open Mailpit to confirm delivery.
         await _emailService.SendAsync(message, ct);
 
         return Ok(new
@@ -81,7 +66,6 @@ public sealed class DevController : ControllerBase
             to,
             smtp = $"{smtp.Host}:{smtp.Port}",
             viewer = "http://localhost:8025",
-            note = "IEmailService is fail-open. Open Mailpit to verify the message actually arrived.",
         });
     }
 }

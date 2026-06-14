@@ -184,14 +184,8 @@ internal sealed class ProfileRepository : IProfileRepository
 
         try
         {
-            // FK order: children before parent.
-            // 1. PermissionProfiles (references Profile)
             _dbContext.PermissionProfiles.UpdateRange(permissionProfiles);
-
-            // 2. UserProfiles (references Profile)
             _dbContext.UserProfiles.UpdateRange(userProfiles);
-
-            // 3. Profile (parent)
             _dbContext.Profiles.Update(profile);
 
             await _dbContext.SaveChangesAsync(ct);
