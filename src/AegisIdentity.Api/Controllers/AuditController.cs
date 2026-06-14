@@ -7,11 +7,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AegisIdentity.Api.Controllers;
 
-[ApiController]
 [Route("api/audit")]
-[Produces("application/json")]
 [PermissionGroup(PermissionGroups.Audit)]
-public sealed class AuditController : ControllerBase
+public sealed class AuditController : ApiBaseController
 {
     private readonly IMediator _mediator;
 

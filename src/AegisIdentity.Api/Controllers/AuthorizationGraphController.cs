@@ -7,11 +7,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AegisIdentity.Api.Controllers;
 
-[ApiController]
 [Route("api/authorization-graph")]
-[Produces("application/json")]
 [PermissionGroup(PermissionGroups.Authorization)]
-public sealed class AuthorizationGraphController : ControllerBase
+public sealed class AuthorizationGraphController : ApiBaseController
 {
     private readonly IMediator _mediator;
 

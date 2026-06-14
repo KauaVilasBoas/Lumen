@@ -7,11 +7,9 @@ using StackExchange.Redis;
 
 namespace AegisIdentity.Api.Controllers;
 
-[ApiController]
 [Route("api/diagnostics")]
-[Produces("application/json")]
 [PermissionGroup(PermissionGroups.Diagnostics)]
-public sealed class DiagnosticsController : ControllerBase
+public sealed class DiagnosticsController : ApiBaseController
 {
     private readonly IConnectionMultiplexer _redis;
     private readonly JobStorage _jobStorage;

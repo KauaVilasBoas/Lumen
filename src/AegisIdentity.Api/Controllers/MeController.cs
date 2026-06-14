@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using AegisIdentity.CommandHandlers.Users.ChangePassword;
 using AegisIdentity.ReadModels.Queries;
 using MediatR;
@@ -6,10 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AegisIdentity.Api.Controllers;
 
-[ApiController]
 [Route("api/me")]
-[Produces("application/json")]
-public sealed class MeController : ControllerBase
+public sealed class MeController : ApiBaseController
 {
     private readonly IMediator _mediator;
 
@@ -26,10 +23,8 @@ public sealed class MeController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get(CancellationToken ct)
     {
-        var sub = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (!Guid.TryParse(sub, out var userId))
-            return Unauthorized();
+        var unauthorized = RequireCurrentUserId(out var userId);
+        if (unauthorized is not null) return unauthorized;
 
         var result = await _mediator.Send(new GetCurrentUserQueryHandler.Query(userId), ct);
 
@@ -47,10 +42,8 @@ public sealed class MeController : ControllerBase
         [FromBody] ChangePasswordRequest request,
         CancellationToken ct)
     {
-        var sub = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (!Guid.TryParse(sub, out var userId))
-            return Unauthorized();
+        var unauthorized = RequireCurrentUserId(out var userId);
+        if (unauthorized is not null) return unauthorized;
 
         var command = new ChangePasswordCommandHandler.Command(userId, request.CurrentPassword, request.NewPassword);
         await _mediator.Send(command, ct);
