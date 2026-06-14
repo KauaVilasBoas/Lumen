@@ -106,7 +106,7 @@ public sealed class ListUsersQueryHandler
                 Username: u.Username,
                 Email: u.Email,
                 State: UserStateResolver.Resolve(u, now),
-                IsBootstrap: false,
+                IsBootstrap: u.IsBootstrap,
                 CreatedAt: u.CreatedAt,
                 LastLoginAt: u.LastLoginAt,
                 EmailConfirmedAt: u.EmailConfirmedAt,

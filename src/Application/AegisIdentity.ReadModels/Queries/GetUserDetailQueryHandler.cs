@@ -56,7 +56,7 @@ public sealed class GetUserDetailQueryHandler
             Username: user.Username,
             Email: user.Email,
             State: UserStateResolver.Resolve(user, DateTime.UtcNow),
-            IsBootstrap: false,
+            IsBootstrap: user.IsBootstrap,
             CreatedAt: user.CreatedAt,
             EmailConfirmedAt: user.EmailConfirmedAt,
             LastLoginAt: user.LastLoginAt,
