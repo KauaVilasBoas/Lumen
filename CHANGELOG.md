@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (REFACTOR-01 — BaseController hierarchy)
+- `ApiBaseController` (abstract, `ControllerBase`) added to `AegisIdentity.Api.Controllers`:
+  - `RequireCurrentUserId(out Guid userId)` — parses `ClaimTypes.NameIdentifier` as a `Guid`; returns `Unauthorized()` result when the claim is absent or not a valid `Guid`, `null` on success. Used as an early-return guard in action methods that require an authenticated user id.
+  - `TryGetCurrentUserId(out Guid userId)` — pure boolean variant for callsites that need to branch without returning directly.
+  - `GetClientIpAddress()` — `HttpContext.Connection.RemoteIpAddress?.ToString()` with `"unknown"` fallback; eliminates the inline null-coalescing literal.
+  - `GetActorIdentifier()` — `User.Identity?.Name ?? User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty`; used where the actor is passed to audit or domain commands.
+  - Promotes `[ApiController]` and `[Produces("application/json")]` to the base class — removed from all 10 concrete API controllers.
+- `BackofficeBaseController` (abstract, `Controller`) added to `AegisIdentity.Backoffice.Controllers`:
+  - `TryGetCurrentUserId(out Guid userId)` — same semantics as the API variant; used by `AuthorizationGraphController.CallerHasPermissionAsync`.
+- All 10 API controllers now extend `ApiBaseController`; `AccountController` excluded from Backoffice hierarchy (raw JWT parsing for cookie sign-in has no shared claims pattern).
+- Inline `System.Security.Claims` usages removed from controllers that no longer reference `ClaimTypes` directly.
+
 ### Added (AUTH-19 — GET /api/auth/confirm-email + POST /api/auth/resend-confirmation)
 - `GET /api/auth/confirm-email?token=...` with `[AllowAnonymous]`; looks up `EmailConfirmationToken` by SHA-256 hash, validates `IsValid()` (not expired, not used), sets `user.IsActive = true` and `user.EmailConfirmedAt = now`, marks token used; returns `200 OK` or `401` via `UnauthorizedException` handled globally.
 - `POST /api/auth/resend-confirmation` with `[AllowAnonymous]`; always returns `200 OK` regardless of email existence (anti-enumeration); for pending users, soft-deletes previous tokens via `InvalidateByUserIdAsync`, generates a new 24h `EmailConfirmationToken`, and sends the `EmailConfirmation` template email; no-ops silently for unknown emails and already-active accounts.
