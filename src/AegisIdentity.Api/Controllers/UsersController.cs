@@ -28,6 +28,7 @@ public sealed class UsersController : ControllerBase
     [RequirePermission]
     [Authorize(Policy = PermissionCodes.Users.List)]
     [ProducesResponseType(typeof(ListUsersQueryHandler.PagedResult), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> List(
@@ -37,29 +38,9 @@ public sealed class UsersController : ControllerBase
         [FromQuery] int pageSize = 20,
         CancellationToken ct = default)
     {
-        if (page < 1)
-            return BadRequest(new ValidationProblemDetails
-            {
-                Errors = { ["page"] = ["Page must be greater than or equal to 1."] }
-            });
-
-        if (pageSize < 1 || pageSize > 100)
-            return BadRequest(new ValidationProblemDetails
-            {
-                Errors = { ["pageSize"] = ["PageSize must be between 1 and 100."] }
-            });
-
-        var stateFilter = ParseStateFilter(state);
-
-        if (stateFilter is null)
-            return BadRequest(new ValidationProblemDetails
-            {
-                Errors = { ["state"] = [$"Invalid state value '{state}'. Allowed values: active, locked, pending, deleted, all."] }
-            });
-
         var query = new ListUsersQueryHandler.Query(
             Search: search,
-            State: stateFilter.Value,
+            State: state,
             Page: page,
             PageSize: pageSize);
 
@@ -103,15 +84,4 @@ public sealed class UsersController : ControllerBase
         var result = await _mediator.Send(command, ct);
         return Ok(result);
     }
-
-    private static ListUsersQueryHandler.UserStateFilter? ParseStateFilter(string? state)
-        => state?.ToLowerInvariant() switch
-        {
-            null or "" or "all" => ListUsersQueryHandler.UserStateFilter.All,
-            "active"            => ListUsersQueryHandler.UserStateFilter.Active,
-            "locked"            => ListUsersQueryHandler.UserStateFilter.Locked,
-            "pending"           => ListUsersQueryHandler.UserStateFilter.Pending,
-            "deleted"           => ListUsersQueryHandler.UserStateFilter.Deleted,
-            _                   => null,
-        };
 }

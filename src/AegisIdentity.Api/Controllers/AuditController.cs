@@ -24,18 +24,13 @@ public sealed class AuditController : ControllerBase
     [RequirePermission]
     [Authorize(Policy = PermissionCodes.Audit.Read)]
     [ProducesResponseType(typeof(IReadOnlyList<GetRecentAuditFeedQueryHandler.AuditEntryResult>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Read(
         [FromQuery] int take = 20,
         CancellationToken ct = default)
     {
-        if (take < 1 || take > 100)
-            return BadRequest(new ValidationProblemDetails
-            {
-                Errors = { ["take"] = ["take must be between 1 and 100."] }
-            });
-
         var query = new GetRecentAuditFeedQueryHandler.Query(take);
         var result = await _mediator.Send(query, ct);
 

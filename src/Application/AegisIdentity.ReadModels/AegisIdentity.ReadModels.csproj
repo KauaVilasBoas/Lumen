@@ -8,6 +8,8 @@
   <ItemGroup>
     <!-- MediatR — query handlers implement IRequestHandler<TRequest, TResponse> -->
     <PackageReference Include="MediatR" />
+    <!-- FluentValidation — AbstractValidator<Query> lives next to the handler it validates -->
+    <PackageReference Include="FluentValidation" />
     <!-- Logging abstractions -->
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <!-- DI registration extension methods -->
