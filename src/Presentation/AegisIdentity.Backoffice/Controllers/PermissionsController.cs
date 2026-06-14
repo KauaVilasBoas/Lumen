@@ -4,12 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AegisIdentity.Backoffice.Controllers;
 
-/// <summary>
-/// Read-only catalogue of discovered permissions (Controller.Action), grouped,
-/// with orphan flags. Backed by <c>GET /api/permissions</c>.
-/// </summary>
 [Authorize]
-public sealed class PermissionsController : Controller
+public sealed class PermissionsController : BackofficeBaseController
 {
     private readonly AdminApiClient _adminApiClient;
 
