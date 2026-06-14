@@ -21,7 +21,7 @@ public sealed class ListUsersQueryHandlerTests
         var user = BuildConfirmedUser();
         SetupRepositories([user]);
 
-        var result = await InvokeHandler(ListUsersQueryHandler.UserStateFilter.All);
+        var result = await InvokeHandler("all");
 
         result.Items.Should().HaveCount(1);
         result.Items[0].State.Should().Be("active");
@@ -33,7 +33,7 @@ public sealed class ListUsersQueryHandlerTests
         var user = BuildUser(emailConfirmedAt: null);
         SetupRepositories([user]);
 
-        var result = await InvokeHandler(ListUsersQueryHandler.UserStateFilter.All);
+        var result = await InvokeHandler("all");
 
         result.Items[0].State.Should().Be("pending");
     }
@@ -44,7 +44,7 @@ public sealed class ListUsersQueryHandlerTests
         var user = BuildLockedUser(lockedUntil: DateTime.UtcNow.AddHours(1));
         SetupRepositories([user]);
 
-        var result = await InvokeHandler(ListUsersQueryHandler.UserStateFilter.All);
+        var result = await InvokeHandler("all");
 
         result.Items[0].State.Should().Be("locked");
     }
@@ -55,7 +55,7 @@ public sealed class ListUsersQueryHandlerTests
         var user = BuildDeletedUser();
         SetupRepositories([user], includeDeleted: true);
 
-        var result = await InvokeHandler(ListUsersQueryHandler.UserStateFilter.All);
+        var result = await InvokeHandler("all");
 
         result.Items[0].State.Should().Be("deleted");
     }
@@ -71,7 +71,7 @@ public sealed class ListUsersQueryHandlerTests
         var pendingUser = BuildUser(emailConfirmedAt: null);
         SetupRepositories([activeUser, pendingUser]);
 
-        var result = await InvokeHandler(ListUsersQueryHandler.UserStateFilter.Active);
+        var result = await InvokeHandler("active");
 
         result.Items.Should().HaveCount(1);
         result.Items[0].Id.Should().Be(activeUser.Id);
@@ -84,7 +84,7 @@ public sealed class ListUsersQueryHandlerTests
         var pendingUser = BuildUser(emailConfirmedAt: null);
         SetupRepositories([activeUser, pendingUser]);
 
-        var result = await InvokeHandler(ListUsersQueryHandler.UserStateFilter.Pending);
+        var result = await InvokeHandler("pending");
 
         result.Items.Should().HaveCount(1);
         result.Items[0].Id.Should().Be(pendingUser.Id);
@@ -97,7 +97,7 @@ public sealed class ListUsersQueryHandlerTests
         var activeUser = BuildConfirmedUser();
         SetupRepositories([lockedUser, activeUser]);
 
-        var result = await InvokeHandler(ListUsersQueryHandler.UserStateFilter.Locked);
+        var result = await InvokeHandler("locked");
 
         result.Items.Should().HaveCount(1);
         result.Items[0].Id.Should().Be(lockedUser.Id);
@@ -109,7 +109,7 @@ public sealed class ListUsersQueryHandlerTests
         var user = BuildConfirmedUser();
         SetupRepositories([user], includeDeleted: true);
 
-        await InvokeHandler(ListUsersQueryHandler.UserStateFilter.All);
+        await InvokeHandler("all");
 
         await _userRepository.Received(1).ListAsync(
             Arg.Any<string?>(),
@@ -125,7 +125,7 @@ public sealed class ListUsersQueryHandlerTests
         var user = BuildDeletedUser();
         SetupRepositories([user], includeDeleted: true);
 
-        await InvokeHandler(ListUsersQueryHandler.UserStateFilter.Deleted);
+        await InvokeHandler("deleted");
 
         await _userRepository.Received(1).ListAsync(
             Arg.Any<string?>(),
@@ -140,7 +140,7 @@ public sealed class ListUsersQueryHandlerTests
     {
         SetupRepositories([]);
 
-        await InvokeHandler(ListUsersQueryHandler.UserStateFilter.Active);
+        await InvokeHandler("active");
 
         await _userRepository.Received(1).ListAsync(
             Arg.Any<string?>(),
@@ -148,6 +148,41 @@ public sealed class ListUsersQueryHandlerTests
             Arg.Any<int>(),
             Arg.Any<int>(),
             Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_NullState_TreatedAsAll_PassesIncludeDeletedTrueToRepository()
+    {
+        var user = BuildConfirmedUser();
+        SetupRepositories([user], includeDeleted: true);
+
+        await InvokeHandler(null);
+
+        await _userRepository.Received(1).ListAsync(
+            Arg.Any<string?>(),
+            includeDeleted: true,
+            Arg.Any<int>(),
+            Arg.Any<int>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Batch query (no N+1)
+    // ──────────────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Handle_MultipleUsers_CallsBatchMethodsOnce()
+    {
+        var userA = BuildConfirmedUser();
+        var userB = BuildConfirmedUser();
+        SetupRepositories([userA, userB]);
+
+        await InvokeHandler("all");
+
+        await _profileRepository.Received(1)
+            .GetProfilesByUserIdsAsync(Arg.Any<IReadOnlyList<Guid>>(), Arg.Any<CancellationToken>());
+        await _profileRepository.Received(1)
+            .GetPermissionCountsByUserIdsAsync(Arg.Any<IReadOnlyList<Guid>>(), Arg.Any<CancellationToken>());
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -162,12 +197,15 @@ public sealed class ListUsersQueryHandlerTests
         var profileB = Profile.Create("Viewer", "Read-only");
 
         SetupRepositories([user]);
-        _profileRepository.GetProfilesByUserIdAsync(user.Id, Arg.Any<CancellationToken>())
-            .Returns(new[] { profileA, profileB });
-        _profileRepository.GetPermissionCodesByUserIdAsync(user.Id, Arg.Any<CancellationToken>())
-            .Returns(new HashSet<string> { "Profiles.List", "Profiles.Get" });
+        _profileRepository.GetProfilesByUserIdsAsync(
+                Arg.Any<IReadOnlyList<Guid>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<Guid, IReadOnlyList<Profile>>
+            {
+                [user.Id] = [profileA, profileB]
+            });
 
-        var result = await InvokeHandler(ListUsersQueryHandler.UserStateFilter.All);
+        var result = await InvokeHandler("all");
 
         result.Items[0].ProfileCount.Should().Be(2);
     }
@@ -176,15 +214,13 @@ public sealed class ListUsersQueryHandlerTests
     public async Task Handle_UserWithDistinctPermissions_ReturnsResolvedPermissionCount()
     {
         var user = BuildConfirmedUser();
-        var profile = Profile.Create("Admin", "Full access");
-
         SetupRepositories([user]);
-        _profileRepository.GetProfilesByUserIdAsync(user.Id, Arg.Any<CancellationToken>())
-            .Returns(new[] { profile });
-        _profileRepository.GetPermissionCodesByUserIdAsync(user.Id, Arg.Any<CancellationToken>())
-            .Returns(new HashSet<string> { "Users.List", "Users.Get", "Profiles.List" });
+        _profileRepository.GetPermissionCountsByUserIdsAsync(
+                Arg.Any<IReadOnlyList<Guid>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<Guid, int> { [user.Id] = 3 });
 
-        var result = await InvokeHandler(ListUsersQueryHandler.UserStateFilter.All);
+        var result = await InvokeHandler("all");
 
         result.Items[0].ResolvedPermissionCount.Should().Be(3);
     }
@@ -194,10 +230,8 @@ public sealed class ListUsersQueryHandlerTests
     {
         var user = BuildConfirmedUser();
         SetupRepositories([user]);
-        _profileRepository.GetProfilesByUserIdAsync(user.Id, Arg.Any<CancellationToken>())
-            .Returns(Array.Empty<Profile>());
 
-        var result = await InvokeHandler(ListUsersQueryHandler.UserStateFilter.All);
+        var result = await InvokeHandler("all");
 
         result.Items[0].ProfileCount.Should().Be(0);
         result.Items[0].ResolvedPermissionCount.Should().Be(0);
@@ -218,7 +252,7 @@ public sealed class ListUsersQueryHandlerTests
                 Arg.Any<CancellationToken>())
             .Returns(((IReadOnlyList<User>)[], 0));
 
-        var result = await InvokeHandler(ListUsersQueryHandler.UserStateFilter.All);
+        var result = await InvokeHandler("all");
 
         result.Items.Should().BeEmpty();
         result.Total.Should().Be(0);
@@ -231,7 +265,7 @@ public sealed class ListUsersQueryHandlerTests
 
         var query = new ListUsersQueryHandler.Query(
             Search: "alice",
-            State: ListUsersQueryHandler.UserStateFilter.Active,
+            State: "active",
             Page: 2,
             PageSize: 10);
 
@@ -256,11 +290,19 @@ public sealed class ListUsersQueryHandlerTests
                 Arg.Any<int>(),
                 Arg.Any<CancellationToken>())
             .Returns(((IReadOnlyList<User>)[user], 42));
-        SetupProfileRepositoryDefaults(user.Id);
+
+        _profileRepository.GetProfilesByUserIdsAsync(
+                Arg.Any<IReadOnlyList<Guid>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<Guid, IReadOnlyList<Profile>>());
+        _profileRepository.GetPermissionCountsByUserIdsAsync(
+                Arg.Any<IReadOnlyList<Guid>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<Guid, int>());
 
         var query = new ListUsersQueryHandler.Query(
             Search: null,
-            State: ListUsersQueryHandler.UserStateFilter.All,
+            State: null,
             Page: 3,
             PageSize: 5);
 
@@ -281,10 +323,8 @@ public sealed class ListUsersQueryHandlerTests
         var lockoutEnd = DateTime.UtcNow.AddHours(2);
         var user = BuildLockedUser(lockoutEnd);
         SetupRepositories([user]);
-        _profileRepository.GetProfilesByUserIdAsync(user.Id, Arg.Any<CancellationToken>())
-            .Returns(Array.Empty<Profile>());
 
-        var result = await InvokeHandler(ListUsersQueryHandler.UserStateFilter.All);
+        var result = await InvokeHandler("all");
 
         var item = result.Items[0];
         item.Id.Should().Be(user.Id);
@@ -302,7 +342,7 @@ public sealed class ListUsersQueryHandlerTests
         new(_userRepository, _profileRepository);
 
     private async Task<ListUsersQueryHandler.PagedResult> InvokeHandler(
-        ListUsersQueryHandler.UserStateFilter state,
+        string? state,
         string? search = null,
         int page = 1,
         int pageSize = 20)
@@ -311,10 +351,6 @@ public sealed class ListUsersQueryHandlerTests
         return await CreateHandler().Handle(query, CancellationToken.None);
     }
 
-    /// <summary>
-    /// Configures the user repository to return the given list with a total
-    /// equal to the list count, and sets up profile/permission defaults for each user.
-    /// </summary>
     private void SetupRepositories(IReadOnlyList<User> users, bool includeDeleted = false)
     {
         _userRepository.ListAsync(
@@ -325,16 +361,15 @@ public sealed class ListUsersQueryHandlerTests
                 Arg.Any<CancellationToken>())
             .Returns((users, users.Count));
 
-        foreach (var user in users)
-            SetupProfileRepositoryDefaults(user.Id);
-    }
+        _profileRepository.GetProfilesByUserIdsAsync(
+                Arg.Any<IReadOnlyList<Guid>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<Guid, IReadOnlyList<Profile>>());
 
-    private void SetupProfileRepositoryDefaults(Guid userId)
-    {
-        _profileRepository.GetProfilesByUserIdAsync(userId, Arg.Any<CancellationToken>())
-            .Returns(Array.Empty<Profile>());
-        _profileRepository.GetPermissionCodesByUserIdAsync(userId, Arg.Any<CancellationToken>())
-            .Returns(new HashSet<string>());
+        _profileRepository.GetPermissionCountsByUserIdsAsync(
+                Arg.Any<IReadOnlyList<Guid>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<Guid, int>());
     }
 
     private static User BuildUser(DateTime? emailConfirmedAt = null)
@@ -353,9 +388,6 @@ public sealed class ListUsersQueryHandlerTests
 
     private static User BuildLockedUser(DateTime lockedUntil)
     {
-        // Use reflection to set the private LockedUntil property for testing purposes.
-        // The domain only exposes RecordFailedLogin which requires threshold/duration,
-        // making it harder to set an exact future date from a test.
         var user = BuildConfirmedUser();
 
         typeof(User)

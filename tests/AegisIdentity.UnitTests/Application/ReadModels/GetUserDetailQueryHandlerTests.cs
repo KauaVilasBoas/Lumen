@@ -146,13 +146,14 @@ public sealed class GetUserDetailQueryHandlerTests
     {
         var user = BuildConfirmedUser();
         var profile = Profile.Create("Admin", "Full access");
-        var permissionProfile = PermissionProfile.Create(Guid.NewGuid(), profile.Id);
 
         SetupUser(user);
         _profileRepository.GetProfilesByUserIdAsync(UserId, Arg.Any<CancellationToken>())
             .Returns(new[] { profile });
-        _profileRepository.GetActivePermissionProfilesByProfileIdAsync(profile.Id, Arg.Any<CancellationToken>())
-            .Returns(new[] { permissionProfile });
+        _profileRepository.GetPermissionCountsByProfileIdsAsync(
+                Arg.Is<IReadOnlyList<Guid>>(ids => ids.Contains(profile.Id)),
+                Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<Guid, int> { [profile.Id] = 1 });
 
         var result = await InvokeHandler(UserId);
 
@@ -172,8 +173,10 @@ public sealed class GetUserDetailQueryHandlerTests
         SetupUser(user);
         _profileRepository.GetProfilesByUserIdAsync(UserId, Arg.Any<CancellationToken>())
             .Returns(new[] { systemProfile });
-        _profileRepository.GetActivePermissionProfilesByProfileIdAsync(systemProfile.Id, Arg.Any<CancellationToken>())
-            .Returns(Array.Empty<PermissionProfile>());
+        _profileRepository.GetPermissionCountsByProfileIdsAsync(
+                Arg.Any<IReadOnlyList<Guid>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<Guid, int>());
 
         var result = await InvokeHandler(UserId);
 
@@ -185,18 +188,43 @@ public sealed class GetUserDetailQueryHandlerTests
     {
         var user = BuildConfirmedUser();
         var profile = Profile.Create("Operator", "Operator access");
-        var pp1 = PermissionProfile.Create(Guid.NewGuid(), profile.Id);
-        var pp2 = PermissionProfile.Create(Guid.NewGuid(), profile.Id);
 
         SetupUser(user);
         _profileRepository.GetProfilesByUserIdAsync(UserId, Arg.Any<CancellationToken>())
             .Returns(new[] { profile });
-        _profileRepository.GetActivePermissionProfilesByProfileIdAsync(profile.Id, Arg.Any<CancellationToken>())
-            .Returns(new[] { pp1, pp2 });
+        _profileRepository.GetPermissionCountsByProfileIdsAsync(
+                Arg.Any<IReadOnlyList<Guid>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<Guid, int> { [profile.Id] = 2 });
 
         var result = await InvokeHandler(UserId);
 
         result.Profiles[0].PermissionCount.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task Handle_BatchPermissionCountCalled_NotPerProfileLoop()
+    {
+        var user = BuildConfirmedUser();
+        var profileA = Profile.Create("Admin", "Full access");
+        var profileB = Profile.Create("Viewer", "Read-only");
+
+        SetupUser(user);
+        _profileRepository.GetProfilesByUserIdAsync(UserId, Arg.Any<CancellationToken>())
+            .Returns(new[] { profileA, profileB });
+        _profileRepository.GetPermissionCountsByProfileIdsAsync(
+                Arg.Any<IReadOnlyList<Guid>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<Guid, int> { [profileA.Id] = 3, [profileB.Id] = 1 });
+
+        var result = await InvokeHandler(UserId);
+
+        await _profileRepository.Received(1)
+            .GetPermissionCountsByProfileIdsAsync(Arg.Any<IReadOnlyList<Guid>>(), Arg.Any<CancellationToken>());
+
+        result.Profiles.Should().HaveCount(2);
+        result.Profiles.First(p => p.ProfileId == profileA.Id).PermissionCount.Should().Be(3);
+        result.Profiles.First(p => p.ProfileId == profileB.Id).PermissionCount.Should().Be(1);
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -263,6 +291,11 @@ public sealed class GetUserDetailQueryHandlerTests
 
         _profileRepository.GetPermissionCodesByUserIdAsync(UserId, Arg.Any<CancellationToken>())
             .Returns(new HashSet<string>());
+
+        _profileRepository.GetPermissionCountsByProfileIdsAsync(
+                Arg.Any<IReadOnlyList<Guid>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<Guid, int>());
     }
 
     private static User BuildUser(

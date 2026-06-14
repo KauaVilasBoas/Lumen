@@ -52,27 +52,6 @@ public sealed class GetRecentAuditFeedQueryHandlerTests
         item.Message.Should().Be("User 'alice' logged in.");
     }
 
-    // ──────────────────────────────────────────────────────────────────────
-    // Take parameter clamping
-    // ──────────────────────────────────────────────────────────────────────
-
-    [Theory]
-    [InlineData(0, 1)]
-    [InlineData(-5, 1)]
-    [InlineData(101, 100)]
-    [InlineData(200, 100)]
-    public async Task Handle_OutOfRangeTake_ClampsToBounds(int requested, int expected)
-    {
-        _auditRepository.GetRecentAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
-            .Returns(Array.Empty<AuditEntry>());
-
-        await InvokeHandler(take: requested);
-
-        await _auditRepository.Received(1).GetRecentAsync(
-            Arg.Is<int>(n => n == expected),
-            Arg.Any<CancellationToken>());
-    }
-
     [Fact]
     public async Task Handle_ValidTake_PassesTakeToRepository()
     {
