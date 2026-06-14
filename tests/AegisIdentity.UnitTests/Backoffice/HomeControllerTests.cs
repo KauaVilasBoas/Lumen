@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using AegisIdentity.Backoffice.Controllers;
 using AegisIdentity.Backoffice.Services;
+using AegisIdentity.Backoffice.ViewModels;
 using AegisIdentity.UnitTests.Infrastructure.Security;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
@@ -24,7 +25,7 @@ public sealed class HomeControllerTests
 
     private HomeController BuildController(StubHttpMessageHandler httpHandler)
     {
-        var httpClient   = new HttpClient(httpHandler) { BaseAddress = new Uri("http://api.test/") };
+        var httpClient     = new HttpClient(httpHandler) { BaseAddress = new Uri("http://api.test/") };
         var adminApiClient = new AdminApiClient(httpClient, _httpContextAccessor);
 
         return new HomeController(adminApiClient)
@@ -126,83 +127,84 @@ public sealed class HomeControllerTests
                 "application/json")
         });
 
+    private static HomeDashboardViewModel GetViewModel(IActionResult result)
+    {
+        result.Should().BeOfType<ViewResult>();
+        var view = (ViewResult)result;
+        view.Model.Should().BeOfType<HomeDashboardViewModel>();
+        return (HomeDashboardViewModel)view.Model!;
+    }
+
     [Fact]
-    public async Task Index_AllSourcesSucceed_PopulatesAllViewBagEntries()
+    public async Task Index_AllSourcesSucceed_PopulatesViewModel()
     {
         var sut = BuildController(BuildHandler(userTotal: 7, profileCount: 3));
 
         var result = await sut.Index(CancellationToken.None);
 
-        result.Should().BeOfType<ViewResult>();
-        var view = (ViewResult)result;
-
-        ((int?)view.ViewData["UserCount"]).Should().Be(7);
-        ((int?)view.ViewData["ProfileCount"]).Should().Be(3);
-        ((int?)view.ViewData["PermissionCount"]).Should().Be(2);
-        ((int?)view.ViewData["OrphanCount"]).Should().Be(1);
-        view.ViewData["Activity"].Should().NotBeNull();
-        view.ViewData["CacheHitRate"].Should().NotBeNull();
-        view.ViewData["JobStats"].Should().NotBeNull();
+        var vm = GetViewModel(result);
+        vm.UserCount.Should().Be(7);
+        vm.ProfileCount.Should().Be(3);
+        vm.PermissionCount.Should().Be(2);
+        vm.OrphanCount.Should().Be(1);
+        vm.Activity.Should().NotBeNull();
+        vm.CacheHitRate.Should().NotBeNull();
+        vm.JobStats.Should().NotBeNull();
     }
 
     [Fact]
-    public async Task Index_UserEndpointFails_UserCountAbsentFromViewBag()
+    public async Task Index_UserEndpointFails_UserCountNullInViewModel()
     {
         var sut = BuildController(BuildHandler(usersEndpointFails: true));
 
         var result = await sut.Index(CancellationToken.None);
 
-        result.Should().BeOfType<ViewResult>();
-        var view = (ViewResult)result;
-        ((int?)view.ViewData["UserCount"]).Should().BeNull();
+        var vm = GetViewModel(result);
+        vm.UserCount.Should().BeNull();
     }
 
     [Fact]
-    public async Task Index_ActivityEndpointFails_ActivityAbsentFromViewBag()
+    public async Task Index_ActivityEndpointFails_ActivityNullInViewModel()
     {
         var sut = BuildController(BuildHandler(activityEndpointFails: true));
 
         var result = await sut.Index(CancellationToken.None);
 
-        result.Should().BeOfType<ViewResult>();
-        var view = (ViewResult)result;
-        view.ViewData["Activity"].Should().BeNull();
+        var vm = GetViewModel(result);
+        vm.Activity.Should().BeNull();
     }
 
     [Fact]
-    public async Task Index_CacheEndpointFails_CacheHitRateAbsentFromViewBag()
+    public async Task Index_CacheEndpointFails_CacheHitRateNullInViewModel()
     {
         var sut = BuildController(BuildHandler(cacheEndpointFails: true));
 
         var result = await sut.Index(CancellationToken.None);
 
-        result.Should().BeOfType<ViewResult>();
-        var view = (ViewResult)result;
-        view.ViewData["CacheHitRate"].Should().BeNull();
+        var vm = GetViewModel(result);
+        vm.CacheHitRate.Should().BeNull();
     }
 
     [Fact]
-    public async Task Index_JobsEndpointFails_JobStatsAbsentFromViewBag()
+    public async Task Index_JobsEndpointFails_JobStatsNullInViewModel()
     {
         var sut = BuildController(BuildHandler(jobsEndpointFails: true));
 
         var result = await sut.Index(CancellationToken.None);
 
-        result.Should().BeOfType<ViewResult>();
-        var view = (ViewResult)result;
-        view.ViewData["JobStats"].Should().BeNull();
+        var vm = GetViewModel(result);
+        vm.JobStats.Should().BeNull();
     }
 
     [Fact]
-    public async Task Index_CacheHitRateIsNull_CacheHitRateAbsentFromViewBag()
+    public async Task Index_CacheHitRateIsNull_CacheHitRateNullInViewModel()
     {
         var sut = BuildController(BuildHandler(cacheHitRate: null));
 
         var result = await sut.Index(CancellationToken.None);
 
-        result.Should().BeOfType<ViewResult>();
-        var view = (ViewResult)result;
-        view.ViewData["CacheHitRate"].Should().BeNull();
+        var vm = GetViewModel(result);
+        vm.CacheHitRate.Should().BeNull();
     }
 
     [Fact]
@@ -223,10 +225,8 @@ public sealed class HomeControllerTests
 
         var result = await sut.Index(CancellationToken.None);
 
-        var view     = (ViewResult)result;
-        var activity = view.ViewData["Activity"] as IReadOnlyList<AdminApiClient.AuditEntry>;
-
-        activity.Should().NotBeNull();
-        activity!.Count.Should().Be(5);
+        var vm = GetViewModel(result);
+        vm.Activity.Should().NotBeNull();
+        vm.Activity!.Count.Should().Be(5);
     }
 }
