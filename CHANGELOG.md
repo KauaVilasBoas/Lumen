@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (AUTH-19 — GET /api/auth/confirm-email + POST /api/auth/resend-confirmation)
+- `GET /api/auth/confirm-email?token=...` with `[AllowAnonymous]`; looks up `EmailConfirmationToken` by SHA-256 hash, validates `IsValid()` (not expired, not used), sets `user.IsActive = true` and `user.EmailConfirmedAt = now`, marks token used; returns `200 OK` or `401` via `UnauthorizedException` handled globally.
+- `POST /api/auth/resend-confirmation` with `[AllowAnonymous]`; always returns `200 OK` regardless of email existence (anti-enumeration); for pending users, soft-deletes previous tokens via `InvalidateByUserIdAsync`, generates a new 24h `EmailConfirmationToken`, and sends the `EmailConfirmation` template email; no-ops silently for unknown emails and already-active accounts.
+- `IEmailConfirmationTokenRepository.InvalidateByUserIdAsync` added to domain port and implemented in `EmailConfirmationTokenRepository` (soft-deletes all active tokens for the user in one `SaveChangesAsync`).
+- `AuthErrorMessages.TokenRequired`, `AuthErrorMessages.InvalidOrExpiredToken` added to `SharedKernel`.
+- `EmailSubjects.PasswordChanged` added to `SharedKernel`.
+- 10 unit tests (8 handler, 2 validator) and 10 integration endpoint tests.
+
+### Added (AUTH-18 — POST /api/auth/reset-password)
+- `POST /api/auth/reset-password` with `[AllowAnonymous]`; accepts `{ token, newPassword }`; validates `PasswordResetToken` by SHA-256 hash and `IsValid()`, rejects with `401` on invalid/expired/used token; applies `IPasswordValidator` (complexity + HIBP) on the new password (`400` on failure); marks token used, updates `PasswordHash` via `IPasswordHasher` (BCrypt work factor 12), revokes all active `RefreshToken`s via `IRefreshTokenRepository`, sends `PasswordChanged` notification email (fail-open on SMTP error); returns `204` on success.
+- `AuthErrorMessages.NewPasswordRequired` added to `SharedKernel`.
+- 13 unit tests (10 handler, 3 validator) and 7 integration endpoint tests.
+
+### Added (USER-05 — POST /api/me/change-password)
+- `POST /api/me/change-password` in `MeController`; protected by FallbackPolicy (authenticated, no dedicated permission); `userId` extracted from JWT `sub` claim.
+- `ChangePasswordCommandHandler`: resolves user by id (`NotFoundException` on missing); verifies `currentPassword` via `IPasswordHasher.Verify` (`400` on mismatch); rejects `newPassword` equal to current (`400`); applies `IPasswordValidator` (`400` on failure); updates `PasswordHash`, revokes all active `RefreshToken`s (logout from all devices), sends `PasswordChanged` email (fail-open); returns `204`.
+- `AuthErrorMessages.CurrentPasswordRequired`, `AuthErrorMessages.CurrentPasswordIncorrect`, `AuthErrorMessages.NewPasswordSameAsCurrent` added to `SharedKernel`.
+- 12 unit tests (9 handler, 3 validator) and 6 integration endpoint tests.
+
 ### Added (AUTH-17 — POST /api/auth/forgot-password)
 - `POST /api/auth/forgot-password` in `AuthController` with `[AllowAnonymous]`; always returns `200 OK` regardless of whether the email exists (prevents user enumeration).
 - `ForgotPasswordCommandHandler` (CQRS/MediatR): looks up user by normalised email, generates a cryptographically-random raw token (32 bytes, Base64Url), persists `PasswordResetToken` with SHA-256 hash and 30-minute expiry, then dispatches the password-reset email.

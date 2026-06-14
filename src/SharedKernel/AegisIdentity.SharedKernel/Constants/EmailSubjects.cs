@@ -11,4 +11,7 @@ public static class EmailSubjects
 
     /// <summary>Subject for the password-reset link email.</summary>
     public const string PasswordReset = "Redefina sua senha — AegisIdentity";
+
+    /// <summary>Subject for the password-changed notification email.</summary>
+    public const string PasswordChanged = "Sua senha foi alterada — AegisIdentity";
 }

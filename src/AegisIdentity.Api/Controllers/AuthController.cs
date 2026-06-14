@@ -1,9 +1,12 @@
 using System.Security.Claims;
+using AegisIdentity.CommandHandlers.Auth.ConfirmEmail;
 using AegisIdentity.CommandHandlers.Auth.ForgotPassword;
 using AegisIdentity.CommandHandlers.Auth.Login;
 using AegisIdentity.CommandHandlers.Auth.Logout;
 using AegisIdentity.CommandHandlers.Auth.Refresh;
 using AegisIdentity.CommandHandlers.Auth.Register;
+using AegisIdentity.CommandHandlers.Auth.ResendConfirmationEmail;
+using AegisIdentity.CommandHandlers.Auth.ResetPassword;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,11 +24,56 @@ public sealed class AuthController : ControllerBase
 
     public sealed record ForgotPasswordRequest(string Email);
 
+    public sealed record ResendConfirmationRequest(string Email);
+
+    public sealed record ResetPasswordRequest(string Token, string NewPassword);
+
     public sealed record LoginRequest(string Identifier, string Password);
 
     public sealed record RefreshRequest(string RefreshToken);
 
     public sealed record LogoutRequest(string? RefreshToken);
+
+    [HttpGet("confirm-email")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ConfirmEmail(
+        [FromQuery] string token,
+        CancellationToken ct)
+    {
+        var command = new ConfirmEmailCommandHandler.Command(token);
+        await _mediator.Send(command, ct);
+        return Ok();
+    }
+
+    [HttpPost("resend-confirmation")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResendConfirmation(
+        [FromBody] ResendConfirmationRequest request,
+        CancellationToken ct)
+    {
+        var command = new ResendConfirmationEmailCommandHandler.Command(request.Email);
+        await _mediator.Send(command, ct);
+        return Ok();
+    }
+
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ResetPassword(
+        [FromBody] ResetPasswordRequest request,
+        CancellationToken ct)
+    {
+        var command = new ResetPasswordCommandHandler.Command(request.Token, request.NewPassword);
+        await _mediator.Send(command, ct);
+        return NoContent();
+    }
 
     [HttpPost("forgot-password")]
     [AllowAnonymous]

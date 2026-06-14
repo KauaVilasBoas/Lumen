@@ -7,4 +7,6 @@ public interface IEmailConfirmationTokenRepository
     Task InsertAsync(EmailConfirmationToken token, CancellationToken ct = default);
 
     Task UpdateAsync(EmailConfirmationToken token, CancellationToken ct = default);
+
+    Task InvalidateByUserIdAsync(Guid userId, CancellationToken ct = default);
 }

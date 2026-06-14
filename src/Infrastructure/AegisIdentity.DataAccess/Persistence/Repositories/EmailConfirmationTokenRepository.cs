@@ -27,4 +27,16 @@ internal sealed class EmailConfirmationTokenRepository : IEmailConfirmationToken
         _dbContext.EmailConfirmationTokens.Update(token);
         await _dbContext.SaveChangesAsync(ct);
     }
+
+    public async Task InvalidateByUserIdAsync(Guid userId, CancellationToken ct = default)
+    {
+        var activeTokens = await _dbContext.EmailConfirmationTokens
+            .Where(t => t.UserId == userId)
+            .ToListAsync(ct);
+
+        foreach (var token in activeTokens)
+            token.SoftDelete();
+
+        await _dbContext.SaveChangesAsync(ct);
+    }
 }

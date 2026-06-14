@@ -29,4 +29,16 @@ public static class AuthErrorMessages
     public const string InvalidOrExpiredRefreshToken = "Invalid or expired refresh token.";
 
     public const string RefreshTokenOwnershipViolation = "You do not own this refresh token.";
+
+    public const string InvalidOrExpiredToken = "Token inválido ou expirado.";
+
+    public const string TokenRequired = "O token é obrigatório.";
+
+    public const string CurrentPasswordRequired = "A senha atual é obrigatória.";
+
+    public const string NewPasswordRequired = "A nova senha é obrigatória.";
+
+    public const string CurrentPasswordIncorrect = "A senha atual está incorreta.";
+
+    public const string NewPasswordSameAsCurrent = "A nova senha não pode ser igual à senha atual.";
 }
