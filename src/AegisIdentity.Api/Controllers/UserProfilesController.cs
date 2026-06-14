@@ -2,6 +2,7 @@ using AegisIdentity.CommandHandlers.UserProfiles.AssignUserProfile;
 using AegisIdentity.CommandHandlers.UserProfiles.RemoveUserProfile;
 using AegisIdentity.ReadModels.Queries;
 using AegisIdentity.SharedKernel.Authorization;
+using AegisIdentity.SharedKernel.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,7 +12,7 @@ namespace AegisIdentity.Api.Controllers;
 [ApiController]
 [Route("api/users/{userId:guid}/profiles")]
 [Produces("application/json")]
-[PermissionGroup("UserProfiles")]
+[PermissionGroup(PermissionGroups.UserProfiles)]
 public sealed class UserProfilesController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -23,7 +24,7 @@ public sealed class UserProfilesController : ControllerBase
 
     [HttpGet]
     [RequirePermission]
-    [Authorize(Policy = "UserProfiles.List")]
+    [Authorize(Policy = PermissionCodes.UserProfiles.List)]
     [ProducesResponseType(typeof(IReadOnlyList<ListUserProfilesQueryHandler.Result>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -35,7 +36,7 @@ public sealed class UserProfilesController : ControllerBase
 
     [HttpPost("{profileId:guid}")]
     [RequirePermission]
-    [Authorize(Policy = "UserProfiles.Assign")]
+    [Authorize(Policy = PermissionCodes.UserProfiles.Assign)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -50,7 +51,7 @@ public sealed class UserProfilesController : ControllerBase
 
     [HttpDelete("{profileId:guid}")]
     [RequirePermission]
-    [Authorize(Policy = "UserProfiles.Remove")]
+    [Authorize(Policy = PermissionCodes.UserProfiles.Remove)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

@@ -24,6 +24,28 @@ public static class PermissionCodes
         public const string GetCacheStats = "Diagnostics.GetCacheStats";
         public const string GetJobStats   = "Diagnostics.GetJobStats";
     }
+
+    public static class Profiles
+    {
+        public const string List           = "Profiles.List";
+        public const string Get            = "Profiles.Get";
+        public const string Create         = "Profiles.Create";
+        public const string Update         = "Profiles.Update";
+        public const string Delete         = "Profiles.Delete";
+        public const string SetPermissions = "Profiles.SetPermissions";
+    }
+
+    public static class Permissions
+    {
+        public const string List = "Permissions.List";
+    }
+
+    public static class UserProfiles
+    {
+        public const string List   = "UserProfiles.List";
+        public const string Assign = "UserProfiles.Assign";
+        public const string Remove = "UserProfiles.Remove";
+    }
 }
 
 public static class PermissionGroups
@@ -32,4 +54,7 @@ public static class PermissionGroups
     public const string Users         = "Users";
     public const string Audit         = "Audit";
     public const string Diagnostics   = "Diagnostics";
+    public const string Profiles      = "Profiles";
+    public const string Permissions   = "Permissions";
+    public const string UserProfiles  = "UserProfiles";
 }

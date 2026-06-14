@@ -4,6 +4,7 @@ using AegisIdentity.CommandHandlers.Profiles.SetProfilePermissions;
 using AegisIdentity.CommandHandlers.Profiles.UpdateProfile;
 using AegisIdentity.ReadModels.Queries;
 using AegisIdentity.SharedKernel.Authorization;
+using AegisIdentity.SharedKernel.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,7 +14,7 @@ namespace AegisIdentity.Api.Controllers;
 [ApiController]
 [Route("api/profiles")]
 [Produces("application/json")]
-[PermissionGroup("Profiles")]
+[PermissionGroup(PermissionGroups.Profiles)]
 public sealed class ProfilesController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -25,7 +26,7 @@ public sealed class ProfilesController : ControllerBase
 
     [HttpGet]
     [RequirePermission]
-    [Authorize(Policy = "Profiles.List")]
+    [Authorize(Policy = PermissionCodes.Profiles.List)]
     [ProducesResponseType(typeof(IReadOnlyList<ListProfilesQueryHandler.Result>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -37,7 +38,7 @@ public sealed class ProfilesController : ControllerBase
 
     [HttpGet("{id:guid}")]
     [RequirePermission]
-    [Authorize(Policy = "Profiles.Get")]
+    [Authorize(Policy = PermissionCodes.Profiles.Get)]
     [ProducesResponseType(typeof(GetProfileQueryHandler.Result), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -54,7 +55,7 @@ public sealed class ProfilesController : ControllerBase
 
     [HttpPost]
     [RequirePermission]
-    [Authorize(Policy = "Profiles.Create")]
+    [Authorize(Policy = PermissionCodes.Profiles.Create)]
     [ProducesResponseType(typeof(CreateProfileCommandHandler.Result), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -70,7 +71,7 @@ public sealed class ProfilesController : ControllerBase
 
     [HttpPut("{id:guid}")]
     [RequirePermission]
-    [Authorize(Policy = "Profiles.Update")]
+    [Authorize(Policy = PermissionCodes.Profiles.Update)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -89,7 +90,7 @@ public sealed class ProfilesController : ControllerBase
 
     [HttpDelete("{id:guid}")]
     [RequirePermission]
-    [Authorize(Policy = "Profiles.Delete")]
+    [Authorize(Policy = PermissionCodes.Profiles.Delete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -102,7 +103,7 @@ public sealed class ProfilesController : ControllerBase
 
     [HttpPut("{id:guid}/permissions")]
     [RequirePermission]
-    [Authorize(Policy = "Profiles.SetPermissions")]
+    [Authorize(Policy = PermissionCodes.Profiles.SetPermissions)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
