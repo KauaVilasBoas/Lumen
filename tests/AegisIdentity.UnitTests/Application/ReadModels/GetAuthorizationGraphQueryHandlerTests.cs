@@ -14,10 +14,6 @@ public sealed class GetAuthorizationGraphQueryHandlerTests
     private readonly IPermissionRepository      _permissionRepository      = Substitute.For<IPermissionRepository>();
     private readonly IGroupPermissionRepository _groupPermissionRepository = Substitute.For<IGroupPermissionRepository>();
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Empty graph
-    // ──────────────────────────────────────────────────────────────────────────
-
     [Fact]
     public async Task Handle_NoData_ReturnsEmptySnapshot()
     {
@@ -29,10 +25,6 @@ public sealed class GetAuthorizationGraphQueryHandlerTests
         result.Profiles.Should().BeEmpty();
         result.Permissions.Should().BeEmpty();
     }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // User nodes
-    // ──────────────────────────────────────────────────────────────────────────
 
     [Fact]
     public async Task Handle_ActiveUser_ReturnsUserNodeWithStateActive()
@@ -80,10 +72,17 @@ public sealed class GetAuthorizationGraphQueryHandlerTests
         SetupRepositoriesWithUsers([user]);
         _profileRepository.ListAllAsync(Arg.Any<CancellationToken>())
             .Returns([profile]);
-        _userProfileRepository.ListByUserIdAsync(user.Id, Arg.Any<CancellationToken>())
-            .Returns([UserProfile.Create(user.Id, profile.Id)]);
-        _profileRepository.GetActivePermissionProfilesByProfileIdAsync(profile.Id, Arg.Any<CancellationToken>())
-            .Returns([]);
+        _userProfileRepository.ListByUserIdsAsync(
+                Arg.Any<IReadOnlyList<Guid>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<Guid, IReadOnlyList<UserProfile>>
+            {
+                [user.Id] = [UserProfile.Create(user.Id, profile.Id)]
+            });
+        _profileRepository.GetActivePermissionProfilesByProfileIdsAsync(
+                Arg.Any<IReadOnlyList<Guid>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<Guid, IReadOnlyList<PermissionProfile>>());
 
         var result = await InvokeHandler();
 
@@ -95,17 +94,15 @@ public sealed class GetAuthorizationGraphQueryHandlerTests
     {
         var user = BuildConfirmedUser();
         SetupRepositoriesWithUsers([user]);
-        _userProfileRepository.ListByUserIdAsync(user.Id, Arg.Any<CancellationToken>())
-            .Returns([]);
+        _userProfileRepository.ListByUserIdsAsync(
+                Arg.Any<IReadOnlyList<Guid>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<Guid, IReadOnlyList<UserProfile>>());
 
         var result = await InvokeHandler();
 
         result.Users[0].Profiles.Should().BeEmpty();
     }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // Profile nodes
-    // ──────────────────────────────────────────────────────────────────────────
 
     [Fact]
     public async Task Handle_ProfileWithPermission_BuildsProfileNodeWithPermissionId()
@@ -118,8 +115,13 @@ public sealed class GetAuthorizationGraphQueryHandlerTests
             .Returns([profile]);
         _permissionRepository.ListAllAsync(Arg.Any<CancellationToken>())
             .Returns([permission]);
-        _profileRepository.GetActivePermissionProfilesByProfileIdAsync(profile.Id, Arg.Any<CancellationToken>())
-            .Returns([PermissionProfile.Create(permission.Id, profile.Id)]);
+        _profileRepository.GetActivePermissionProfilesByProfileIdsAsync(
+                Arg.Any<IReadOnlyList<Guid>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<Guid, IReadOnlyList<PermissionProfile>>
+            {
+                [profile.Id] = [PermissionProfile.Create(permission.Id, profile.Id)]
+            });
 
         var result = await InvokeHandler();
 
@@ -138,17 +140,15 @@ public sealed class GetAuthorizationGraphQueryHandlerTests
         SetupEmptyRepositories();
         _profileRepository.ListAllAsync(Arg.Any<CancellationToken>())
             .Returns([profile]);
-        _profileRepository.GetActivePermissionProfilesByProfileIdAsync(profile.Id, Arg.Any<CancellationToken>())
-            .Returns([]);
+        _profileRepository.GetActivePermissionProfilesByProfileIdsAsync(
+                Arg.Any<IReadOnlyList<Guid>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<Guid, IReadOnlyList<PermissionProfile>>());
 
         var result = await InvokeHandler();
 
         result.Profiles[profile.Id.ToString()].IsSystem.Should().BeTrue();
     }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // Permission nodes
-    // ──────────────────────────────────────────────────────────────────────────
 
     [Fact]
     public async Task Handle_PermissionWithGroup_ReturnsGroupNameInNode()
@@ -199,10 +199,6 @@ public sealed class GetAuthorizationGraphQueryHandlerTests
         result.Permissions[permission.Id.ToString()].Group.Should().BeEmpty();
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Shape contract — no color, no method fields in result records
-    // ──────────────────────────────────────────────────────────────────────────
-
     [Fact]
     public void UserNode_DoesNotExposeColorOrMethod()
     {
@@ -221,9 +217,56 @@ public sealed class GetAuthorizationGraphQueryHandlerTests
         permNodeType.GetProperty("Method").Should().BeNull("method is derivable at the front end");
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Helpers
-    // ──────────────────────────────────────────────────────────────────────────
+    [Fact]
+    public async Task Handle_MultipleUsersAndProfiles_UsesBatchQueriesAndMapsCorrectly()
+    {
+        var user1 = BuildConfirmedUser();
+        var user2 = BuildConfirmedUser();
+        var profile1 = Profile.Create("Admin", "Full access");
+        var profile2 = Profile.Create("Viewer", "Read only");
+        var permission = Permission.Create("Users", "List", "Users.List");
+
+        SetupEmptyRepositories();
+        _userRepository.ListAsync(
+                Arg.Any<string?>(),
+                Arg.Any<bool>(),
+                Arg.Any<int>(),
+                Arg.Any<int>(),
+                Arg.Any<CancellationToken>())
+            .Returns(((IReadOnlyList<User>)[user1, user2], 2));
+
+        _profileRepository.ListAllAsync(Arg.Any<CancellationToken>())
+            .Returns([profile1, profile2]);
+
+        _permissionRepository.ListAllAsync(Arg.Any<CancellationToken>())
+            .Returns([permission]);
+
+        _userProfileRepository.ListByUserIdsAsync(
+                Arg.Any<IReadOnlyList<Guid>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<Guid, IReadOnlyList<UserProfile>>
+            {
+                [user1.Id] = [UserProfile.Create(user1.Id, profile1.Id)],
+                [user2.Id] = [UserProfile.Create(user2.Id, profile2.Id)]
+            });
+
+        _profileRepository.GetActivePermissionProfilesByProfileIdsAsync(
+                Arg.Any<IReadOnlyList<Guid>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<Guid, IReadOnlyList<PermissionProfile>>
+            {
+                [profile1.Id] = [PermissionProfile.Create(permission.Id, profile1.Id)],
+                [profile2.Id] = []
+            });
+
+        var result = await InvokeHandler();
+
+        result.Users.Should().HaveCount(2);
+        result.Users.Should().Contain(u => u.Id == user1.Id && u.Profiles.Contains(profile1.Id.ToString()));
+        result.Users.Should().Contain(u => u.Id == user2.Id && u.Profiles.Contains(profile2.Id.ToString()));
+        result.Profiles[profile1.Id.ToString()].Permissions.Should().ContainSingle();
+        result.Profiles[profile2.Id.ToString()].Permissions.Should().BeEmpty();
+    }
 
     private Task<GetAuthorizationGraphQueryHandler.GraphSnapshot> InvokeHandler()
     {
@@ -255,6 +298,16 @@ public sealed class GetAuthorizationGraphQueryHandlerTests
 
         _groupPermissionRepository.ListAllAsync(Arg.Any<CancellationToken>())
             .Returns([]);
+
+        _profileRepository.GetActivePermissionProfilesByProfileIdsAsync(
+                Arg.Any<IReadOnlyList<Guid>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<Guid, IReadOnlyList<PermissionProfile>>());
+
+        _userProfileRepository.ListByUserIdsAsync(
+                Arg.Any<IReadOnlyList<Guid>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<Guid, IReadOnlyList<UserProfile>>());
     }
 
     private void SetupRepositoriesWithUsers(IReadOnlyList<User> users)
@@ -276,11 +329,15 @@ public sealed class GetAuthorizationGraphQueryHandlerTests
         _groupPermissionRepository.ListAllAsync(Arg.Any<CancellationToken>())
             .Returns([]);
 
-        foreach (var user in users)
-        {
-            _userProfileRepository.ListByUserIdAsync(user.Id, Arg.Any<CancellationToken>())
-                .Returns([]);
-        }
+        _profileRepository.GetActivePermissionProfilesByProfileIdsAsync(
+                Arg.Any<IReadOnlyList<Guid>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<Guid, IReadOnlyList<PermissionProfile>>());
+
+        _userProfileRepository.ListByUserIdsAsync(
+                Arg.Any<IReadOnlyList<Guid>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new Dictionary<Guid, IReadOnlyList<UserProfile>>());
     }
 
     private static User BuildUser(DateTime? emailConfirmedAt = null)

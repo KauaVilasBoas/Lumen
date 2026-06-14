@@ -150,6 +150,22 @@ internal sealed class ProfileRepository : IProfileRepository
                            .Where(pp => pp.ProfileId == profileId)
                            .ToListAsync(ct);
 
+    public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<PermissionProfile>>> GetActivePermissionProfilesByProfileIdsAsync(
+        IReadOnlyList<Guid> profileIds,
+        CancellationToken ct = default)
+    {
+        var rows = await _dbContext.PermissionProfiles
+            .Where(pp => profileIds.Contains(pp.ProfileId))
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+        return rows
+            .GroupBy(pp => pp.ProfileId)
+            .ToDictionary(
+                g => g.Key,
+                g => (IReadOnlyList<PermissionProfile>)g.ToList());
+    }
+
     public async Task InsertPermissionProfilesAsync(
         IReadOnlyList<PermissionProfile> permissionProfiles,
         CancellationToken ct = default)

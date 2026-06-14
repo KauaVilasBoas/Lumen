@@ -36,6 +36,10 @@ public interface IProfileRepository
 
     Task<IReadOnlyList<PermissionProfile>> GetActivePermissionProfilesByProfileIdAsync(Guid profileId, CancellationToken ct = default);
 
+    Task<IReadOnlyDictionary<Guid, IReadOnlyList<PermissionProfile>>> GetActivePermissionProfilesByProfileIdsAsync(
+        IReadOnlyList<Guid> profileIds,
+        CancellationToken ct = default);
+
     Task InsertPermissionProfilesAsync(IReadOnlyList<PermissionProfile> permissionProfiles, CancellationToken ct = default);
 
     Task UpdatePermissionProfileAsync(PermissionProfile permissionProfile, CancellationToken ct = default);

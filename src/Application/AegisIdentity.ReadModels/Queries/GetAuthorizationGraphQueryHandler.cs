@@ -62,16 +62,16 @@ public sealed class GetAuthorizationGraphQueryHandler
             pageSize: int.MaxValue,
             ct);
 
-        var profiles        = await _profileRepository.ListAllAsync(ct);
-        var permissions     = await _permissionRepository.ListAllAsync(ct);
-        var groups          = await _groupPermissionRepository.ListAllAsync(ct);
+        var profiles    = await _profileRepository.ListAllAsync(ct);
+        var permissions = await _permissionRepository.ListAllAsync(ct);
+        var groups      = await _groupPermissionRepository.ListAllAsync(ct);
 
-        var groupNameById   = groups.ToDictionary(g => g.Id, g => g.Name);
-        var profileById     = profiles.ToDictionary(p => p.Id);
+        var groupNameById = groups.ToDictionary(g => g.Id, g => g.Name);
+        var profileById   = profiles.ToDictionary(p => p.Id);
 
-        var permissionNodes = BuildPermissionNodes(permissions, groupNameById);
-        var profileNodes    = await BuildProfileNodesAsync(profiles, permissionNodes, ct);
-        var userNodes       = await BuildUserNodesAsync(rawUsers, profileById, ct);
+        var permissionNodes  = BuildPermissionNodes(permissions, groupNameById);
+        var profileNodes     = await BuildProfileNodesAsync(profiles, permissionNodes, ct);
+        var userNodes        = await BuildUserNodesAsync(rawUsers, profileById, ct);
 
         return new GraphSnapshot(userNodes, profileNodes, permissionNodes);
     }
@@ -105,13 +105,22 @@ public sealed class GetAuthorizationGraphQueryHandler
     {
         var result = new Dictionary<string, ProfileNode>(profiles.Count);
 
+        if (profiles.Count == 0)
+            return result;
+
+        var profileIds = profiles.Select(p => p.Id).ToList();
+        var permissionProfilesByProfile = await _profileRepository
+            .GetActivePermissionProfilesByProfileIdsAsync(profileIds, ct);
+
         foreach (var profile in profiles)
         {
-            var permissionProfiles = await _profileRepository.GetActivePermissionProfilesByProfileIdAsync(profile.Id, ct);
+            var permissionProfiles = permissionProfilesByProfile.TryGetValue(profile.Id, out var pps)
+                ? pps
+                : [];
 
             var permissionIds = permissionProfiles
                 .Select(pp => pp.PermissionId.ToString())
-                .Where(id => permissionNodes.ContainsKey(id))
+                .Where(permissionNodes.ContainsKey)
                 .ToList();
 
             result[profile.Id.ToString()] = new ProfileNode(
@@ -128,27 +137,31 @@ public sealed class GetAuthorizationGraphQueryHandler
         Dictionary<Guid, Profile> profileById,
         CancellationToken ct)
     {
+        if (users.Count == 0)
+            return [];
+
         var now    = DateTime.UtcNow;
-        var result = new List<UserNode>(users.Count);
+        var userIds = users.Select(u => u.Id).ToList();
+        var userProfilesByUser = await _userProfileRepository.ListByUserIdsAsync(userIds, ct);
 
-        foreach (var user in users)
-        {
-            var userProfiles = await _userProfileRepository.ListByUserIdAsync(user.Id, ct);
+        return users
+            .Select(user =>
+            {
+                var userProfiles = userProfilesByUser.TryGetValue(user.Id, out var ups) ? ups : [];
 
-            var profileIds = userProfiles
-                .Select(up => up.ProfileId)
-                .Where(profileById.ContainsKey)
-                .Select(id => id.ToString())
-                .ToList();
+                var profileIds = userProfiles
+                    .Select(up => up.ProfileId)
+                    .Where(profileById.ContainsKey)
+                    .Select(id => id.ToString())
+                    .ToList();
 
-            result.Add(new UserNode(
-                Id:       user.Id,
-                Username: user.Username,
-                Email:    user.Email,
-                State:    UserStateResolver.Resolve(user, now),
-                Profiles: profileIds));
-        }
-
-        return result;
+                return new UserNode(
+                    Id:       user.Id,
+                    Username: user.Username,
+                    Email:    user.Email,
+                    State:    UserStateResolver.Resolve(user, now),
+                    Profiles: profileIds);
+            })
+            .ToList();
     }
 }
