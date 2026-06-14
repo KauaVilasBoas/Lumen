@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="NetArchTest.Rules" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\AegisIdentity.Domain\AegisIdentity.Domain.csproj" />
+    <ProjectReference Include="..\..\src\SharedKernel\AegisIdentity.SharedKernel\AegisIdentity.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\src\Application\AegisIdentity.CommandHandlers\AegisIdentity.CommandHandlers.csproj" />
+    <ProjectReference Include="..\..\src\Application\AegisIdentity.ReadModels\AegisIdentity.ReadModels.csproj" />
+    <ProjectReference Include="..\..\src\Application\AegisIdentity.EventHandlers\AegisIdentity.EventHandlers.csproj" />
+    <ProjectReference Include="..\..\src\Infrastructure\AegisIdentity.DataAccess\AegisIdentity.DataAccess.csproj" />
+    <ProjectReference Include="..\..\src\Infrastructure\AegisIdentity.Integration\AegisIdentity.Integration.csproj" />
+    <ProjectReference Include="..\..\src\AegisIdentity.Infrastructure\AegisIdentity.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\AegisIdentity.Api\AegisIdentity.Api.csproj" />
+    <ProjectReference Include="..\..\src\Presentation\AegisIdentity.Backoffice\AegisIdentity.Backoffice.csproj" />
+    <ProjectReference Include="..\..\src\Jobs\AegisIdentity.Jobs\AegisIdentity.Jobs.csproj" />
+  </ItemGroup>
+
+</Project>
