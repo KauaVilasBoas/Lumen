@@ -30,14 +30,6 @@ public sealed class DevController : ApiBaseController
         _env = env;
     }
 
-    /// <summary>
-    /// Dev: send a smoke-test email via Mailpit.
-    /// </summary>
-    /// <remarks>
-    /// Renders the EmailConfirmation template and dispatches it through IEmailService.
-    /// Available only in Development.
-    /// Open http://localhost:8025 after calling this endpoint to inspect the message.
-    /// </remarks>
     [HttpGet("email-test")]
     public async Task<IActionResult> EmailTest(
         [FromQuery] string to,
@@ -65,8 +57,6 @@ public sealed class DevController : ApiBaseController
             HtmlBody: html,
             TextBody: text);
 
-        // IEmailService is fail-open: transport errors are logged and swallowed.
-        // The endpoint always reports 200 — open Mailpit to confirm delivery.
         await _emailService.SendAsync(message, ct);
 
         return Ok(new
@@ -75,7 +65,6 @@ public sealed class DevController : ApiBaseController
             to,
             smtp = $"{smtp.Host}:{smtp.Port}",
             viewer = "http://localhost:8025",
-            note = "IEmailService is fail-open. Open Mailpit to verify the message actually arrived.",
         });
     }
 }

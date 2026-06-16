@@ -21,6 +21,22 @@ internal sealed class UserProfileRepository : IUserProfileRepository
                            .Where(up => up.UserId == userId)
                            .ToListAsync(ct);
 
+    public async Task<IReadOnlyDictionary<Guid, IReadOnlyList<UserProfile>>> ListByUserIdsAsync(
+        IReadOnlyList<Guid> userIds,
+        CancellationToken ct = default)
+    {
+        var rows = await _dbContext.UserProfiles
+            .Where(up => userIds.Contains(up.UserId))
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+        return rows
+            .GroupBy(up => up.UserId)
+            .ToDictionary(
+                g => g.Key,
+                g => (IReadOnlyList<UserProfile>)g.ToList());
+    }
+
     public async Task<IReadOnlyList<UserProfile>> ListByProfileIdAsync(Guid profileId, CancellationToken ct = default)
         => await _dbContext.UserProfiles
                            .Where(up => up.ProfileId == profileId)

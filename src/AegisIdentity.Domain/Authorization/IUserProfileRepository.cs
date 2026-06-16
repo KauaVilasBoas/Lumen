@@ -6,6 +6,10 @@ public interface IUserProfileRepository
 
     Task<IReadOnlyList<UserProfile>> ListByUserIdAsync(Guid userId, CancellationToken ct = default);
 
+    Task<IReadOnlyDictionary<Guid, IReadOnlyList<UserProfile>>> ListByUserIdsAsync(
+        IReadOnlyList<Guid> userIds,
+        CancellationToken ct = default);
+
     Task<IReadOnlyList<UserProfile>> ListByProfileIdAsync(Guid profileId, CancellationToken ct = default);
 
     Task InsertAsync(UserProfile userProfile, CancellationToken ct = default);

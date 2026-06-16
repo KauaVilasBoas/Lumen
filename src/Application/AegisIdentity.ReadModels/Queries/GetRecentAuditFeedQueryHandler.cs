@@ -1,4 +1,6 @@
 using AegisIdentity.Domain.Audit;
+using AegisIdentity.SharedKernel.Constants;
+using FluentValidation;
 using MediatR;
 
 namespace AegisIdentity.ReadModels.Queries;
@@ -6,11 +8,7 @@ namespace AegisIdentity.ReadModels.Queries;
 public sealed class GetRecentAuditFeedQueryHandler
     : IRequestHandler<GetRecentAuditFeedQueryHandler.Query, IReadOnlyList<GetRecentAuditFeedQueryHandler.AuditEntryResult>>
 {
-    private const int MinTake = 1;
-    private const int MaxTake = 100;
-    private const int DefaultTake = 20;
-
-    public sealed record Query(int Take = DefaultTake)
+    public sealed record Query(int Take = ValidationLimits.AuditTakeDefaultValue)
         : IRequest<IReadOnlyList<AuditEntryResult>>;
 
     public sealed record AuditEntryResult(
@@ -19,6 +17,16 @@ public sealed class GetRecentAuditFeedQueryHandler
         string? Target,
         string Message,
         DateTime OccurredAt);
+
+    public sealed class Validator : AbstractValidator<Query>
+    {
+        public Validator()
+        {
+            RuleFor(q => q.Take)
+                .InclusiveBetween(ValidationLimits.AuditTakeMinValue, ValidationLimits.AuditTakeMaxValue)
+                .OverridePropertyName("take");
+        }
+    }
 
     private readonly IAuditRepository _auditRepository;
 
@@ -29,9 +37,7 @@ public sealed class GetRecentAuditFeedQueryHandler
 
     public async Task<IReadOnlyList<AuditEntryResult>> Handle(Query query, CancellationToken ct)
     {
-        var take = ClampTake(query.Take);
-
-        var entries = await _auditRepository.GetRecentAsync(take, ct);
+        var entries = await _auditRepository.GetRecentAsync(query.Take, ct);
 
         return entries
             .Select(e => new AuditEntryResult(
@@ -42,7 +48,4 @@ public sealed class GetRecentAuditFeedQueryHandler
                 OccurredAt: e.OccurredAt))
             .ToList();
     }
-
-    private static int ClampTake(int requested)
-        => Math.Clamp(requested, MinTake, MaxTake);
 }

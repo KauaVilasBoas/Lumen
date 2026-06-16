@@ -28,6 +28,8 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
                .IsRequired()
                .HasMaxLength(128);
 
+        builder.Property(u => u.IsBootstrap);
+
         builder.Property(u => u.IsActive);
 
         builder.Property(u => u.EmailConfirmedAt);

@@ -63,9 +63,6 @@ internal sealed class UserRepository : IUserRepository
         int pageSize,
         CancellationToken ct = default)
     {
-        // When includeDeleted is true we must bypass the global soft-delete filter
-        // so that deleted users are visible. The caller (handler) controls this flag
-        // based on the state filter requested by the API consumer.
         var query = includeDeleted
             ? _dbContext.Users.IgnoreQueryFilters()
             : _dbContext.Users.AsQueryable();

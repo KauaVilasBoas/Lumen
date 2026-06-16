@@ -1,17 +1,18 @@
 @using AegisIdentity.Backoffice.Services
+@model AegisIdentity.Backoffice.ViewModels.HomeDashboardViewModel
 @{
     ViewData["Title"] = "Overview";
     ViewData["Subtitle"] = "System state at a glance";
     Layout = "_Layout";
 
-    var userCount       = ViewBag.UserCount as int?;
-    var profileCount    = ViewBag.ProfileCount as int?;
-    var permissionCount = ViewBag.PermissionCount as int?;
-    var orphanCount     = ViewBag.OrphanCount as int?;
-    var cacheHitRate    = ViewBag.CacheHitRate as double?;
+    var userCount       = Model.UserCount;
+    var profileCount    = Model.ProfileCount;
+    var permissionCount = Model.PermissionCount;
+    var orphanCount     = Model.OrphanCount;
+    var cacheHitRate    = Model.CacheHitRate;
 
-    var activity = ViewBag.Activity as IReadOnlyList<AdminApiClient.AuditEntry>;
-    var jobStats = ViewBag.JobStats as AdminApiClient.JobStats;
+    var activity = Model.Activity;
+    var jobStats = Model.JobStats;
 
     var chain = new[]
     {

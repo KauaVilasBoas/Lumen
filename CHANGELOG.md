@@ -1,4 +1,4 @@
-﻿# Changelog
+# Changelog
 
 All notable changes to this project will be documented in this file.
 
@@ -18,6 +18,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `TryGetCurrentUserId(out Guid userId)` — same semantics as the API variant; used by `AuthorizationGraphController.CallerHasPermissionAsync`.
 - All 10 API controllers now extend `ApiBaseController`; `AccountController` excluded from Backoffice hierarchy (raw JWT parsing for cookie sign-in has no shared claims pattern).
 - Inline `System.Security.Claims` usages removed from controllers that no longer reference `ClaimTypes` directly.
+
+### Added (Architecture blindagem — refactor/architecture-blindagem)
+- **IsBootstrap no domínio User**: adicionada propriedade `IsBootstrap` (`private set`, imutável) ao agregado `User` e factory method `User.CreateBootstrap` para criação explícita do usuário-semente. Migration `20260614220101_AddUserIsBootstrapColumn` adiciona a coluna (`bit NOT NULL DEFAULT 0`) e marca o usuário admin seed como bootstrap via `UpdateData`. `ListUsersQueryHandler` e `GetUserDetailQueryHandler` passam a retornar o valor real em vez de `false` hardcoded. 5 novos testes unitários em `UserTests`.
+- **N+1 eliminado em GetAuthorizationGraphQueryHandler**: `BuildProfileNodesAsync` e `BuildUserNodesAsync` substituem os loops N+1 por chamadas batch (`GetActivePermissionProfilesByProfileIdsAsync` e `ListByUserIdsAsync`). Reduz de `O(P + U)` round-trips adicionais para 2 queries fixas. Novos métodos batch adicionados a `IProfileRepository`, `IUserProfileRepository` e implementados em `ProfileRepository`, `UserProfileRepository` com `AsNoTracking`. Testes atualizados para mocks batch; novo cenário multi-entidade adicionado.
+- **Projeto AegisIdentity.ArchitectureTests**: 16 testes de arquitetura automatizados com NetArchTest.Rules (1.3.2) que falham ao build quando regras de Clean Architecture são violadas. Cobre: isolamento do Domain, isolamento do SharedKernel, independência das camadas Application de Infrastructure/Presentation, separação CQRS (Command↔Query), e proibição de Controllers referenciarem tipos de Domain diretamente. Documentado em CLAUDE.md na seção "Constraints de arquitetura (testes automatizados)".
+
+### Changed (Architecture alignment — refactor/architecture-alignment)
+- **Permission constants**: Added `PermissionCodes.Profiles.*`, `PermissionCodes.Permissions.*`, `PermissionCodes.UserProfiles.*` and matching `PermissionGroups.*` to `SharedKernel/Constants/Permissions.cs`. Replaced all literal strings in `PermissionsController`, `ProfilesController` and `UserProfilesController` with the new constants.
+- **FluentValidation for queries**: Added `AbstractValidator<Query>` (same file, per CQRS convention) to `ListUsersQueryHandler` and `GetRecentAuditFeedQueryHandler`. Added `PageMinValue`, `PageSizeMinValue/MaxValue`, `AuditTakeMinValue/MaxValue` to `ValidationLimits`. Removed all inline `BadRequest`/`ValidationProblemDetails` guards from `UsersController.List` and `AuditController.Read`. Added FluentValidation package reference to `ReadModels.csproj` and registered validator scanning for the ReadModels assembly in `Program.cs`.
+- **N+1 elimination in read models**: Added batch methods `GetProfilesByUserIdsAsync`, `GetPermissionCountsByUserIdsAsync` and `GetPermissionCountsByProfileIdsAsync` to `IProfileRepository` and `ProfileRepository` (single EF Core query each with `AsNoTracking`). `ListUsersQueryHandler` reduced from `1 + 2N` queries to 3 queries total. `GetUserDetailQueryHandler.BuildProfileSummariesAsync` loop replaced with a single batch call.
+- **ViewComponent + ViewModel in Backoffice**: Introduced `HomeDashboardViewModel` replacing `ViewBag` in `HomeController`. Created `UserListViewComponent` and `UserDetailViewComponent` with typed PartialViews in `Views/Shared/Components/`. Extracted `UsersPageViewModel`, `UserListItemViewModel`, `UserDetailViewModel`, `ProfileMembershipViewModel`, `LifecycleStepViewModel` and `UserViewModelBuilder` — presentation logic (`AvatarPalette`, `ProfileAccentColor`, `MapDetail`, `BuildLifecycle`, `FormatDate`) moved out of the controller.
+- **Legacy comments removed**: Removed XML doc blocks and inline comments from `DevController`, `IProfileRepository`, `IUserRepository`, `UserRepository` and `ProfileRepository` per self-documenting code convention.
 
 ### Added (AUTH-19 — GET /api/auth/confirm-email + POST /api/auth/resend-confirmation)
 - `GET /api/auth/confirm-email?token=...` with `[AllowAnonymous]`; looks up `EmailConfirmationToken` by SHA-256 hash, validates `IsValid()` (not expired, not used), sets `user.IsActive = true` and `user.EmailConfirmedAt = now`, marks token used; returns `200 OK` or `401` via `UnauthorizedException` handled globally.

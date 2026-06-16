@@ -12,6 +12,8 @@ public sealed class User : ISoftDeletable
 
     public string PasswordHash { get; set; } = string.Empty;
 
+    public bool IsBootstrap { get; private set; }
+
     public bool IsActive { get; set; }
 
     public DateTime? EmailConfirmedAt { get; set; }
@@ -42,6 +44,13 @@ public sealed class User : ISoftDeletable
             Username = username,
             PasswordHash = passwordHash,
         };
+    }
+
+    public static User CreateBootstrap(string email, string username, string passwordHash)
+    {
+        var user = Create(email, username, passwordHash);
+        user.IsBootstrap = true;
+        return user;
     }
 
     public static string NormalizeEmail(string email)

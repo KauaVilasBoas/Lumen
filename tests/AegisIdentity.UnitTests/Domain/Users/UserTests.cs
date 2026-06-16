@@ -142,4 +142,46 @@ public sealed class UserTests
         user.IsLockedOut().Should().BeFalse();
     }
 
+    [Fact]
+    public void Create_SetsIsBootstrap_ToFalse()
+    {
+        var user = User.Create("alice@example.com", "alice", "hash");
+
+        user.IsBootstrap.Should().BeFalse();
+    }
+
+    [Fact]
+    public void CreateBootstrap_SetsIsBootstrap_ToTrue()
+    {
+        var user = User.CreateBootstrap("admin@example.com", "admin", "hash");
+
+        user.IsBootstrap.Should().BeTrue();
+    }
+
+    [Fact]
+    public void CreateBootstrap_WithBlankEmail_ThrowsArgumentException()
+    {
+        var act = () => User.CreateBootstrap("", "admin", "hash");
+
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void CreateBootstrap_NormalisesEmail_ToLowercaseAndTrimmed()
+    {
+        var user = User.CreateBootstrap("  Admin@Example.COM  ", "admin", "hash");
+
+        user.Email.Should().Be("admin@example.com");
+    }
+
+    [Fact]
+    public void CreateBootstrap_IsBootstrap_CannotBeOverriddenByRegularCreate()
+    {
+        var regular = User.Create("alice@example.com", "alice", "hash");
+        var bootstrap = User.CreateBootstrap("admin@example.com", "admin", "hash");
+
+        regular.IsBootstrap.Should().BeFalse();
+        bootstrap.IsBootstrap.Should().BeTrue();
+    }
+
 }

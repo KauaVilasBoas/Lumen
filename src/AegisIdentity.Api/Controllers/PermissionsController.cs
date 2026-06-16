@@ -1,5 +1,6 @@
 using AegisIdentity.ReadModels.Queries;
 using AegisIdentity.SharedKernel.Authorization;
+using AegisIdentity.SharedKernel.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -7,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AegisIdentity.Api.Controllers;
 
 [Route("api/permissions")]
-[PermissionGroup("Permissions")]
+[PermissionGroup(PermissionGroups.Permissions)]
 public sealed class PermissionsController : ApiBaseController
 {
     private readonly IMediator _mediator;
@@ -19,7 +20,7 @@ public sealed class PermissionsController : ApiBaseController
 
     [HttpGet]
     [RequirePermission]
-    [Authorize(Policy = "Permissions.List")]
+    [Authorize(Policy = PermissionCodes.Permissions.List)]
     [ProducesResponseType(typeof(IReadOnlyList<ListPermissionsQueryHandler.GroupResult>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

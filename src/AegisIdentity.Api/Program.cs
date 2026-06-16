@@ -75,6 +75,7 @@ try
     });
 
     builder.Services.AddValidatorsFromAssemblyContaining<RegisterUserCommandHandler>();
+    builder.Services.AddValidatorsFromAssemblyContaining<GetCurrentUserQueryHandler>();
 
     // ── Presentation ──────────────────────────────────────────────────────────
     builder.Services.AddSignalR();

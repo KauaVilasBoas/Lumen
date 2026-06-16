@@ -7,4 +7,11 @@ public static class ValidationLimits
     public const int EmailMaxLength = 256;
     public const int PasswordMinLength = 12;
     public const string PasswordSpecialCharacters = "!@#$%^&*()-_=+[]{};:'\",.<>/?\\|`~";
+
+    public const int PageMinValue = 1;
+    public const int PageSizeMinValue = 1;
+    public const int PageSizeMaxValue = 100;
+    public const int AuditTakeMinValue = 1;
+    public const int AuditTakeMaxValue = 100;
+    public const int AuditTakeDefaultValue = 20;
 }
