@@ -126,6 +126,6 @@ public sealed class ListUsersQueryHandler
             "locked"            => UserStateFilter.Locked,
             "pending"           => UserStateFilter.Pending,
             "deleted"           => UserStateFilter.Deleted,
-            _                   => UserStateFilter.All,
+            _                   => throw new ArgumentOutOfRangeException(nameof(state), state, "Unsupported user state filter."),
         };
 }
