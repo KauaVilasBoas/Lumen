@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AegisIdentity.Backoffice.Controllers;
 
 [Authorize]
-public sealed class UsersController : Controller
+public sealed class UsersController : BackofficeBaseController
 {
     private static readonly string[] AvatarPalette =
     [

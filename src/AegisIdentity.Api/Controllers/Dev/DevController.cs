@@ -1,3 +1,4 @@
+using AegisIdentity.Api.Controllers;
 using AegisIdentity.Domain.Notifications;
 using AegisIdentity.Infrastructure.Configuration;
 using AegisIdentity.Integration.Notifications;
@@ -7,17 +8,10 @@ using Microsoft.Extensions.Options;
 
 namespace AegisIdentity.Api.Controllers.Dev;
 
-/// <summary>
-/// Development-only controller that exercises internal infrastructure pipelines.
-/// Each action verifies the environment at runtime and returns 404 in non-Development
-/// environments, mirroring the fail-safe behaviour of the original Minimal Endpoint.
-/// </summary>
-[ApiController]
 [Route("dev")]
-[Produces("application/json")]
 [ApiExplorerSettings(GroupName = "Dev")]
 [AllowAnonymous]
-public sealed class DevController : ControllerBase
+public sealed class DevController : ApiBaseController
 {
     private readonly IEmailService _emailService;
     private readonly EmailTemplateRenderer _renderer;

@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using AegisIdentity.CommandHandlers.Auth.ConfirmEmail;
 using AegisIdentity.CommandHandlers.Auth.ForgotPassword;
 using AegisIdentity.CommandHandlers.Auth.Login;
@@ -13,10 +12,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AegisIdentity.Api.Controllers;
 
-[ApiController]
 [Route("api/auth")]
-[Produces("application/json")]
-public sealed class AuthController : ControllerBase
+public sealed class AuthController : ApiBaseController
 {
     private readonly IMediator _mediator;
 
@@ -116,11 +113,8 @@ public sealed class AuthController : ControllerBase
         [FromBody] LoginRequest request,
         CancellationToken ct)
     {
-        var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        var command = new LoginUserCommandHandler.Command(request.Identifier, request.Password, clientIp);
-
+        var command = new LoginUserCommandHandler.Command(request.Identifier, request.Password, GetClientIpAddress());
         var result = await _mediator.Send(command, ct);
-
         return Ok(result);
     }
 
@@ -133,11 +127,8 @@ public sealed class AuthController : ControllerBase
         [FromBody] RefreshRequest request,
         CancellationToken ct)
     {
-        var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        var command = new RefreshTokenCommandHandler.Command(request.RefreshToken, clientIp);
-
+        var command = new RefreshTokenCommandHandler.Command(request.RefreshToken, GetClientIpAddress());
         var result = await _mediator.Send(command, ct);
-
         return Ok(result);
     }
 
@@ -150,14 +141,10 @@ public sealed class AuthController : ControllerBase
         [FromBody] LogoutRequest request,
         CancellationToken ct)
     {
-        var sub = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var unauthorized = RequireCurrentUserId(out var userId);
+        if (unauthorized is not null) return unauthorized;
 
-        if (!Guid.TryParse(sub, out var userId))
-            return Unauthorized();
-
-        var clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        var command = new LogoutUserCommandHandler.Command(request.RefreshToken, userId, clientIp);
-
+        var command = new LogoutUserCommandHandler.Command(request.RefreshToken, userId, GetClientIpAddress());
         await _mediator.Send(command, ct);
 
         return NoContent();

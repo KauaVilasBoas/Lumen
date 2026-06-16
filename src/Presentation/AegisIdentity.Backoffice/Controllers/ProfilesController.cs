@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AegisIdentity.Backoffice.Controllers;
 
 [Authorize]
-public sealed class ProfilesController : Controller
+public sealed class ProfilesController : BackofficeBaseController
 {
     private readonly AdminApiClient _adminApiClient;
 
