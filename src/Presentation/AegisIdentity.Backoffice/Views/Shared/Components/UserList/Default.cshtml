@@ -17,7 +17,7 @@
                class="urow @(item.Id == Model.SelectedId ? "active" : "") @(item.State == "deleted" ? "is-deleted" : "")"
                style="text-decoration:none">
                 <div class="avatar"
-                     style="background:@item.AvatarColor;width:32px;height:32px;font-size:13px">@item.Username.Substring(0, 1).ToUpper()</div>
+                     style="background:@item.AvatarColor;width:32px;height:32px;font-size:13px">@(string.IsNullOrEmpty(item.Username) ? "?" : item.Username.Substring(0, 1).ToUpper())</div>
                 <div class="urow-main">
                     <div class="urow-name">@item.Username @(item.Bootstrap ? Html.Raw("<span class=\"badge sys\" style=\"margin-left:6px\">BOOTSTRAP</span>") : null)</div>
                     <div class="urow-mail mono">@item.Email</div>

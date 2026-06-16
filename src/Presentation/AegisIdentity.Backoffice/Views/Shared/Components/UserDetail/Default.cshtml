@@ -27,7 +27,7 @@
                 </div>
 
                 <div class="user-detail-head">
-                    <div class="avatar" style="background:@u.AvatarColor;width:52px;height:52px;font-size:20px;border-radius:15px">@u.Username.Substring(0, 1).ToUpper()</div>
+                    <div class="avatar" style="background:@u.AvatarColor;width:52px;height:52px;font-size:20px;border-radius:15px">@(string.IsNullOrEmpty(u.Username) ? "?" : u.Username.Substring(0, 1).ToUpper())</div>
                     <div class="user-detail-id"><h2>@u.Username</h2>
                         <div class="mono user-detail-mail">@u.Email</div>
                     </div>
