@@ -13,4 +13,5 @@ public static class ValidationLimits
     public const int PageSizeMaxValue = 100;
     public const int AuditTakeMinValue = 1;
     public const int AuditTakeMaxValue = 100;
+    public const int AuditTakeDefaultValue = 20;
 }

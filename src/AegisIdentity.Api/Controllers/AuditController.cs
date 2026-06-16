@@ -26,7 +26,7 @@ public sealed class AuditController : ApiBaseController
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Read(
-        [FromQuery] int take = 20,
+        [FromQuery] int take = ValidationLimits.AuditTakeDefaultValue,
         CancellationToken ct = default)
     {
         var query = new GetRecentAuditFeedQueryHandler.Query(take);

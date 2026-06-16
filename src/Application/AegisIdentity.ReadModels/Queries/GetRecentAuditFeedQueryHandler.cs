@@ -8,7 +8,7 @@ namespace AegisIdentity.ReadModels.Queries;
 public sealed class GetRecentAuditFeedQueryHandler
     : IRequestHandler<GetRecentAuditFeedQueryHandler.Query, IReadOnlyList<GetRecentAuditFeedQueryHandler.AuditEntryResult>>
 {
-    public sealed record Query(int Take = ValidationLimits.AuditTakeMinValue)
+    public sealed record Query(int Take = ValidationLimits.AuditTakeDefaultValue)
         : IRequest<IReadOnlyList<AuditEntryResult>>;
 
     public sealed record AuditEntryResult(
