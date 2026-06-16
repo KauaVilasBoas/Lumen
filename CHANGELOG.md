@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-15
+
 ### Added (REFACTOR-01 — BaseController hierarchy)
 - `ApiBaseController` (abstract, `ControllerBase`) added to `AegisIdentity.Api.Controllers`:
   - `RequireCurrentUserId(out Guid userId)` — parses `ClaimTypes.NameIdentifier` as a `Guid`; returns `Unauthorized()` result when the claim is absent or not a valid `Guid`, `null` on success. Used as an early-return guard in action methods that require an authenticated user id.
