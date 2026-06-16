@@ -65,23 +65,25 @@ internal sealed class ProfileRepository : IProfileRepository
         IReadOnlyList<Guid> userIds,
         CancellationToken ct = default)
     {
-        var counts = await _dbContext.UserProfiles
+        var pairs = await _dbContext.UserProfiles
             .Where(up => userIds.Contains(up.UserId))
             .Join(
                 _dbContext.PermissionProfiles,
                 up => up.ProfileId,
                 pp => pp.ProfileId,
                 (up, pp) => new { up.UserId, pp.PermissionId })
-            .Where(r => !_dbContext.Permissions
-                .Where(p => p.Id == r.PermissionId)
-                .Select(p => p.IsDeleted)
-                .FirstOrDefault())
-            .GroupBy(r => r.UserId)
-            .Select(g => new { UserId = g.Key, Count = g.Select(r => r.PermissionId).Distinct().Count() })
+            .Join(
+                _dbContext.Permissions,
+                r => r.PermissionId,
+                p => p.Id,
+                (r, p) => new { r.UserId, r.PermissionId })
+            .Distinct()
             .AsNoTracking()
             .ToListAsync(ct);
 
-        return counts.ToDictionary(r => r.UserId, r => r.Count);
+        return pairs
+            .GroupBy(r => r.UserId)
+            .ToDictionary(g => g.Key, g => g.Count());
     }
 
     public async Task<IReadOnlyDictionary<Guid, int>> GetPermissionCountsByProfileIdsAsync(
