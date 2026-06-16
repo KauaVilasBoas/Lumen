@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using System.Text.Json;
 using AegisIdentity.Backoffice.Services;
 using AegisIdentity.Domain.Authorization;
@@ -9,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace AegisIdentity.Backoffice.Controllers;
 
 [Authorize]
-public sealed class AuthorizationGraphController : Controller
+public sealed class AuthorizationGraphController : BackofficeBaseController
 {
     private static readonly JsonSerializerOptions JsonOpts = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
@@ -41,9 +40,7 @@ public sealed class AuthorizationGraphController : Controller
 
     private async Task<bool> CallerHasPermissionAsync()
     {
-        var sub = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (!Guid.TryParse(sub, out var userId))
+        if (!TryGetCurrentUserId(out var userId))
             return false;
 
         return await _permissionService.HasPermissionAsync(userId, PermissionCodes.AuthorizationGraph.View);

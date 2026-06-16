@@ -1,3 +1,4 @@
+using AegisIdentity.Api.Controllers;
 using AegisIdentity.Domain.Notifications;
 using AegisIdentity.Infrastructure.Configuration;
 using AegisIdentity.Integration.Notifications;
@@ -9,10 +10,9 @@ namespace AegisIdentity.Api.Controllers.Dev;
 
 [ApiController]
 [Route("dev")]
-[Produces("application/json")]
 [ApiExplorerSettings(GroupName = "Dev")]
 [AllowAnonymous]
-public sealed class DevController : ControllerBase
+public sealed class DevController : ApiBaseController
 {
     private readonly IEmailService _emailService;
     private readonly EmailTemplateRenderer _renderer;

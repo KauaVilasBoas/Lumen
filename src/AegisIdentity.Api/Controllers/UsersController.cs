@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using AegisIdentity.CommandHandlers.Users.Update;
 using AegisIdentity.ReadModels.Queries;
 using AegisIdentity.SharedKernel.Authorization;
@@ -9,11 +8,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AegisIdentity.Api.Controllers;
 
-[ApiController]
 [Route("api/users")]
-[Produces("application/json")]
 [PermissionGroup(PermissionGroups.Users)]
-public sealed class UsersController : ControllerBase
+public sealed class UsersController : ApiBaseController
 {
     public sealed record UpdateUserRequest(string? Email, string? Username);
 
@@ -73,13 +70,11 @@ public sealed class UsersController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateUserRequest request, CancellationToken ct = default)
     {
-        var actorId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
-
         var command = new UpdateUserCommandHandler.Command(
             UserId: id,
             NewEmail: request.Email,
             NewUsername: request.Username,
-            ActorId: actorId);
+            ActorId: GetActorIdentifier());
 
         var result = await _mediator.Send(command, ct);
         return Ok(result);

@@ -1,4 +1,4 @@
-﻿# Changelog
+# Changelog
 
 All notable changes to this project will be documented in this file.
 
@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Added (REFACTOR-01 — BaseController hierarchy)
+- `ApiBaseController` (abstract, `ControllerBase`) added to `AegisIdentity.Api.Controllers`:
+  - `RequireCurrentUserId(out Guid userId)` — parses `ClaimTypes.NameIdentifier` as a `Guid`; returns `Unauthorized()` result when the claim is absent or not a valid `Guid`, `null` on success. Used as an early-return guard in action methods that require an authenticated user id.
+  - `TryGetCurrentUserId(out Guid userId)` — pure boolean variant for callsites that need to branch without returning directly.
+  - `GetClientIpAddress()` — `HttpContext.Connection.RemoteIpAddress?.ToString()` with `"unknown"` fallback; eliminates the inline null-coalescing literal.
+  - `GetActorIdentifier()` — `User.Identity?.Name ?? User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty`; used where the actor is passed to audit or domain commands.
+  - Promotes `[ApiController]` and `[Produces("application/json")]` to the base class — removed from all 10 concrete API controllers.
+- `BackofficeBaseController` (abstract, `Controller`) added to `AegisIdentity.Backoffice.Controllers`:
+  - `TryGetCurrentUserId(out Guid userId)` — same semantics as the API variant; used by `AuthorizationGraphController.CallerHasPermissionAsync`.
+- All 10 API controllers now extend `ApiBaseController`; `AccountController` excluded from Backoffice hierarchy (raw JWT parsing for cookie sign-in has no shared claims pattern).
+- Inline `System.Security.Claims` usages removed from controllers that no longer reference `ClaimTypes` directly.
 
 ### Added (Architecture blindagem — refactor/architecture-blindagem)
 - **IsBootstrap no domínio User**: adicionada propriedade `IsBootstrap` (`private set`, imutável) ao agregado `User` e factory method `User.CreateBootstrap` para criação explícita do usuário-semente. Migration `20260614220101_AddUserIsBootstrapColumn` adiciona a coluna (`bit NOT NULL DEFAULT 0`) e marca o usuário admin seed como bootstrap via `UpdateData`. `ListUsersQueryHandler` e `GetUserDetailQueryHandler` passam a retornar o valor real em vez de `false` hardcoded. 5 novos testes unitários em `UserTests`.

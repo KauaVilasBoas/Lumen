@@ -11,7 +11,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AegisIdentity.Api.Controllers;
 
-[ApiController]
 [Route("api/profiles")]
 [Produces("application/json")]
 [PermissionGroup(PermissionGroups.Profiles)]
@@ -114,8 +113,7 @@ public sealed class ProfilesController : ControllerBase
         [FromBody] SetPermissionsRequest request,
         CancellationToken ct)
     {
-        var actorUsername = User.Identity?.Name ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        var command = new SetProfilePermissionsCommandHandler.Command(id, request.PermissionIds, actorUsername);
+        var command = new SetProfilePermissionsCommandHandler.Command(id, request.PermissionIds, GetActorIdentifier());
         await _mediator.Send(command, ct);
         return NoContent();
     }

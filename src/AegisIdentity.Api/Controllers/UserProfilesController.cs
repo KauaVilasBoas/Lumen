@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AegisIdentity.Api.Controllers;
 
-[ApiController]
 [Route("api/users/{userId:guid}/profiles")]
 [Produces("application/json")]
 [PermissionGroup(PermissionGroups.UserProfiles)]
