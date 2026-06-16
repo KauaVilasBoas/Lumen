@@ -8,9 +8,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace AegisIdentity.Api.Controllers;
 
 [Route("api/permissions")]
-[Produces("application/json")]
 [PermissionGroup(PermissionGroups.Permissions)]
-public sealed class PermissionsController : ControllerBase
+public sealed class PermissionsController : ApiBaseController
 {
     private readonly IMediator _mediator;
 

@@ -8,7 +8,6 @@ using Microsoft.Extensions.Options;
 
 namespace AegisIdentity.Api.Controllers.Dev;
 
-[ApiController]
 [Route("dev")]
 [ApiExplorerSettings(GroupName = "Dev")]
 [AllowAnonymous]

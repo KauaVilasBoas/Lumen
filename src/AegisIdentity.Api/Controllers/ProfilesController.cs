@@ -12,9 +12,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace AegisIdentity.Api.Controllers;
 
 [Route("api/profiles")]
-[Produces("application/json")]
 [PermissionGroup(PermissionGroups.Profiles)]
-public sealed class ProfilesController : ControllerBase
+public sealed class ProfilesController : ApiBaseController
 {
     private readonly IMediator _mediator;
 
