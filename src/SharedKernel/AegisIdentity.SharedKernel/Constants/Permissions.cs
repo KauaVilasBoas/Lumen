@@ -9,9 +9,11 @@ public static class PermissionCodes
 
     public static class Users
     {
-        public const string List   = "Users.List";
-        public const string Get    = "Users.Get";
-        public const string Update = "Users.Update";
+        public const string List    = "Users.List";
+        public const string Get     = "Users.Get";
+        public const string Update  = "Users.Update";
+        public const string Delete  = "Users.Delete";
+        public const string Restore = "Users.Restore";
     }
 
     public static class Audit

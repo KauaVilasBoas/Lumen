@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (USER-04 — DELETE /api/users/{id} soft delete + POST /api/users/{id}/restore)
+- `DELETE /api/users/{id}` with `[RequirePermission]` + `Users.Delete` policy; soft-deletes the user via `User.SoftDelete()`, revokes all active refresh tokens, publishes `UserPermissionsChanged` (cache invalidation), writes audit entry `user.deleted`. Returns 204 on success, 404 when user not found, 403 when target is the bootstrap admin, 409 when target is the only active Administrator.
+- `POST /api/users/{id}/restore` with `[RequirePermission]` + `Users.Restore` policy; uses `FindByIdIgnoringFiltersAsync` to reach soft-deleted records, validates 30-day restore window, calls `User.Restore()`, writes audit entry `user.restored`. Returns 204 on success, 404 when not found or not deleted, 409 when restore window expired.
+- `User.Restore()` domain method added — clears `IsDeleted`/`DeletedAt` and bumps `UpdatedAt`.
+- `IUserRepository.CountActiveAdministratorsAsync(administratorProfileId)` added to domain port and implemented in `UserRepository` (subquery join via EF Core `AsNoTracking`).
+- `PermissionCodes.Users.Delete` and `PermissionCodes.Users.Restore` added to `SharedKernel/Constants/Permissions.cs`.
+- `AuditEventKinds.UserDeleted` (`user.deleted`) and `AuditEventKinds.UserRestored` (`user.restored`) added to `SharedKernel/Constants/AuditEventKinds.cs`.
+- `AuthErrorMessages.CannotDeleteBootstrapUser`, `CannotDeleteLastAdministrator`, `UserAlreadyDeleted`, `UserRestoreWindowExpired`, `UserNotDeleted` added to `SharedKernel/Constants/AuthErrorMessages.cs`.
+- `ValidationLimits.UserRestoreWindowDays = 30` added to `SharedKernel/Constants/ValidationLimits.cs`.
+- Migration `20260615000000_SeedUsersDeleteRestorePermissions` seeds `Users.Delete` and `Users.Restore` permissions under the Users group (idempotent `IF NOT EXISTS`).
+- 18 unit tests (11 delete handler, 7 restore handler) covering: 404 not found, 403 bootstrap guard, 409 last-admin guard, soft-delete state, refresh token revocation, audit entry content, cache invalidation publish, and restore window expiry.
+
 ## [0.3.0] - 2026-06-15
 
 ### Added (REFACTOR-01 — BaseController hierarchy)

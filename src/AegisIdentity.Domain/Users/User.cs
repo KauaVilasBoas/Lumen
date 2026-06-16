@@ -96,4 +96,11 @@ public sealed class User : ISoftDeletable
         IsDeleted = true;
         DeletedAt = DateTime.UtcNow;
     }
+
+    public void Restore()
+    {
+        IsDeleted = false;
+        DeletedAt = null;
+        UpdatedAt = DateTime.UtcNow;
+    }
 }
