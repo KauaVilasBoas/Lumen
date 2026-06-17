@@ -1,4 +1,5 @@
 using AegisIdentity.Domain.Authorization;
+using AegisIdentity.SharedKernel.Constants;
 using AegisIdentity.SharedKernel.Exceptions;
 using FluentValidation;
 using MediatR;
@@ -15,12 +16,14 @@ public sealed class CreateProfileCommandHandler
         public Validator()
         {
             RuleFor(x => x.Name)
-                .NotEmpty().WithMessage("Profile name is required.")
-                .MaximumLength(128).WithMessage("Profile name must not exceed 128 characters.");
+                .NotEmpty().WithMessage(ProfileErrorMessages.ProfileNameRequired)
+                .MaximumLength(ValidationLimits.ProfileNameMaxLength)
+                    .WithMessage(ProfileErrorMessages.ProfileNameTooLong);
 
             RuleFor(x => x.Description)
-                .NotEmpty().WithMessage("Profile description is required.")
-                .MaximumLength(512).WithMessage("Profile description must not exceed 512 characters.");
+                .NotEmpty().WithMessage(ProfileErrorMessages.ProfileDescriptionRequired)
+                .MaximumLength(ValidationLimits.ProfileDescriptionMaxLength)
+                    .WithMessage(ProfileErrorMessages.ProfileDescriptionTooLong);
         }
     }
 
@@ -38,7 +41,7 @@ public sealed class CreateProfileCommandHandler
         var nameAlreadyUsed = await _profileRepository.ActiveNameExistsAsync(cmd.Name, excludeId: null, ct);
 
         if (nameAlreadyUsed)
-            throw new ConflictException($"A profile with name '{cmd.Name}' already exists.");
+            throw new ConflictException(string.Format(ProfileErrorMessages.ProfileNameConflict, cmd.Name));
 
         var profile = Domain.Authorization.Profile.Create(cmd.Name, cmd.Description);
 

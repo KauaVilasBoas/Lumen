@@ -16,6 +16,11 @@ internal sealed class PermissionRepository : IPermissionRepository
         => _dbContext.Permissions
                      .FirstOrDefaultAsync(p => p.Id == id, ct);
 
+    public async Task<IReadOnlyList<Permission>> GetByIdsAsync(IReadOnlyList<Guid> ids, CancellationToken ct = default)
+        => await _dbContext.Permissions
+                           .Where(p => ids.Contains(p.Id))
+                           .ToListAsync(ct);
+
     public Task<Permission?> FindByCodeAsync(string code, CancellationToken ct = default)
         => _dbContext.Permissions
                      .FirstOrDefaultAsync(p => p.Code == code, ct);

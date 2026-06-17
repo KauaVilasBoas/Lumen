@@ -12,9 +12,9 @@ using Microsoft.Extensions.Logging;
 namespace AegisIdentity.CommandHandlers.Auth.ForgotPassword;
 
 public sealed class ForgotPasswordCommandHandler
-    : IRequestHandler<ForgotPasswordCommandHandler.Command, Unit>
+    : IRequestHandler<ForgotPasswordCommandHandler.Command>
 {
-    public sealed record Command(string Email) : IRequest<Unit>;
+    public sealed record Command(string Email) : IRequest;
 
     public sealed class Validator : AbstractValidator<Command>
     {
@@ -27,7 +27,6 @@ public sealed class ForgotPasswordCommandHandler
         }
     }
 
-    private static readonly TimeSpan TokenLifetime = TimeSpan.FromMinutes(30);
 
     private readonly IUserRepository _userRepository;
     private readonly IPasswordResetTokenRepository _tokenRepository;
@@ -52,7 +51,7 @@ public sealed class ForgotPasswordCommandHandler
         _logger = logger;
     }
 
-    public async Task<Unit> Handle(Command cmd, CancellationToken ct)
+    public async Task Handle(Command cmd, CancellationToken ct)
     {
         var normalizedEmail = User.NormalizeEmail(cmd.Email);
         var user = await _userRepository.FindByEmailAsync(normalizedEmail, ct);
@@ -60,7 +59,7 @@ public sealed class ForgotPasswordCommandHandler
         if (user is null)
         {
             await PerformDummyWorkToMitigateTiming(ct);
-            return Unit.Value;
+            return;
         }
 
         _logger.LogInformation(
@@ -68,8 +67,6 @@ public sealed class ForgotPasswordCommandHandler
             user.Id);
 
         await SendPasswordResetEmailAsync(user, ct);
-
-        return Unit.Value;
     }
 
     private async Task SendPasswordResetEmailAsync(User user, CancellationToken ct)
@@ -80,7 +77,7 @@ public sealed class ForgotPasswordCommandHandler
         var resetToken = PasswordResetToken.Create(
             userId: user.Id,
             tokenHash: tokenHash,
-            expiresAt: DateTime.UtcNow.Add(TokenLifetime));
+            expiresAt: DateTime.UtcNow.AddMinutes(TokenLifetimes.PasswordResetMinutes));
 
         await _tokenRepository.InsertAsync(resetToken, ct);
 
@@ -108,7 +105,7 @@ public sealed class ForgotPasswordCommandHandler
     {
         var bytes = RandomNumberGenerator.GetBytes(TokenSizes.RawTokenBytes);
         _ = Sha256Hasher.ComputeHex(Base64UrlEncoder.Encode(bytes));
-        await Task.Delay(TimeSpan.FromMilliseconds(50), ct).ConfigureAwait(false);
+        await Task.Delay(TimeSpan.FromMilliseconds(TokenLifetimes.AntiTimingAttackDelayMilliseconds), ct).ConfigureAwait(false);
     }
 
     private static string GenerateRawToken()

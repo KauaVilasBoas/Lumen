@@ -44,6 +44,8 @@ public interface IProfileRepository
 
     Task UpdatePermissionProfileAsync(PermissionProfile permissionProfile, CancellationToken ct = default);
 
+    Task UpdatePermissionProfilesAsync(IReadOnlyList<PermissionProfile> permissionProfiles, CancellationToken ct = default);
+
     Task<IReadOnlyList<Guid>> GetUserIdsByProfileIdAsync(Guid profileId, CancellationToken ct = default);
 
     Task DeleteWithCascadeAsync(

@@ -1,7 +1,7 @@
 using AegisIdentity.Api.Controllers;
 using AegisIdentity.Domain.Notifications;
 using AegisIdentity.Infrastructure.Configuration;
-using AegisIdentity.Integration.Notifications;
+using AegisIdentity.SharedKernel.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -14,13 +14,13 @@ namespace AegisIdentity.Api.Controllers.Dev;
 public sealed class DevController : ApiBaseController
 {
     private readonly IEmailService _emailService;
-    private readonly EmailTemplateRenderer _renderer;
+    private readonly IEmailTemplateRenderer _renderer;
     private readonly IOptions<SmtpOptions> _smtpOptions;
     private readonly IWebHostEnvironment _env;
 
     public DevController(
         IEmailService emailService,
-        EmailTemplateRenderer renderer,
+        IEmailTemplateRenderer renderer,
         IOptions<SmtpOptions> smtpOptions,
         IWebHostEnvironment env)
     {
@@ -45,11 +45,11 @@ public sealed class DevController : ApiBaseController
 
         var placeholders = new Dictionary<string, string>
         {
-            ["UserName"] = "Developer",
-            ["ConfirmationUrl"] = "http://localhost:5237/dev/email-test",
+            [EmailPlaceholderKeys.UserName] = "Developer",
+            [EmailPlaceholderKeys.ConfirmationUrl] = "http://localhost:5237/dev/email-test",
         };
 
-        var (html, text) = _renderer.Render(EmailTemplate.EmailConfirmation, placeholders);
+        var (html, text) = _renderer.Render(EmailTemplateNames.EmailConfirmation, placeholders);
 
         var message = new EmailMessage(
             To: to,

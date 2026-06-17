@@ -9,9 +9,9 @@ using MediatR;
 namespace AegisIdentity.CommandHandlers.Auth.ConfirmEmail;
 
 public sealed class ConfirmEmailCommandHandler
-    : IRequestHandler<ConfirmEmailCommandHandler.Command, Unit>
+    : IRequestHandler<ConfirmEmailCommandHandler.Command>
 {
-    public sealed record Command(string Token) : IRequest<Unit>;
+    public sealed record Command(string Token) : IRequest;
 
     public sealed class Validator : AbstractValidator<Command>
     {
@@ -33,7 +33,7 @@ public sealed class ConfirmEmailCommandHandler
         _userRepository = userRepository;
     }
 
-    public async Task<Unit> Handle(Command cmd, CancellationToken ct)
+    public async Task Handle(Command cmd, CancellationToken ct)
     {
         var tokenHash = Sha256Hasher.ComputeHex(cmd.Token);
         var confirmationToken = await _tokenRepository.FindByTokenHashAsync(tokenHash, ct);
@@ -49,11 +49,7 @@ public sealed class ConfirmEmailCommandHandler
         confirmationToken.MarkAsUsed();
         await _tokenRepository.UpdateAsync(confirmationToken, ct);
 
-        user.IsActive = true;
-        user.EmailConfirmedAt = DateTime.UtcNow;
-        user.UpdatedAt = DateTime.UtcNow;
+        user.ConfirmEmail();
         await _userRepository.UpdateAsync(user, ct);
-
-        return Unit.Value;
     }
 }

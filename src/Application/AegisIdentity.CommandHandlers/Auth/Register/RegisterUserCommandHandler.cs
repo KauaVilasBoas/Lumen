@@ -43,7 +43,6 @@ public sealed class RegisterUserCommandHandler
 
     public sealed record Result(string Id, string Email, string Username);
 
-    private static readonly TimeSpan TokenLifetime = TimeSpan.FromHours(24);
 
     private readonly IUserRepository _userRepository;
     private readonly IEmailConfirmationTokenRepository _tokenRepository;
@@ -113,7 +112,7 @@ public sealed class RegisterUserCommandHandler
         var confirmationToken = EmailConfirmationToken.Create(
             userId: user.Id,
             tokenHash: tokenHash,
-            expiresAt: DateTime.UtcNow.Add(TokenLifetime));
+            expiresAt: DateTime.UtcNow.AddHours(TokenLifetimes.EmailConfirmationHours));
 
         await _tokenRepository.InsertAsync(confirmationToken, ct);
 

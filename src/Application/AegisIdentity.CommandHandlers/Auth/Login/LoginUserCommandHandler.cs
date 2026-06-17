@@ -22,10 +22,10 @@ public sealed class LoginUserCommandHandler
         public Validator()
         {
             RuleFor(x => x.Identifier)
-                .NotEmpty().WithMessage("O campo identificador é obrigatório.");
+                .NotEmpty().WithMessage(AuthErrorMessages.IdentifierRequired);
 
             RuleFor(x => x.Password)
-                .NotEmpty().WithMessage("O campo senha é obrigatório.");
+                .NotEmpty().WithMessage(AuthErrorMessages.PasswordRequired);
         }
     }
 
@@ -63,11 +63,9 @@ public sealed class LoginUserCommandHandler
 
         if (user is null)
         {
-            // Consume the same BCrypt cost as a real Verify call so that response time
-            // is indistinguishable from a wrong-password attempt against an existing user.
             _passwordHasher.Verify(cmd.Password, PasswordHashing.DummyBcryptHash);
             _logger.LogWarning("Login failed — identifier not found: {Identifier}", cmd.Identifier);
-            throw new UnauthorizedException("Invalid credentials.");
+            throw new UnauthorizedException(AuthErrorMessages.InvalidCredentials);
         }
 
         if (user.IsLockedOut())
@@ -90,21 +88,20 @@ public sealed class LoginUserCommandHandler
             if (user.IsLockedOut())
                 await _publisher.Publish(new UserLockedOut(user.Id, user.Username), ct);
 
-            throw new UnauthorizedException("Invalid credentials.");
+            throw new UnauthorizedException(AuthErrorMessages.InvalidCredentials);
         }
 
         if (!user.IsActive)
         {
             _logger.LogWarning(
                 "Login rejected — email not confirmed for user {UserId}", user.Id);
-            throw new ForbiddenException("Email address not yet confirmed.");
+            throw new ForbiddenException(AuthErrorMessages.EmailNotConfirmed);
         }
 
         if (user.FailedLoginAttempts > 0)
             user.Unlock();
 
-        user.LastLoginAt = DateTime.UtcNow;
-        user.UpdatedAt = DateTime.UtcNow;
+        user.RecordLogin();
         await _userRepository.UpdateAsync(user, ct);
 
         var accessToken = _jwtService.GenerateAccessToken(user);

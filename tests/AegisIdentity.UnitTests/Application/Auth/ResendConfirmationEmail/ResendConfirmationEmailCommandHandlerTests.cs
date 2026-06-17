@@ -57,8 +57,7 @@ public sealed class ResendConfirmationEmailCommandHandlerTests
     public async Task Handle_WhenUserAlreadyActive_DoesNotSendEmail()
     {
         var activeUser = BuildUser();
-        activeUser.IsActive = true;
-        activeUser.EmailConfirmedAt = DateTime.UtcNow;
+        activeUser.ConfirmEmail();
 
         _userRepository.FindByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(activeUser);
@@ -72,7 +71,7 @@ public sealed class ResendConfirmationEmailCommandHandlerTests
     public async Task Handle_WhenUserAlreadyActive_DoesNotInvalidatePreviousTokens()
     {
         var activeUser = BuildUser();
-        activeUser.IsActive = true;
+        activeUser.ConfirmEmail();
 
         _userRepository.FindByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(activeUser);

@@ -143,9 +143,12 @@ public sealed class GetCurrentUserQueryHandlerTests
             username: "testuser",
             passwordHash: "hashed-password");
 
-        user.LastLoginAt = lastLoginAt;
-        user.EmailConfirmedAt = emailConfirmedAt;
+        SetUserProperty(user, nameof(User.LastLoginAt), lastLoginAt);
+        SetUserProperty(user, nameof(User.EmailConfirmedAt), emailConfirmedAt);
 
         return user;
     }
+
+    private static void SetUserProperty(User user, string propertyName, object? value)
+        => typeof(User).GetProperty(propertyName)!.SetValue(user, value);
 }

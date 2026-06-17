@@ -44,7 +44,6 @@ public sealed class UpdateUserCommandHandler
 
     public sealed record Result(Guid UserId, bool EmailChanged);
 
-    private static readonly TimeSpan TokenLifetime = TimeSpan.FromHours(24);
 
     private readonly IUserRepository _userRepository;
     private readonly IEmailConfirmationTokenRepository _tokenRepository;
@@ -149,7 +148,7 @@ public sealed class UpdateUserCommandHandler
         var confirmationToken = EmailConfirmationToken.Create(
             userId: user.Id,
             tokenHash: tokenHash,
-            expiresAt: DateTime.UtcNow.Add(TokenLifetime));
+            expiresAt: DateTime.UtcNow.AddHours(TokenLifetimes.EmailConfirmationHours));
 
         await _tokenRepository.InsertAsync(confirmationToken, ct);
 

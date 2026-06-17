@@ -11,9 +11,9 @@ using MediatR;
 namespace AegisIdentity.CommandHandlers.Auth.ResendConfirmationEmail;
 
 public sealed class ResendConfirmationEmailCommandHandler
-    : IRequestHandler<ResendConfirmationEmailCommandHandler.Command, Unit>
+    : IRequestHandler<ResendConfirmationEmailCommandHandler.Command>
 {
-    public sealed record Command(string Email) : IRequest<Unit>;
+    public sealed record Command(string Email) : IRequest;
 
     public sealed class Validator : AbstractValidator<Command>
     {
@@ -26,7 +26,6 @@ public sealed class ResendConfirmationEmailCommandHandler
         }
     }
 
-    private static readonly TimeSpan TokenLifetime = TimeSpan.FromHours(24);
 
     private readonly IUserRepository _userRepository;
     private readonly IEmailConfirmationTokenRepository _tokenRepository;
@@ -48,18 +47,16 @@ public sealed class ResendConfirmationEmailCommandHandler
         _appSettings = appSettings;
     }
 
-    public async Task<Unit> Handle(Command cmd, CancellationToken ct)
+    public async Task Handle(Command cmd, CancellationToken ct)
     {
         var normalizedEmail = User.NormalizeEmail(cmd.Email);
         var user = await _userRepository.FindByEmailAsync(normalizedEmail, ct);
 
         if (user is null || user.IsActive)
-            return Unit.Value;
+            return;
 
         await _tokenRepository.InvalidateByUserIdAsync(user.Id, ct);
         await SendConfirmationEmailAsync(user, ct);
-
-        return Unit.Value;
     }
 
     private async Task SendConfirmationEmailAsync(User user, CancellationToken ct)
@@ -70,7 +67,7 @@ public sealed class ResendConfirmationEmailCommandHandler
         var confirmationToken = EmailConfirmationToken.Create(
             userId: user.Id,
             tokenHash: tokenHash,
-            expiresAt: DateTime.UtcNow.Add(TokenLifetime));
+            expiresAt: DateTime.UtcNow.AddHours(TokenLifetimes.EmailConfirmationHours));
 
         await _tokenRepository.InsertAsync(confirmationToken, ct);
 

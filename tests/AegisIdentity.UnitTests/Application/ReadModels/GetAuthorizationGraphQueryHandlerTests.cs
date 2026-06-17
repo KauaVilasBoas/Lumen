@@ -347,7 +347,7 @@ public sealed class GetAuthorizationGraphQueryHandlerTests
             username: $"user-{Guid.NewGuid():N}",
             passwordHash: "hashed");
 
-        user.EmailConfirmedAt = emailConfirmedAt;
+        SetUserProperty(user, nameof(User.EmailConfirmedAt), emailConfirmedAt);
         return user;
     }
 
@@ -357,11 +357,10 @@ public sealed class GetAuthorizationGraphQueryHandlerTests
     private static User BuildLockedUser(DateTime lockedUntil)
     {
         var user = BuildConfirmedUser();
-
-        typeof(User)
-            .GetProperty(nameof(user.LockedUntil))!
-            .SetValue(user, lockedUntil);
-
+        SetUserProperty(user, nameof(User.LockedUntil), lockedUntil);
         return user;
     }
+
+    private static void SetUserProperty(User user, string propertyName, object? value)
+        => typeof(User).GetProperty(propertyName)!.SetValue(user, value);
 }

@@ -1,4 +1,5 @@
 using AegisIdentity.Domain.Authorization;
+using AegisIdentity.SharedKernel.Constants;
 using MediatR;
 
 namespace AegisIdentity.ReadModels.Queries;
@@ -43,7 +44,7 @@ public sealed class ListPermissionsQueryHandler
             {
                 var groupName = g.Key.HasValue && groupById.TryGetValue(g.Key.Value, out var grp)
                     ? grp.Name
-                    : "Ungrouped";
+                    : PermissionGroupNames.Ungrouped;
 
                 var items = g
                     .Select(p => new PermissionResult(p.Id, p.Code, p.DisplayName, p.IsOrphan))

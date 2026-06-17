@@ -2,6 +2,11 @@ namespace AegisIdentity.SharedKernel.Constants;
 
 public static class AuthErrorMessages
 {
+    public const string IdentifierRequired   = "O campo identificador é obrigatório.";
+    public const string InvalidCredentials   = "Invalid credentials.";
+    public const string EmailNotConfirmed    = "Email address not yet confirmed.";
+    public const string RefreshTokenRequired = "O campo refresh token é obrigatório.";
+
     public const string EmailAlreadyInUse = "Este email já está em uso.";
     public const string UsernameAlreadyInUse = "Este username já está em uso.";
 
@@ -44,7 +49,6 @@ public static class AuthErrorMessages
 
     public const string CannotDeleteBootstrapUser     = "O usuário administrador bootstrap não pode ser removido.";
     public const string CannotDeleteLastAdministrator = "Não é possível remover o único administrador ativo do sistema.";
-    public const string UserAlreadyDeleted            = "Usuário não encontrado.";
     public const string UserRestoreWindowExpired      = "O prazo de 30 dias para restauração expirou.";
     public const string UserNotDeleted                = "Usuário não encontrado no histórico de exclusão.";
 }

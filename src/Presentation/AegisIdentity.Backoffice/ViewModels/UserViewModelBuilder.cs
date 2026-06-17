@@ -1,4 +1,5 @@
 using AegisIdentity.Backoffice.Services;
+using AegisIdentity.SharedKernel.Constants;
 
 namespace AegisIdentity.Backoffice.ViewModels;
 
@@ -42,7 +43,7 @@ public static class UserViewModelBuilder
     private static string ProfileAccentColor(AdminApiClient.ProfileMembership profile)
     {
         if (profile.IsSystem)
-            return profile.Name == "Administrator" ? "#8b6dff" : "#5b6478";
+            return profile.ProfileId == SystemProfiles.AdministratorId ? "#8b6dff" : "#5b6478";
 
         return ProfileColorPalette[Math.Abs(profile.Name.GetHashCode()) % ProfileColorPalette.Length];
     }
@@ -72,21 +73,21 @@ public static class UserViewModelBuilder
 
         steps.Add(u.State switch
         {
-            "locked" => new LifecycleStepViewModel(
+            UserStates.Locked => new LifecycleStepViewModel(
                 "Locked out",
                 u.LockoutEndAt.HasValue ? FormatDate(u.LockoutEndAt!.Value) : "indefinite",
                 true,
                 "var(--danger)",
                 "423 until lockout expires"),
 
-            "deleted" => new LifecycleStepViewModel(
+            UserStates.Deleted => new LifecycleStepViewModel(
                 "Soft-deleted",
                 "account removed",
                 true,
                 "var(--text-faint)",
                 "row retained · email re-registerable"),
 
-            "pending" => new LifecycleStepViewModel(
+            UserStates.Pending => new LifecycleStepViewModel(
                 "Awaiting confirmation",
                 "blocked",
                 false,

@@ -1,5 +1,6 @@
 using AegisIdentity.Domain.Audit;
 using AegisIdentity.Domain.Authorization;
+using AegisIdentity.SharedKernel.Constants;
 using AegisIdentity.SharedKernel.Exceptions;
 using FluentValidation;
 using MediatR;
@@ -16,13 +17,13 @@ public sealed class SetProfilePermissionsCommandHandler
         public Validator()
         {
             RuleFor(x => x.ProfileId)
-                .NotEmpty().WithMessage("ProfileId is required.");
+                .NotEmpty().WithMessage(ProfileErrorMessages.ProfileIdRequired);
 
             RuleFor(x => x.PermissionIds)
-                .NotNull().WithMessage("PermissionIds is required.");
+                .NotNull().WithMessage(ProfileErrorMessages.PermissionIdsRequired);
 
             RuleForEach(x => x.PermissionIds)
-                .NotEmpty().WithMessage("Each PermissionId must be a valid non-empty Guid.");
+                .NotEmpty().WithMessage(ProfileErrorMessages.PermissionIdInvalid);
         }
     }
 
@@ -43,22 +44,25 @@ public sealed class SetProfilePermissionsCommandHandler
     public async Task Handle(Command cmd, CancellationToken ct)
     {
         var profile = await _profileRepository.FindByIdAsync(cmd.ProfileId, ct)
-            ?? throw new NotFoundException($"Profile '{cmd.ProfileId}' not found.");
+            ?? throw new NotFoundException(string.Format(ProfileErrorMessages.ProfileNotFound, cmd.ProfileId));
 
         if (profile.IsSystem)
-            throw new ForbiddenException($"Permissions on system profile '{profile.Name}' are managed automatically and cannot be overwritten via the API.");
+            throw new ForbiddenException(string.Format(ProfileErrorMessages.SystemProfilePermissionsReadOnly, profile.Name));
 
-        foreach (var permId in cmd.PermissionIds)
+        if (cmd.PermissionIds.Count > 0)
         {
-            var permission = await _permissionRepository.FindByIdAsync(permId, ct);
-            if (permission is null)
-                throw new NotFoundException($"Permission '{permId}' not found.");
+            var foundPermissions = await _permissionRepository.GetByIdsAsync(cmd.PermissionIds, ct);
+            if (foundPermissions.Count != cmd.PermissionIds.Count)
+            {
+                var foundIds = new HashSet<Guid>(foundPermissions.Select(p => p.Id));
+                var missingId = cmd.PermissionIds.First(id => !foundIds.Contains(id));
+                throw new NotFoundException(string.Format(ProfileErrorMessages.PermissionNotFound, missingId));
+            }
         }
 
         var existingAll = await _profileRepository.GetActivePermissionProfilesByProfileIdAsync(cmd.ProfileId, ct);
 
         var desiredSet = new HashSet<Guid>(cmd.PermissionIds);
-        var existingByPermId = existingAll.ToDictionary(pp => pp.PermissionId);
 
         var toSoftDelete = existingAll
             .Where(pp => !pp.IsDeleted && !desiredSet.Contains(pp.PermissionId))
@@ -71,10 +75,12 @@ public sealed class SetProfilePermissionsCommandHandler
             .Where(permId => !currentActivePermIds.Contains(permId))
             .ToList();
 
-        foreach (var pp in toSoftDelete)
+        if (toSoftDelete.Count > 0)
         {
-            pp.SoftDelete();
-            await _profileRepository.UpdatePermissionProfileAsync(pp, ct);
+            foreach (var pp in toSoftDelete)
+                pp.SoftDelete();
+
+            await _profileRepository.UpdatePermissionProfilesAsync(toSoftDelete, ct);
         }
 
         if (toAdd.Count > 0)

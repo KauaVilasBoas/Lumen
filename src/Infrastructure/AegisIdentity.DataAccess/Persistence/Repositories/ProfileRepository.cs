@@ -184,6 +184,14 @@ internal sealed class ProfileRepository : IProfileRepository
         await _dbContext.SaveChangesAsync(ct);
     }
 
+    public async Task UpdatePermissionProfilesAsync(
+        IReadOnlyList<PermissionProfile> permissionProfiles,
+        CancellationToken ct = default)
+    {
+        _dbContext.PermissionProfiles.UpdateRange(permissionProfiles);
+        await _dbContext.SaveChangesAsync(ct);
+    }
+
     public async Task<IReadOnlyList<Guid>> GetUserIdsByProfileIdAsync(
         Guid profileId,
         CancellationToken ct = default)

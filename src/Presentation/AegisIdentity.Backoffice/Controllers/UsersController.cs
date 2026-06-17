@@ -1,5 +1,6 @@
 using AegisIdentity.Backoffice.Services;
 using AegisIdentity.Backoffice.ViewModels;
+using AegisIdentity.SharedKernel.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -19,7 +20,7 @@ public sealed class UsersController : BackofficeBaseController
     public async Task<IActionResult> Index(Guid? id, CancellationToken ct)
     {
         var page = await _adminApiClient.ListUsersAsync(
-            search: null, state: null, page: 1, pageSize: 100, ct);
+            search: null, state: null, page: 1, pageSize: BackofficeDefaults.UserPageSize, ct);
 
         var users = page?.Items ?? [];
 
