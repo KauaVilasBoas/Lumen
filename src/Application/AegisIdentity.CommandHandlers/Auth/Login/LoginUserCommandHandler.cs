@@ -63,8 +63,6 @@ public sealed class LoginUserCommandHandler
 
         if (user is null)
         {
-            // Consume the same BCrypt cost as a real Verify call so that response time
-            // is indistinguishable from a wrong-password attempt against an existing user.
             _passwordHasher.Verify(cmd.Password, PasswordHashing.DummyBcryptHash);
             _logger.LogWarning("Login failed — identifier not found: {Identifier}", cmd.Identifier);
             throw new UnauthorizedException("Invalid credentials.");

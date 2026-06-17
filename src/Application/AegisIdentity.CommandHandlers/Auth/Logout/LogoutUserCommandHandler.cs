@@ -8,9 +8,9 @@ using Microsoft.Extensions.Logging;
 namespace AegisIdentity.CommandHandlers.Auth.Logout;
 
 public sealed class LogoutUserCommandHandler
-    : IRequestHandler<LogoutUserCommandHandler.Command, Unit>
+    : IRequestHandler<LogoutUserCommandHandler.Command>
 {
-    public sealed record Command(string? RefreshToken, Guid UserId, string ClientIp) : IRequest<Unit>;
+    public sealed record Command(string? RefreshToken, Guid UserId, string ClientIp) : IRequest;
 
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly ILogger<LogoutUserCommandHandler> _logger;
@@ -23,16 +23,16 @@ public sealed class LogoutUserCommandHandler
         _logger = logger;
     }
 
-    public async Task<Unit> Handle(Command cmd, CancellationToken ct)
+    public async Task Handle(Command cmd, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(cmd.RefreshToken))
-            return Unit.Value;
+            return;
 
         var tokenHash = Sha256Hasher.ComputeHex(cmd.RefreshToken);
         var token = await _refreshTokenRepository.FindByTokenHashAsync(tokenHash, ct);
 
         if (token is null || IsAlreadyInactive(token))
-            return Unit.Value;
+            return;
 
         ValidateOwnership(token, cmd.UserId, cmd.ClientIp);
 
@@ -42,8 +42,6 @@ public sealed class LogoutUserCommandHandler
         _logger.LogInformation(
             "User {UserId} logged out successfully from {ClientIp}",
             cmd.UserId, cmd.ClientIp);
-
-        return Unit.Value;
     }
 
     private static bool IsAlreadyInactive(RefreshToken token) =>

@@ -12,9 +12,9 @@ using Microsoft.Extensions.Logging;
 namespace AegisIdentity.CommandHandlers.Auth.ResetPassword;
 
 public sealed class ResetPasswordCommandHandler
-    : IRequestHandler<ResetPasswordCommandHandler.Command, Unit>
+    : IRequestHandler<ResetPasswordCommandHandler.Command>
 {
-    public sealed record Command(string Token, string NewPassword) : IRequest<Unit>;
+    public sealed record Command(string Token, string NewPassword) : IRequest;
 
     public sealed class Validator : AbstractValidator<Command>
     {
@@ -57,7 +57,7 @@ public sealed class ResetPasswordCommandHandler
         _logger = logger;
     }
 
-    public async Task<Unit> Handle(Command cmd, CancellationToken ct)
+    public async Task Handle(Command cmd, CancellationToken ct)
     {
         var tokenHash = Sha256Hasher.ComputeHex(cmd.Token);
         var resetToken = await _tokenRepository.FindByTokenHashAsync(tokenHash, ct);
@@ -88,8 +88,6 @@ public sealed class ResetPasswordCommandHandler
         _logger.LogInformation("Password reset completed for UserId {UserId}", user.Id);
 
         await SendPasswordChangedEmailAsync(user, ct);
-
-        return Unit.Value;
     }
 
     private async Task RevokeAllRefreshTokensAsync(Guid userId, CancellationToken ct)

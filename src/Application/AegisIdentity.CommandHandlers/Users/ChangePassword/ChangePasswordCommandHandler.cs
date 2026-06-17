@@ -11,9 +11,9 @@ using Microsoft.Extensions.Logging;
 namespace AegisIdentity.CommandHandlers.Users.ChangePassword;
 
 public sealed class ChangePasswordCommandHandler
-    : IRequestHandler<ChangePasswordCommandHandler.Command, Unit>
+    : IRequestHandler<ChangePasswordCommandHandler.Command>
 {
-    public sealed record Command(Guid UserId, string CurrentPassword, string NewPassword) : IRequest<Unit>;
+    public sealed record Command(Guid UserId, string CurrentPassword, string NewPassword) : IRequest;
 
     public sealed class Validator : AbstractValidator<Command>
     {
@@ -53,7 +53,7 @@ public sealed class ChangePasswordCommandHandler
         _logger = logger;
     }
 
-    public async Task<Unit> Handle(Command cmd, CancellationToken ct)
+    public async Task Handle(Command cmd, CancellationToken ct)
     {
         var user = await _userRepository.FindByIdAsync(cmd.UserId, ct);
 
@@ -85,8 +85,6 @@ public sealed class ChangePasswordCommandHandler
         _logger.LogInformation("Password changed for UserId {UserId}", user.Id);
 
         await SendPasswordChangedEmailAsync(user, ct);
-
-        return Unit.Value;
     }
 
     private async Task RevokeAllRefreshTokensAsync(Guid userId, CancellationToken ct)

@@ -38,7 +38,7 @@ public sealed class ListUsersQueryHandler
     public sealed class Validator : AbstractValidator<Query>
     {
         private static readonly HashSet<string> ValidStateValues =
-            ["active", "locked", "pending", "deleted", "all", ""];
+            [UserStates.Active, UserStates.Locked, UserStates.Pending, UserStates.Deleted, "all", ""];
 
         public Validator()
         {
@@ -121,11 +121,11 @@ public sealed class ListUsersQueryHandler
     private static UserStateFilter ParseStateFilter(string? state)
         => state?.ToLowerInvariant() switch
         {
-            null or "" or "all" => UserStateFilter.All,
-            "active"            => UserStateFilter.Active,
-            "locked"            => UserStateFilter.Locked,
-            "pending"           => UserStateFilter.Pending,
-            "deleted"           => UserStateFilter.Deleted,
-            _                   => throw new ArgumentOutOfRangeException(nameof(state), state, "Unsupported user state filter."),
+            null or "" or "all"       => UserStateFilter.All,
+            UserStates.Active         => UserStateFilter.Active,
+            UserStates.Locked         => UserStateFilter.Locked,
+            UserStates.Pending        => UserStateFilter.Pending,
+            UserStates.Deleted        => UserStateFilter.Deleted,
+            _                         => throw new ArgumentOutOfRangeException(nameof(state), state, "Unsupported user state filter."),
         };
 }

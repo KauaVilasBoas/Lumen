@@ -1,4 +1,5 @@
 using AegisIdentity.Backoffice.Services;
+using AegisIdentity.SharedKernel.Constants;
 
 namespace AegisIdentity.Backoffice.ViewModels;
 
@@ -72,21 +73,21 @@ public static class UserViewModelBuilder
 
         steps.Add(u.State switch
         {
-            "locked" => new LifecycleStepViewModel(
+            UserStates.Locked => new LifecycleStepViewModel(
                 "Locked out",
                 u.LockoutEndAt.HasValue ? FormatDate(u.LockoutEndAt!.Value) : "indefinite",
                 true,
                 "var(--danger)",
                 "423 until lockout expires"),
 
-            "deleted" => new LifecycleStepViewModel(
+            UserStates.Deleted => new LifecycleStepViewModel(
                 "Soft-deleted",
                 "account removed",
                 true,
                 "var(--text-faint)",
                 "row retained · email re-registerable"),
 
-            "pending" => new LifecycleStepViewModel(
+            UserStates.Pending => new LifecycleStepViewModel(
                 "Awaiting confirmation",
                 "blocked",
                 false,

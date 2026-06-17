@@ -12,9 +12,9 @@ using Microsoft.Extensions.Logging;
 namespace AegisIdentity.CommandHandlers.Auth.ForgotPassword;
 
 public sealed class ForgotPasswordCommandHandler
-    : IRequestHandler<ForgotPasswordCommandHandler.Command, Unit>
+    : IRequestHandler<ForgotPasswordCommandHandler.Command>
 {
-    public sealed record Command(string Email) : IRequest<Unit>;
+    public sealed record Command(string Email) : IRequest;
 
     public sealed class Validator : AbstractValidator<Command>
     {
@@ -52,7 +52,7 @@ public sealed class ForgotPasswordCommandHandler
         _logger = logger;
     }
 
-    public async Task<Unit> Handle(Command cmd, CancellationToken ct)
+    public async Task Handle(Command cmd, CancellationToken ct)
     {
         var normalizedEmail = User.NormalizeEmail(cmd.Email);
         var user = await _userRepository.FindByEmailAsync(normalizedEmail, ct);
@@ -60,7 +60,7 @@ public sealed class ForgotPasswordCommandHandler
         if (user is null)
         {
             await PerformDummyWorkToMitigateTiming(ct);
-            return Unit.Value;
+            return;
         }
 
         _logger.LogInformation(
@@ -68,8 +68,6 @@ public sealed class ForgotPasswordCommandHandler
             user.Id);
 
         await SendPasswordResetEmailAsync(user, ct);
-
-        return Unit.Value;
     }
 
     private async Task SendPasswordResetEmailAsync(User user, CancellationToken ct)
