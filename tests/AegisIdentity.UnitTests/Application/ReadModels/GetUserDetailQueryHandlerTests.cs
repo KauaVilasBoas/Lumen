@@ -307,8 +307,8 @@ public sealed class GetUserDetailQueryHandlerTests
             username: $"user-{Guid.NewGuid():N}",
             passwordHash: "hashed");
 
-        user.EmailConfirmedAt = emailConfirmedAt;
-        user.LastLoginAt = lastLoginAt;
+        SetUserProperty(user, nameof(User.EmailConfirmedAt), emailConfirmedAt);
+        SetUserProperty(user, nameof(User.LastLoginAt), lastLoginAt);
         return user;
     }
 
@@ -318,11 +318,12 @@ public sealed class GetUserDetailQueryHandlerTests
     private static User BuildLockedUser(DateTime lockedUntil)
     {
         var user = BuildConfirmedUser();
-        typeof(User)
-            .GetProperty(nameof(user.LockedUntil))!
-            .SetValue(user, lockedUntil);
+        SetUserProperty(user, nameof(User.LockedUntil), lockedUntil);
         return user;
     }
+
+    private static void SetUserProperty(User user, string propertyName, object? value)
+        => typeof(User).GetProperty(propertyName)!.SetValue(user, value);
 
     private static User BuildDeletedUser()
     {

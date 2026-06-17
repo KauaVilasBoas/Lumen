@@ -101,8 +101,7 @@ public sealed class LoginUserCommandHandler
         if (user.FailedLoginAttempts > 0)
             user.Unlock();
 
-        user.LastLoginAt = DateTime.UtcNow;
-        user.UpdatedAt = DateTime.UtcNow;
+        user.RecordLogin();
         await _userRepository.UpdateAsync(user, ct);
 
         var accessToken = _jwtService.GenerateAccessToken(user);

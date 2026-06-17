@@ -8,17 +8,17 @@ public sealed class User : ISoftDeletable
 
     public string Email { get; private set; } = string.Empty;
 
-    public string Username { get; set; } = string.Empty;
+    public string Username { get; private set; } = string.Empty;
 
-    public string PasswordHash { get; set; } = string.Empty;
+    public string PasswordHash { get; private set; } = string.Empty;
 
     public bool IsBootstrap { get; private set; }
 
-    public bool IsActive { get; set; }
+    public bool IsActive { get; private set; }
 
-    public DateTime? EmailConfirmedAt { get; set; }
+    public DateTime? EmailConfirmedAt { get; private set; }
 
-    public DateTime? LastLoginAt { get; set; }
+    public DateTime? LastLoginAt { get; private set; }
 
     public int FailedLoginAttempts { get; private set; }
 
@@ -26,7 +26,7 @@ public sealed class User : ISoftDeletable
 
     public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
 
-    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; private set; } = DateTime.UtcNow;
 
     public bool IsDeleted { get; private set; }
 
@@ -89,6 +89,27 @@ public sealed class User : ISoftDeletable
 
         Username  = newUsername;
         UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void ConfirmEmail()
+    {
+        IsActive       = true;
+        EmailConfirmedAt = DateTime.UtcNow;
+        UpdatedAt      = DateTime.UtcNow;
+    }
+
+    public void RecordLogin()
+    {
+        LastLoginAt = DateTime.UtcNow;
+        UpdatedAt   = DateTime.UtcNow;
+    }
+
+    public void ChangePassword(string newHash)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(newHash);
+
+        PasswordHash = newHash;
+        UpdatedAt    = DateTime.UtcNow;
     }
 
     public void SoftDelete()

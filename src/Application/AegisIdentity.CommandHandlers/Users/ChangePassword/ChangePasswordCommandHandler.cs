@@ -76,8 +76,7 @@ public sealed class ChangePasswordCommandHandler
         if (!passwordValidation.IsValid)
             throw new SharedKernel.Exceptions.ValidationException("newPassword", passwordValidation.Errors);
 
-        user.PasswordHash = _passwordHasher.Hash(cmd.NewPassword);
-        user.UpdatedAt = DateTime.UtcNow;
+        user.ChangePassword(_passwordHasher.Hash(cmd.NewPassword));
         await _userRepository.UpdateAsync(user, ct);
 
         await RevokeAllRefreshTokensAsync(user.Id, ct);

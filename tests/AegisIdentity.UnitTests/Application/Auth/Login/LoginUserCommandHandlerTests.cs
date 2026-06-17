@@ -271,7 +271,7 @@ public sealed class LoginUserCommandHandlerTests
     private static User ActiveUser()
     {
         var user = User.Create(ValidEmail, ValidUsername, FakeHash);
-        user.IsActive = true;
+        user.ConfirmEmail();
         return user;
     }
 
