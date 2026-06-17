@@ -1,6 +1,7 @@
 using AegisIdentity.Domain.Authorization;
 using AegisIdentity.Domain.Users;
 using AegisIdentity.ReadModels.Users;
+using AegisIdentity.SharedKernel.Constants;
 using AegisIdentity.SharedKernel.Exceptions;
 using MediatR;
 
@@ -44,7 +45,7 @@ public sealed class GetUserDetailQueryHandler
     public async Task<Result> Handle(Query query, CancellationToken ct)
     {
         var user = await _userRepository.FindByIdIgnoringFiltersAsync(query.UserId, ct)
-            ?? throw new NotFoundException($"User '{query.UserId}' was not found.");
+            ?? throw new NotFoundException(string.Format(ProfileErrorMessages.UserNotFoundInDetail, query.UserId));
 
         var profiles = await _profileRepository.GetProfilesByUserIdAsync(query.UserId, ct);
         var permissionCodes = await _profileRepository.GetPermissionCodesByUserIdAsync(query.UserId, ct);

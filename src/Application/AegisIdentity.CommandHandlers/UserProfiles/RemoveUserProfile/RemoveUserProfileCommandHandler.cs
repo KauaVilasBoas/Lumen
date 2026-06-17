@@ -1,6 +1,7 @@
 using AegisIdentity.Domain.Audit;
 using AegisIdentity.Domain.Authorization;
 using AegisIdentity.Domain.Users;
+using AegisIdentity.SharedKernel.Constants;
 using AegisIdentity.SharedKernel.Exceptions;
 using FluentValidation;
 using MediatR;
@@ -17,10 +18,10 @@ public sealed class RemoveUserProfileCommandHandler
         public Validator()
         {
             RuleFor(x => x.UserId)
-                .NotEmpty().WithMessage("UserId is required.");
+                .NotEmpty().WithMessage(ProfileErrorMessages.UserIdRequired);
 
             RuleFor(x => x.ProfileId)
-                .NotEmpty().WithMessage("ProfileId is required.");
+                .NotEmpty().WithMessage(ProfileErrorMessages.ProfileIdRequired);
         }
     }
 
@@ -44,13 +45,13 @@ public sealed class RemoveUserProfileCommandHandler
     public async Task Handle(Command cmd, CancellationToken ct)
     {
         var user = await _userRepository.FindByIdAsync(cmd.UserId, ct)
-            ?? throw new NotFoundException($"User '{cmd.UserId}' not found.");
+            ?? throw new NotFoundException(string.Format(ProfileErrorMessages.UserNotFoundForProfile, cmd.UserId));
 
         var profile = await _profileRepository.FindByIdAsync(cmd.ProfileId, ct)
-            ?? throw new NotFoundException($"Profile '{cmd.ProfileId}' not found.");
+            ?? throw new NotFoundException(string.Format(ProfileErrorMessages.ProfileNotFound, cmd.ProfileId));
 
         var userProfile = await _userProfileRepository.FindActiveAsync(cmd.UserId, cmd.ProfileId, ct)
-            ?? throw new NotFoundException($"Active assignment of user '{cmd.UserId}' to profile '{cmd.ProfileId}' not found.");
+            ?? throw new NotFoundException(string.Format(ProfileErrorMessages.ActiveAssignmentNotFound, cmd.UserId, cmd.ProfileId));
 
         userProfile.SoftDelete();
 

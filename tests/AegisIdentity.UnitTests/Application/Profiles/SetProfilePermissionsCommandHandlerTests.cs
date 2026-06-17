@@ -1,5 +1,6 @@
 using AegisIdentity.CommandHandlers.Profiles.SetProfilePermissions;
 using AegisIdentity.Domain.Authorization;
+using AegisIdentity.SharedKernel.Constants;
 using AegisIdentity.SharedKernel.Exceptions;
 using FluentAssertions;
 using FluentValidation.TestHelper;
@@ -155,7 +156,7 @@ public sealed class SetProfilePermissionsCommandHandlerTests
         var result = await _validator.TestValidateAsync(command);
 
         result.ShouldHaveValidationErrorFor(c => c.PermissionIds)
-            .WithErrorMessage("PermissionIds is required.");
+            .WithErrorMessage(ProfileErrorMessages.PermissionIdsRequired);
     }
 
     [Fact]
@@ -178,7 +179,7 @@ public sealed class SetProfilePermissionsCommandHandlerTests
         var result = await _validator.TestValidateAsync(command);
 
         result.ShouldHaveValidationErrorFor("PermissionIds[0]")
-            .WithErrorMessage("Each PermissionId must be a valid non-empty Guid.");
+            .WithErrorMessage(ProfileErrorMessages.PermissionIdInvalid);
     }
 
     [Fact]
@@ -189,7 +190,7 @@ public sealed class SetProfilePermissionsCommandHandlerTests
         var result = await _validator.TestValidateAsync(command);
 
         result.ShouldHaveValidationErrorFor(c => c.ProfileId)
-            .WithErrorMessage("ProfileId is required.");
+            .WithErrorMessage(ProfileErrorMessages.ProfileIdRequired);
     }
 
     [Fact]

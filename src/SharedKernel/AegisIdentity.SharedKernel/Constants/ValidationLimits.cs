@@ -8,6 +8,9 @@ public static class ValidationLimits
     public const int PasswordMinLength = 12;
     public const string PasswordSpecialCharacters = "!@#$%^&*()-_=+[]{};:'\",.<>/?\\|`~";
 
+    public const int ProfileNameMaxLength        = 128;
+    public const int ProfileDescriptionMaxLength = 512;
+
     public const int PageMinValue = 1;
     public const int PageSizeMinValue = 1;
     public const int PageSizeMaxValue = 100;

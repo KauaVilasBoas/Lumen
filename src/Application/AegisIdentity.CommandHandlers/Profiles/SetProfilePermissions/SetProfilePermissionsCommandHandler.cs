@@ -1,5 +1,6 @@
 using AegisIdentity.Domain.Audit;
 using AegisIdentity.Domain.Authorization;
+using AegisIdentity.SharedKernel.Constants;
 using AegisIdentity.SharedKernel.Exceptions;
 using FluentValidation;
 using MediatR;
@@ -16,13 +17,13 @@ public sealed class SetProfilePermissionsCommandHandler
         public Validator()
         {
             RuleFor(x => x.ProfileId)
-                .NotEmpty().WithMessage("ProfileId is required.");
+                .NotEmpty().WithMessage(ProfileErrorMessages.ProfileIdRequired);
 
             RuleFor(x => x.PermissionIds)
-                .NotNull().WithMessage("PermissionIds is required.");
+                .NotNull().WithMessage(ProfileErrorMessages.PermissionIdsRequired);
 
             RuleForEach(x => x.PermissionIds)
-                .NotEmpty().WithMessage("Each PermissionId must be a valid non-empty Guid.");
+                .NotEmpty().WithMessage(ProfileErrorMessages.PermissionIdInvalid);
         }
     }
 
@@ -43,16 +44,16 @@ public sealed class SetProfilePermissionsCommandHandler
     public async Task Handle(Command cmd, CancellationToken ct)
     {
         var profile = await _profileRepository.FindByIdAsync(cmd.ProfileId, ct)
-            ?? throw new NotFoundException($"Profile '{cmd.ProfileId}' not found.");
+            ?? throw new NotFoundException(string.Format(ProfileErrorMessages.ProfileNotFound, cmd.ProfileId));
 
         if (profile.IsSystem)
-            throw new ForbiddenException($"Permissions on system profile '{profile.Name}' are managed automatically and cannot be overwritten via the API.");
+            throw new ForbiddenException(string.Format(ProfileErrorMessages.SystemProfilePermissionsReadOnly, profile.Name));
 
         foreach (var permId in cmd.PermissionIds)
         {
             var permission = await _permissionRepository.FindByIdAsync(permId, ct);
             if (permission is null)
-                throw new NotFoundException($"Permission '{permId}' not found.");
+                throw new NotFoundException(string.Format(ProfileErrorMessages.PermissionNotFound, permId));
         }
 
         var existingAll = await _profileRepository.GetActivePermissionProfilesByProfileIdAsync(cmd.ProfileId, ct);

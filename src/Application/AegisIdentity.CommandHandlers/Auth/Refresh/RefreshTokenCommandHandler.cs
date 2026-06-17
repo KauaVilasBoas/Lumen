@@ -21,7 +21,7 @@ public sealed class RefreshTokenCommandHandler
         public Validator()
         {
             RuleFor(x => x.RefreshToken)
-                .NotEmpty().WithMessage("O campo refresh token é obrigatório.");
+                .NotEmpty().WithMessage(AuthErrorMessages.RefreshTokenRequired);
         }
     }
 

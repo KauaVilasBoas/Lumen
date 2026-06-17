@@ -27,7 +27,6 @@ public sealed class ForgotPasswordCommandHandler
         }
     }
 
-    private static readonly TimeSpan TokenLifetime = TimeSpan.FromMinutes(30);
 
     private readonly IUserRepository _userRepository;
     private readonly IPasswordResetTokenRepository _tokenRepository;
@@ -78,7 +77,7 @@ public sealed class ForgotPasswordCommandHandler
         var resetToken = PasswordResetToken.Create(
             userId: user.Id,
             tokenHash: tokenHash,
-            expiresAt: DateTime.UtcNow.Add(TokenLifetime));
+            expiresAt: DateTime.UtcNow.AddMinutes(TokenLifetimes.PasswordResetMinutes));
 
         await _tokenRepository.InsertAsync(resetToken, ct);
 

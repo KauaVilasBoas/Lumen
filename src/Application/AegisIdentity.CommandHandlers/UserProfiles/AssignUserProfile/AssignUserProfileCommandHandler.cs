@@ -1,6 +1,7 @@
 using AegisIdentity.Domain.Audit;
 using AegisIdentity.Domain.Authorization;
 using AegisIdentity.Domain.Users;
+using AegisIdentity.SharedKernel.Constants;
 using AegisIdentity.SharedKernel.Exceptions;
 using FluentValidation;
 using MediatR;
@@ -17,10 +18,10 @@ public sealed class AssignUserProfileCommandHandler
         public Validator()
         {
             RuleFor(x => x.UserId)
-                .NotEmpty().WithMessage("UserId is required.");
+                .NotEmpty().WithMessage(ProfileErrorMessages.UserIdRequired);
 
             RuleFor(x => x.ProfileId)
-                .NotEmpty().WithMessage("ProfileId is required.");
+                .NotEmpty().WithMessage(ProfileErrorMessages.ProfileIdRequired);
         }
     }
 
@@ -44,10 +45,10 @@ public sealed class AssignUserProfileCommandHandler
     public async Task Handle(Command cmd, CancellationToken ct)
     {
         var user = await _userRepository.FindByIdAsync(cmd.UserId, ct)
-            ?? throw new NotFoundException($"User '{cmd.UserId}' not found.");
+            ?? throw new NotFoundException(string.Format(ProfileErrorMessages.UserNotFoundForProfile, cmd.UserId));
 
         var profile = await _profileRepository.FindByIdAsync(cmd.ProfileId, ct)
-            ?? throw new NotFoundException($"Profile '{cmd.ProfileId}' not found.");
+            ?? throw new NotFoundException(string.Format(ProfileErrorMessages.ProfileNotFound, cmd.ProfileId));
 
         var existing = await _userProfileRepository.FindActiveAsync(cmd.UserId, cmd.ProfileId, ct);
 

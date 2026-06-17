@@ -1,4 +1,5 @@
 using AegisIdentity.Domain.Authorization;
+using AegisIdentity.SharedKernel.Constants;
 using AegisIdentity.SharedKernel.Exceptions;
 using FluentValidation;
 using MediatR;
@@ -15,15 +16,17 @@ public sealed class UpdateProfileCommandHandler
         public Validator()
         {
             RuleFor(x => x.Id)
-                .NotEmpty().WithMessage("Profile id is required.");
+                .NotEmpty().WithMessage(ProfileErrorMessages.ProfileIdRequired);
 
             RuleFor(x => x.Name)
-                .NotEmpty().WithMessage("Profile name is required.")
-                .MaximumLength(128).WithMessage("Profile name must not exceed 128 characters.");
+                .NotEmpty().WithMessage(ProfileErrorMessages.ProfileNameRequired)
+                .MaximumLength(ValidationLimits.ProfileNameMaxLength)
+                    .WithMessage(ProfileErrorMessages.ProfileNameTooLong);
 
             RuleFor(x => x.Description)
-                .NotEmpty().WithMessage("Profile description is required.")
-                .MaximumLength(512).WithMessage("Profile description must not exceed 512 characters.");
+                .NotEmpty().WithMessage(ProfileErrorMessages.ProfileDescriptionRequired)
+                .MaximumLength(ValidationLimits.ProfileDescriptionMaxLength)
+                    .WithMessage(ProfileErrorMessages.ProfileDescriptionTooLong);
         }
     }
 
@@ -37,15 +40,15 @@ public sealed class UpdateProfileCommandHandler
     public async Task Handle(Command cmd, CancellationToken ct)
     {
         var profile = await _profileRepository.FindByIdAsync(cmd.Id, ct)
-            ?? throw new NotFoundException($"Profile '{cmd.Id}' not found.");
+            ?? throw new NotFoundException(string.Format(ProfileErrorMessages.ProfileNotFound, cmd.Id));
 
         if (profile.IsSystem && !string.Equals(profile.Name, cmd.Name, StringComparison.Ordinal))
-            throw new ForbiddenException($"System profile '{profile.Name}' cannot be renamed.");
+            throw new ForbiddenException(string.Format(ProfileErrorMessages.SystemProfileCannotRename, profile.Name));
 
         var nameAlreadyUsed = await _profileRepository.ActiveNameExistsAsync(cmd.Name, excludeId: cmd.Id, ct);
 
         if (nameAlreadyUsed)
-            throw new ConflictException($"A profile with name '{cmd.Name}' already exists.");
+            throw new ConflictException(string.Format(ProfileErrorMessages.ProfileNameConflict, cmd.Name));
 
         profile.Update(cmd.Name, cmd.Description);
 

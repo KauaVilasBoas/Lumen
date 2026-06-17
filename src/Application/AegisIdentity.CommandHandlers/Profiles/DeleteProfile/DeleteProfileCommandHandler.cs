@@ -1,4 +1,5 @@
 using AegisIdentity.Domain.Authorization;
+using AegisIdentity.SharedKernel.Constants;
 using AegisIdentity.SharedKernel.Exceptions;
 using MediatR;
 
@@ -26,10 +27,10 @@ public sealed class DeleteProfileCommandHandler
     public async Task Handle(Command cmd, CancellationToken ct)
     {
         var profile = await _profileRepository.FindByIdAsync(cmd.Id, ct)
-            ?? throw new NotFoundException($"Profile '{cmd.Id}' not found.");
+            ?? throw new NotFoundException(string.Format(ProfileErrorMessages.ProfileNotFound, cmd.Id));
 
         if (profile.IsSystem)
-            throw new ForbiddenException($"System profile '{profile.Name}' cannot be deleted.");
+            throw new ForbiddenException(string.Format(ProfileErrorMessages.SystemProfileCannotDelete, profile.Name));
 
         var affectedUserIds = await _profileRepository.GetUserIdsByProfileIdAsync(cmd.Id, ct);
 
