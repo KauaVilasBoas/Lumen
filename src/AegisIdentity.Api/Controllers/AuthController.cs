@@ -31,6 +31,8 @@ public sealed class AuthController : ApiBaseController
 
     public sealed record LogoutRequest(string? RefreshToken);
 
+    public sealed record RegisterRequest(string Email, string Username, string Password);
+
     [HttpGet("confirm-email")]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -91,9 +93,10 @@ public sealed class AuthController : ApiBaseController
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Register(
-        [FromBody] RegisterUserCommandHandler.Command command,
+        [FromBody] RegisterRequest request,
         CancellationToken ct)
     {
+        var command = new RegisterUserCommandHandler.Command(request.Email, request.Username, request.Password);
         var result = await _mediator.Send(command, ct);
 
         return CreatedAtAction(

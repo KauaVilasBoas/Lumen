@@ -1,4 +1,5 @@
 using AegisIdentity.Domain.Users;
+using AegisIdentity.SharedKernel.Constants;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
@@ -6,8 +7,6 @@ namespace AegisIdentity.DataAccess.Persistence.Repositories;
 
 internal sealed class UserRepository : IUserRepository
 {
-    private const int SqlServerUniqueConstraintViolation = 2627;
-    private const int SqlServerUniqueIndexViolation = 2601;
 
     private readonly AegisIdentityDbContext _dbContext;
 
@@ -88,7 +87,7 @@ internal sealed class UserRepository : IUserRepository
 
     private static bool IsSqlUniqueViolation(DbUpdateException ex, out string message)
     {
-        if (ex.InnerException is SqlException { Number: SqlServerUniqueConstraintViolation or SqlServerUniqueIndexViolation } sqlEx)
+        if (ex.InnerException is SqlException { Number: SqlErrorCodes.UniqueConstraintViolation or SqlErrorCodes.UniqueIndexViolation } sqlEx)
         {
             message = sqlEx.Message;
             return true;

@@ -105,7 +105,7 @@ public sealed class ForgotPasswordCommandHandler
     {
         var bytes = RandomNumberGenerator.GetBytes(TokenSizes.RawTokenBytes);
         _ = Sha256Hasher.ComputeHex(Base64UrlEncoder.Encode(bytes));
-        await Task.Delay(TimeSpan.FromMilliseconds(50), ct).ConfigureAwait(false);
+        await Task.Delay(TimeSpan.FromMilliseconds(TokenLifetimes.AntiTimingAttackDelayMilliseconds), ct).ConfigureAwait(false);
     }
 
     private static string GenerateRawToken()

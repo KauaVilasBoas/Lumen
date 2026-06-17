@@ -43,7 +43,7 @@ public static class UserViewModelBuilder
     private static string ProfileAccentColor(AdminApiClient.ProfileMembership profile)
     {
         if (profile.IsSystem)
-            return profile.Name == "Administrator" ? "#8b6dff" : "#5b6478";
+            return profile.ProfileId == SystemProfiles.AdministratorId ? "#8b6dff" : "#5b6478";
 
         return ProfileColorPalette[Math.Abs(profile.Name.GetHashCode()) % ProfileColorPalette.Length];
     }
