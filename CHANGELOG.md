@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (REFACTOR-02 — codebase audit cleanup across 5 waves)
+
+**Onda 1 — Limpeza**
+- Removed scaffold placeholder files: `Class1.cs` (Domain), `UnitTest1.cs` (UnitTests, IntegrationTests).
+- Removed dead constant `AuthErrorMessages.UserAlreadyDeleted` (zero usages).
+- Replaced hardcoded state string literals with `UserStates.*` constants in `ListUsersQueryHandler` (`HashSet` initializer and `ParseStateFilter` switch) and in `UserViewModelBuilder` (`BuildLifecycle` switch arms).
+- Standardized 6 void-like `CommandHandler`s from `IRequest<Unit>` / `Task<Unit>` to `IRequest` / `Task`: `ChangePassword`, `ConfirmEmail`, `ForgotPassword`, `Logout`, `ResendConfirmationEmail`, `ResetPassword`.
+- Removed inline explanatory comments from `LoginUserCommandHandler` and `DeleteProfileCommandHandler`.
+
+**Onda 2 — Constantes faltantes**
+- Added `TokenLifetimes` (SharedKernel) with `EmailConfirmationHours = 24`, `PasswordResetMinutes = 30`, `AntiTimingAttackDelayMilliseconds = 50`; removed 4 local `TimeSpan TokenLifetime` declarations from `RegisterUser`, `ResendConfirmationEmail`, `UpdateUser`, `ForgotPassword` handlers.
+- Added `ProfileErrorMessages` (SharedKernel) consolidating validation and domain error strings for all Profile/UserProfile/SetPermissions/GetUserDetail handlers; zero hardcoded message literals remain in those handlers.
+- Added `PermissionGroupNames.Ungrouped` (SharedKernel); used in `ListPermissionsQueryHandler`.
+- Expanded `ValidationLimits` with `ProfileNameMaxLength = 128` and `ProfileDescriptionMaxLength = 512`; wired into `CreateProfile` and `UpdateProfile` validators.
+- Added `AuthErrorMessages.IdentifierRequired`, `InvalidCredentials`, `EmailNotConfirmed`, `RefreshTokenRequired`; replaced hardcoded strings in `LoginUserCommandHandler` and `RefreshTokenCommandHandler`.
+- Updated `SetProfilePermissionsCommandHandlerTests` to reference `ProfileErrorMessages` constants instead of literal strings.
+
+**Onda 3 — Domain encapsulation**
+- Added `User.ConfirmEmail()`, `User.RecordLogin()`, `User.ChangePassword(hash)` domain methods; each updates `UpdatedAt` internally.
+- Closed formerly-public setters to `private set`: `Username`, `PasswordHash`, `IsActive`, `EmailConfirmedAt`, `LastLoginAt`, `UpdatedAt`.
+- Updated `ConfirmEmailCommandHandler`, `LoginUserCommandHandler`, `ChangePasswordCommandHandler`, `ResetPasswordCommandHandler` to call the new domain methods.
+- Updated all unit tests that previously assigned closed properties directly: used `ConfirmEmail()` for boolean-only `IsActive` cases; used reflection helpers (consistent with existing `LockedUntil` pattern) for temporal `EmailConfirmedAt` and `LastLoginAt` values.
+- Added 9 new unit tests in `UserTests` covering `ConfirmEmail`, `RecordLogin` and `ChangePassword` (state, timestamps, validation).
+
+**Onda 4 — Performance + coverage**
+- Added `IPermissionRepository.GetByIdsAsync(IReadOnlyList<Guid>)` and `PermissionRepository` implementation (single `WHERE Id IN (...)` query).
+- Added `IProfileRepository.UpdatePermissionProfilesAsync(IReadOnlyList<PermissionProfile>)` and `ProfileRepository` implementation (`UpdateRange` + single `SaveChangesAsync`).
+- Rewrote `SetProfilePermissionsCommandHandler`: permission existence validated via single `GetByIdsAsync` round-trip; soft-delete batch dispatched via `UpdatePermissionProfilesAsync`. Eliminates N+1 for both operations.
+- Added integration tests `UserDeleteEndpointTests` and `UserRestoreEndpointTests` (401/403/404/204/409 + DB state assertions). Require Docker — not executed locally.
+
+**Onda 5 — Refinements**
+- `AuthController.Register`: extracted `RegisterRequest` DTO; stops exposing internal `Command` type as `[FromBody]` parameter.
+- `UserViewModelBuilder.ProfileAccentColor`: replaced `profile.Name == "Administrator"` string comparison with `profile.ProfileId == SystemProfiles.AdministratorId` (identity-based check).
+- `DevController`: now injects `IEmailTemplateRenderer` and uses `EmailTemplateNames`/`EmailPlaceholderKeys` constants; removed direct dependency on Infrastructure `EmailTemplateRenderer` and `EmailTemplate` enum.
+- Added `BackofficeDefaults.UserPageSize = 100` (SharedKernel); replaced hardcoded `100` in `Backoffice.UsersController.Index`.
+- Added `SqlErrorCodes.UniqueConstraintViolation = 2627` and `UniqueIndexViolation = 2601` (SharedKernel); removed private numeric constants from `UserRepository`.
+
 ### Added (USER-04 — DELETE /api/users/{id} soft delete + POST /api/users/{id}/restore)
 - `DELETE /api/users/{id}` with `[RequirePermission]` + `Users.Delete` policy; soft-deletes the user via `User.SoftDelete()`, revokes all active refresh tokens, publishes `UserPermissionsChanged` (cache invalidation), writes audit entry `user.deleted`. Returns 204 on success, 404 when user not found, 403 when target is the bootstrap admin, 409 when target is the only active Administrator.
 - `POST /api/users/{id}/restore` with `[RequirePermission]` + `Users.Restore` policy; uses `FindByIdIgnoringFiltersAsync` to reach soft-deleted records, validates 30-day restore window, calls `User.Restore()`, writes audit entry `user.restored`. Returns 204 on success, 404 when not found or not deleted, 409 when restore window expired.
