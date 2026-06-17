@@ -49,17 +49,20 @@ public sealed class SetProfilePermissionsCommandHandler
         if (profile.IsSystem)
             throw new ForbiddenException(string.Format(ProfileErrorMessages.SystemProfilePermissionsReadOnly, profile.Name));
 
-        foreach (var permId in cmd.PermissionIds)
+        if (cmd.PermissionIds.Count > 0)
         {
-            var permission = await _permissionRepository.FindByIdAsync(permId, ct);
-            if (permission is null)
-                throw new NotFoundException(string.Format(ProfileErrorMessages.PermissionNotFound, permId));
+            var foundPermissions = await _permissionRepository.GetByIdsAsync(cmd.PermissionIds, ct);
+            if (foundPermissions.Count != cmd.PermissionIds.Count)
+            {
+                var foundIds = new HashSet<Guid>(foundPermissions.Select(p => p.Id));
+                var missingId = cmd.PermissionIds.First(id => !foundIds.Contains(id));
+                throw new NotFoundException(string.Format(ProfileErrorMessages.PermissionNotFound, missingId));
+            }
         }
 
         var existingAll = await _profileRepository.GetActivePermissionProfilesByProfileIdAsync(cmd.ProfileId, ct);
 
         var desiredSet = new HashSet<Guid>(cmd.PermissionIds);
-        var existingByPermId = existingAll.ToDictionary(pp => pp.PermissionId);
 
         var toSoftDelete = existingAll
             .Where(pp => !pp.IsDeleted && !desiredSet.Contains(pp.PermissionId))
@@ -72,10 +75,12 @@ public sealed class SetProfilePermissionsCommandHandler
             .Where(permId => !currentActivePermIds.Contains(permId))
             .ToList();
 
-        foreach (var pp in toSoftDelete)
+        if (toSoftDelete.Count > 0)
         {
-            pp.SoftDelete();
-            await _profileRepository.UpdatePermissionProfileAsync(pp, ct);
+            foreach (var pp in toSoftDelete)
+                pp.SoftDelete();
+
+            await _profileRepository.UpdatePermissionProfilesAsync(toSoftDelete, ct);
         }
 
         if (toAdd.Count > 0)

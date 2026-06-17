@@ -4,6 +4,8 @@ public interface IPermissionRepository
 {
     Task<Permission?> FindByIdAsync(Guid id, CancellationToken ct = default);
 
+    Task<IReadOnlyList<Permission>> GetByIdsAsync(IReadOnlyList<Guid> ids, CancellationToken ct = default);
+
     Task<Permission?> FindByCodeAsync(string code, CancellationToken ct = default);
 
     Task<IReadOnlyList<Permission>> ListAllAsync(CancellationToken ct = default);

@@ -90,8 +90,9 @@ public sealed class SetProfilePermissionsCommandHandlerTests
 
         _profileRepository.FindByIdAsync(profile.Id, Arg.Any<CancellationToken>())
             .Returns(profile);
-        _permissionRepository.FindByIdAsync(missingPermissionId, Arg.Any<CancellationToken>())
-            .Returns((Permission?)null);
+        _permissionRepository
+            .GetByIdsAsync(Arg.Any<IReadOnlyList<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(new List<Permission>());
 
         var act = async () => await _sut.Handle(
             new SetProfilePermissionsCommandHandler.Command(profile.Id, new List<Guid> { missingPermissionId }),
@@ -114,10 +115,9 @@ public sealed class SetProfilePermissionsCommandHandlerTests
         _profileRepository.FindByIdAsync(profile.Id, Arg.Any<CancellationToken>())
             .Returns(profile);
 
-        _permissionRepository.FindByIdAsync(permIdToKeep, Arg.Any<CancellationToken>())
-            .Returns(permToKeep);
-        _permissionRepository.FindByIdAsync(permIdToAdd, Arg.Any<CancellationToken>())
-            .Returns(permToAdd);
+        _permissionRepository
+            .GetByIdsAsync(Arg.Any<IReadOnlyList<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(new List<Permission> { permToKeep, permToAdd });
 
         var existingToRemove = PermissionProfile.Create(permIdToRemove, profile.Id);
         var existingToKeep  = PermissionProfile.Create(permIdToKeep, profile.Id);
@@ -134,8 +134,9 @@ public sealed class SetProfilePermissionsCommandHandlerTests
             new SetProfilePermissionsCommandHandler.Command(profile.Id, new List<Guid> { permIdToKeep, permIdToAdd }),
             CancellationToken.None);
 
-        await _profileRepository.Received(1).UpdatePermissionProfileAsync(
-            Arg.Is<PermissionProfile>(pp => pp.PermissionId == permIdToRemove && pp.IsDeleted),
+        await _profileRepository.Received(1).UpdatePermissionProfilesAsync(
+            Arg.Is<IReadOnlyList<PermissionProfile>>(list =>
+                list.Count == 1 && list[0].PermissionId == permIdToRemove && list[0].IsDeleted),
             Arg.Any<CancellationToken>());
 
         await _profileRepository.Received(1).InsertPermissionProfilesAsync(
