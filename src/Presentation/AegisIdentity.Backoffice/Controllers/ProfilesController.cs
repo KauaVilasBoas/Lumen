@@ -1,4 +1,5 @@
 using AegisIdentity.Backoffice.Services;
+using AegisIdentity.Backoffice.ViewModels;
 using AegisIdentity.SharedKernel.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -32,8 +33,7 @@ public sealed class ProfilesController : BackofficeBaseController
 
         var permissions = await _adminApiClient.ListPermissionsAsync(ct) ?? [];
 
-        ViewData["AllPermissions"] = permissions;
-        return View(profile);
+        return View(new ProfileDetailViewModel(profile, permissions));
     }
 
     [HttpGet]

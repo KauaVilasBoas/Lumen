@@ -1,4 +1,5 @@
 using AegisIdentity.Backoffice.Services;
+using AegisIdentity.Backoffice.ViewModels;
 using AegisIdentity.SharedKernel.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -24,10 +25,7 @@ public sealed class UserProfilesController : BackofficeBaseController
         var assignedProfileIds = new HashSet<Guid>(userProfiles.Select(up => up.ProfileId));
         var availableProfiles = allProfiles.Where(p => !assignedProfileIds.Contains(p.Id)).ToList();
 
-        ViewData["UserId"] = userId;
-        ViewData["AvailableProfiles"] = availableProfiles;
-
-        return View(userProfiles);
+        return View(new UserProfilesViewModel(userId, userProfiles, availableProfiles));
     }
 
     [HttpPost]

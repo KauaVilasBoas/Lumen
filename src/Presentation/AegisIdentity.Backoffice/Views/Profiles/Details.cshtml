@@ -1,15 +1,16 @@
 @using AegisIdentity.Backoffice.Services
-@model AegisIdentity.Backoffice.Services.AdminApiClient.ProfileDetail
+@using AegisIdentity.Backoffice.ViewModels
+@model ProfileDetailViewModel
 @{
-    ViewData["Title"] = Model.Name;
+    ViewData["Title"] = Model.Profile.Name;
     ViewData["Subtitle"] = "Permission assignment matrix";
     Layout = "_Layout";
 
-    var allGroups = ViewData["AllPermissions"] as IReadOnlyList<AdminApiClient.PermissionGroup> ?? new List<AdminApiClient.PermissionGroup>();
-    var assignedIds = new HashSet<Guid>(Model.PermissionIds);
-    var canEdit = !Model.IsSystem && await Html.HasPermissionAsync("Profiles", "SetPermissions");
-    var accent = Model.Name == "Administrator" ? "#8b6dff" : (Model.IsSystem ? "#5b6478" : "#4c8dff");
-    var grantCount = Model.PermissionIds.Count;
+    var allGroups = Model.AllPermissions;
+    var assignedIds = new HashSet<Guid>(Model.Profile.PermissionIds);
+    var canEdit = !Model.Profile.IsSystem && await Html.HasPermissionAsync("Profiles", "SetPermissions");
+    var accent = Model.Profile.Name == "Administrator" ? "#8b6dff" : (Model.Profile.IsSystem ? "#5b6478" : "#4c8dff");
+    var grantCount = Model.Profile.PermissionIds.Count;
 
     string Method(string code)
     {
@@ -44,8 +45,8 @@
                     <span class="mng-detail-badge"
                           style="background:@accent">@await Html.PartialAsync("_Icon", "shieldKey")</span>
                     <div>
-                        <h2>@Model.Name</h2>
-                        <p class="muted">@Model.Description</p>
+                        <h2>@Model.Profile.Name</h2>
+                        <p class="muted">@Model.Profile.Description</p>
                     </div>
                 </div>
                 <div class="mng-detail-meta">
@@ -60,17 +61,17 @@
                 <div class="login-error" style="margin:16px 24px 0">@error</div>
             }
 
-            @if (Model.IsSystem)
+            @if (Model.Profile.IsSystem)
             {
                 <div class="mng-syslock mono">
                     @await Html.PartialAsync("_Icon", "lock")
-                    @(Model.Name == "Administrator"
+                    @(Model.Profile.Name == "Administrator"
                         ? "Administrator is reconciled with every discovered permission at startup — its grants are read-only."
                         : "System profile — its permission set is fixed and the profile cannot be soft-deleted.")
                 </div>
             }
 
-            <form asp-action="SetPermissions" asp-route-id="@Model.Id" method="post">
+            <form asp-action="SetPermissions" asp-route-id="@Model.Profile.Id" method="post">
                 @Html.AntiForgeryToken()
 
                 <div class="matrix" data-matrix data-readonly="@(canEdit ? "0" : "1")">
