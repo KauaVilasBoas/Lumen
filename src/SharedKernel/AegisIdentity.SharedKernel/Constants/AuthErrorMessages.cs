@@ -41,4 +41,9 @@ public static class AuthErrorMessages
     public const string CurrentPasswordIncorrect = "A senha atual está incorreta.";
 
     public const string NewPasswordSameAsCurrent = "A nova senha não pode ser igual à senha atual.";
+
+    public const string CannotDeleteBootstrapUser     = "O usuário administrador bootstrap não pode ser removido.";
+    public const string CannotDeleteLastAdministrator = "Não é possível remover o único administrador ativo do sistema.";
+    public const string UserRestoreWindowExpired      = "O prazo de {0} dias para restauração expirou.";
+    public const string UserNotDeleted                = "Usuário não encontrado no histórico de exclusão.";
 }
