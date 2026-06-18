@@ -36,10 +36,10 @@ public sealed class DiagnosticsController : ApiBaseController
             if (server is null)
                 return StatusCode(StatusCodes.Status503ServiceUnavailable);
 
-            var info = await server.InfoAsync("stats");
+            var info = await server.InfoAsync(RedisInfoKeys.Stats);
 
-            var hits   = ExtractLong(info, "keyspace_hits");
-            var misses = ExtractLong(info, "keyspace_misses");
+            var hits   = ExtractLong(info, RedisInfoKeys.KeyspaceHits);
+            var misses = ExtractLong(info, RedisInfoKeys.KeyspaceMisses);
 
             var total = hits + misses;
 
@@ -73,7 +73,7 @@ public sealed class DiagnosticsController : ApiBaseController
 
             var dailySeries = succeededByDate
                 .OrderBy(kvp => kvp.Key)
-                .TakeLast(DashboardSeriesDays)
+                .TakeLast(DiagnosticsDefaults.DashboardSeriesDays)
                 .Select(kvp => kvp.Value)
                 .ToList();
 
@@ -97,7 +97,7 @@ public sealed class DiagnosticsController : ApiBaseController
 
             var hash = connection.GetAllEntriesFromHash($"recurring-job:{JobSchedules.CleanupJobName}");
 
-            if (hash is null || !hash.TryGetValue("NextExecution", out var nextStr))
+            if (hash is null || !hash.TryGetValue(HangfireStorageKeys.NextExecution, out var nextStr))
                 return null;
 
             if (DateTime.TryParse(nextStr, null, System.Globalization.DateTimeStyles.RoundtripKind, out var next))
@@ -124,8 +124,6 @@ public sealed class DiagnosticsController : ApiBaseController
 
         return long.TryParse(entry.Value, out var value) ? value : 0;
     }
-
-    private const int DashboardSeriesDays = 14;
 
     public sealed record CacheStatsResult(double? HitRate);
 
