@@ -1,25 +1,12 @@
 using AegisIdentity.Backoffice.Services;
+using AegisIdentity.SharedKernel.Constants;
 
 namespace AegisIdentity.Backoffice.ViewModels;
 
 public static class UserViewModelBuilder
 {
-    private static readonly string[] AvatarPalette =
-    [
-        "linear-gradient(135deg,#9a7dff,#6b49f0)",
-        "linear-gradient(135deg,#4c8dff,#2a5fd6)",
-        "linear-gradient(135deg,#2bd4a0,#159e78)",
-        "linear-gradient(135deg,#f5a623,#d4830a)",
-        "linear-gradient(135deg,#f25fa6,#c43e87)",
-        "linear-gradient(135deg,#a78bfa,#7c59e0)",
-        "linear-gradient(135deg,#34d399,#059669)",
-    ];
-
-    private static readonly string[] ProfileColorPalette =
-        ["#4c8dff", "#2bd4a0", "#f5a623", "#f25fa6", "#a78bfa"];
-
     public static string AvatarColor(Guid id)
-        => AvatarPalette[Math.Abs(id.GetHashCode()) % AvatarPalette.Length];
+        => BackofficeCssTokens.AvatarGradients[Math.Abs(id.GetHashCode()) % BackofficeCssTokens.AvatarGradients.Length];
 
     public static UserListItemViewModel ToListItem(AdminApiClient.UserListItem u)
         => new(u.Id, u.Username, u.Email, u.State, u.IsBootstrap, AvatarColor(u.Id));
@@ -42,58 +29,70 @@ public static class UserViewModelBuilder
     private static string ProfileAccentColor(AdminApiClient.ProfileMembership profile)
     {
         if (profile.IsSystem)
-            return profile.Name == "Administrator" ? "#8b6dff" : "#5b6478";
+            return profile.ProfileId == SystemProfiles.AdministratorId
+                ? BackofficeCssTokens.ProfileAccentAdministrator
+                : BackofficeCssTokens.ProfileAccentSystemDefault;
 
-        return ProfileColorPalette[Math.Abs(profile.Name.GetHashCode()) % ProfileColorPalette.Length];
+        return BackofficeCssTokens.ProfileAccentColors[
+            Math.Abs(profile.Name.GetHashCode()) % BackofficeCssTokens.ProfileAccentColors.Length];
     }
 
     private static IReadOnlyList<LifecycleStepViewModel> BuildLifecycle(AdminApiClient.UserDetail u)
     {
         var steps = new List<LifecycleStepViewModel>
         {
-            new("Registered", FormatDate(u.CreatedAt), true, "var(--pres)", "isActive = false until confirmed"),
+            new(BackofficeDisplayLabels.Registered,
+                FormatDate(u.CreatedAt),
+                true,
+                BackofficeCssTokens.LifecycleColorPresentation,
+                BackofficeDisplayLabels.RegisteredNote),
         };
 
         var emailConfirmed = u.EmailConfirmedAt.HasValue;
         steps.Add(new LifecycleStepViewModel(
-            "Email confirmed",
-            emailConfirmed ? FormatDate(u.EmailConfirmedAt!.Value) : "pending",
+            BackofficeDisplayLabels.EmailConfirmed,
+            emailConfirmed ? FormatDate(u.EmailConfirmedAt!.Value) : BackofficeDisplayLabels.EmailPending,
             emailConfirmed,
-            "var(--app)",
-            ""));
+            BackofficeCssTokens.LifecycleColorApplication,
+            string.Empty));
 
         var hasLogin = u.LastLoginAt.HasValue;
         steps.Add(new LifecycleStepViewModel(
-            "Last login",
-            hasLogin ? FormatDate(u.LastLoginAt!.Value) : "—",
+            BackofficeDisplayLabels.LastLogin,
+            hasLogin ? FormatDate(u.LastLoginAt!.Value) : BackofficeDisplayLabels.NoLoginDate,
             hasLogin,
-            "var(--dom)",
-            ""));
+            BackofficeCssTokens.LifecycleColorDomain,
+            string.Empty));
 
         steps.Add(u.State switch
         {
-            "locked" => new LifecycleStepViewModel(
-                "Locked out",
-                u.LockoutEndAt.HasValue ? FormatDate(u.LockoutEndAt!.Value) : "indefinite",
+            UserStates.Locked => new LifecycleStepViewModel(
+                BackofficeDisplayLabels.LockedOut,
+                u.LockoutEndAt.HasValue ? FormatDate(u.LockoutEndAt!.Value) : BackofficeDisplayLabels.LockoutIndefinite,
                 true,
-                "var(--danger)",
-                "423 until lockout expires"),
+                BackofficeCssTokens.LifecycleColorDanger,
+                BackofficeDisplayLabels.LockoutNote),
 
-            "deleted" => new LifecycleStepViewModel(
-                "Soft-deleted",
-                "account removed",
+            UserStates.Deleted => new LifecycleStepViewModel(
+                BackofficeDisplayLabels.SoftDeleted,
+                BackofficeDisplayLabels.SoftDeletedDate,
                 true,
-                "var(--text-faint)",
-                "row retained · email re-registerable"),
+                BackofficeCssTokens.LifecycleColorFaint,
+                BackofficeDisplayLabels.SoftDeletedNote),
 
-            "pending" => new LifecycleStepViewModel(
-                "Awaiting confirmation",
-                "blocked",
+            UserStates.Pending => new LifecycleStepViewModel(
+                BackofficeDisplayLabels.AwaitingConfirmation,
+                BackofficeDisplayLabels.AwaitingBlocked,
                 false,
-                "var(--warn)",
-                "403 until email confirmed"),
+                BackofficeCssTokens.LifecycleColorWarning,
+                BackofficeDisplayLabels.AwaitingNote),
 
-            _ => new LifecycleStepViewModel("Active session", "JWT valid", true, "var(--ok)", ""),
+            _ => new LifecycleStepViewModel(
+                BackofficeDisplayLabels.ActiveSession,
+                BackofficeDisplayLabels.ActiveSessionDate,
+                true,
+                BackofficeCssTokens.LifecycleColorOk,
+                string.Empty),
         });
 
         return steps;
