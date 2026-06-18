@@ -39,21 +39,21 @@ public sealed class DevController : ApiBaseController
             return NotFound();
 
         if (string.IsNullOrWhiteSpace(to))
-            return BadRequest(new { error = "Query parameter 'to' is required." });
+            return BadRequest(new { error = DevDefaults.ToQueryParamRequired });
 
         var smtp = _smtpOptions.Value;
 
         var placeholders = new Dictionary<string, string>
         {
-            ["UserName"] = "Developer",
-            ["ConfirmationUrl"] = "http://localhost:5237/dev/email-test",
+            ["UserName"]        = DevDefaults.TestEmailRecipientDisplayName,
+            ["ConfirmationUrl"] = DevDefaults.TestEmailConfirmationUrl,
         };
 
         var (html, text) = _renderer.Render(EmailTemplate.EmailConfirmation, placeholders);
 
         var message = new EmailMessage(
             To: to,
-            Subject: "AegisIdentity Mailpit Smoke Test",
+            Subject: DevDefaults.TestEmailSubject,
             HtmlBody: html,
             TextBody: text);
 
@@ -64,7 +64,7 @@ public sealed class DevController : ApiBaseController
             ok = true,
             to,
             smtp = $"{smtp.Host}:{smtp.Port}",
-            viewer = "http://localhost:8025",
+            viewer = DevDefaults.MailpitViewerUrl,
         });
     }
 }
