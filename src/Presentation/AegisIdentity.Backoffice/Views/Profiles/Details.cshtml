@@ -12,16 +12,6 @@
     var accent = Model.Profile.Name == "Administrator" ? "#8b6dff" : (Model.Profile.IsSystem ? "#5b6478" : "#4c8dff");
     var grantCount = Model.Profile.PermissionIds.Count;
 
-    string Method(string code)
-    {
-        var action = code.Contains('.') ? code.Split('.')[1] : code;
-        if (action is "Create" or "Assign" or "Register" or "Login") return "POST";
-        if (action is "Update" or "SetPermissions") return "PUT";
-        if (action is "Delete" or "Remove") return "DELETE";
-        return "GET";
-    }
-
-    string MethodColor(string m) => m switch { "POST" => "var(--pres)", "PUT" => "var(--warn)", "DELETE" => "var(--danger)", _ => "var(--app)" };
 }
 
 <div class="content-wrap">
@@ -101,7 +91,7 @@
                                 @foreach (var perm in group.Permissions)
                                 {
                                     var isOn = assignedIds.Contains(perm.Id);
-                                    var m = Method(perm.Code);
+                                    var m = PermissionDisplayHelper.HttpMethod(perm.Code);
                                     <button type="button"
                                             class="mperm @(isOn ? "on" : "") @(perm.IsOrphan ? "orphan" : "")"
                                             @(canEdit ? "" : "disabled")>
@@ -121,7 +111,7 @@
                                         else
                                         {
                                             <span class="knode-method mono"
-                                                  style="color:@MethodColor(m);border-color:@MethodColor(m)">@m</span>
+                                                  style="color:@PermissionDisplayHelper.MethodCssColor(m);border-color:@PermissionDisplayHelper.MethodCssColor(m)">@m</span>
                                         }
                                     </button>
                                 }

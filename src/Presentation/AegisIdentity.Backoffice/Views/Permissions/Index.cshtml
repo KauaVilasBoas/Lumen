@@ -8,17 +8,6 @@
     var all = Model.SelectMany(g => g.Permissions).ToList();
     var orphanCount = all.Count(p => p.IsOrphan);
 
-    string Method(string code)
-    {
-        var action = code.Contains('.') ? code.Split('.')[1] : code;
-        if (action is "Create" or "Assign" or "Register" or "Login") return "POST";
-        if (action is "Update" or "SetPermissions") return "PUT";
-        if (action is "Delete" or "Remove") return "DELETE";
-        return "GET";
-    }
-
-    string MethodColor(string m) => m switch { "POST" => "var(--pres)", "PUT" => "var(--warn)", "DELETE" => "var(--danger)", _ => "var(--app)" };
-
     string RouteFor(string code)
     {
         var parts = code.Split('.');
@@ -137,10 +126,10 @@
                             class="perm-group-count mono">@group.Permissions.Count</span></div>
                     @foreach (var p in group.Permissions)
                     {
-                        var m = Method(p.Code);
+                        var m = PermissionDisplayHelper.HttpMethod(p.Code);
                         <div class="perm-item @(p.IsOrphan ? "orphan" : "")">
                             <span class="perm-method mono"
-                                  style="color:@MethodColor(m);border-color:@MethodColor(m)">@m</span>
+                                  style="color:@PermissionDisplayHelper.MethodCssColor(m);border-color:@PermissionDisplayHelper.MethodCssColor(m)">@m</span>
                             <div class="perm-code-wrap"><span class="perm-code mono">@p.Code</span><span
                                     class="perm-route mono">@RouteFor(p.Code)</span></div>
                             <span class="perm-name">@p.DisplayName</span>
