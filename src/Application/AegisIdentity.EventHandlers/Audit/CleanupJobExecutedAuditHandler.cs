@@ -24,7 +24,7 @@ public sealed class CleanupJobExecutedAuditHandler : INotificationHandler<Cleanu
             kind: AuditEventKinds.JobCleanup,
             actor: null,
             target: null,
-            message: $"Job '{notification.JobName}' executed — {notification.DeletedCount} record(s) deleted.");
+            message: string.Format(AuditMessageTemplates.CleanupJobExecuted, notification.JobName, notification.DeletedCount));
 
         await _auditRepository.InsertAsync(entry, cancellationToken);
 

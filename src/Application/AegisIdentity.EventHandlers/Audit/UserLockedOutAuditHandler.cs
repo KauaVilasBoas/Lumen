@@ -24,7 +24,7 @@ public sealed class UserLockedOutAuditHandler : INotificationHandler<UserLockedO
             kind: AuditEventKinds.AuthLockout,
             actor: null,
             target: notification.Username,
-            message: $"Account '{notification.Username}' locked out after repeated failed login attempts.");
+            message: string.Format(AuditMessageTemplates.UserLockedOut, notification.Username));
 
         await _auditRepository.InsertAsync(entry, cancellationToken);
 

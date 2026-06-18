@@ -24,7 +24,7 @@ public sealed class UserLoggedInAuditHandler : INotificationHandler<UserLoggedIn
             kind: AuditEventKinds.AuthLogin,
             actor: notification.Username,
             target: null,
-            message: $"User '{notification.Username}' logged in.");
+            message: string.Format(AuditMessageTemplates.UserLoggedIn, notification.Username));
 
         await _auditRepository.InsertAsync(entry, cancellationToken);
 

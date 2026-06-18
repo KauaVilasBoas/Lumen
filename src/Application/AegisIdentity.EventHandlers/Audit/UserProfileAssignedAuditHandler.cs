@@ -24,7 +24,7 @@ public sealed class UserProfileAssignedAuditHandler : INotificationHandler<UserP
             kind: AuditEventKinds.UserProfileAssign,
             actor: null,
             target: notification.Username,
-            message: $"Profile '{notification.ProfileName}' assigned to user '{notification.Username}'.");
+            message: string.Format(AuditMessageTemplates.UserProfileAssigned, notification.ProfileName, notification.Username));
 
         await _auditRepository.InsertAsync(entry, cancellationToken);
 

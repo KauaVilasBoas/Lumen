@@ -25,7 +25,7 @@ public sealed class UserPermissionsChangedAuditHandler : INotificationHandler<Us
             kind: AuditEventKinds.CacheInvalidate,
             actor: null,
             target: notification.UserId.ToString(),
-            message: $"Permission cache invalidated for user '{notification.UserId}'.");
+            message: string.Format(AuditMessageTemplates.UserPermissionCacheInvalidated, notification.UserId));
 
         await _auditRepository.InsertAsync(entry, cancellationToken);
 

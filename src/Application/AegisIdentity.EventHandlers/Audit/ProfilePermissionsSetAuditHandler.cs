@@ -24,7 +24,7 @@ public sealed class ProfilePermissionsSetAuditHandler : INotificationHandler<Pro
             kind: AuditEventKinds.ProfilePermSet,
             actor: notification.ActorUsername,
             target: notification.ProfileName,
-            message: $"Permissions updated on profile '{notification.ProfileName}' by '{notification.ActorUsername}'.");
+            message: string.Format(AuditMessageTemplates.ProfilePermissionsUpdated, notification.ProfileName, notification.ActorUsername));
 
         await _auditRepository.InsertAsync(entry, cancellationToken);
 

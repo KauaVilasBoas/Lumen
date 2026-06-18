@@ -24,7 +24,7 @@ public sealed class UserProfileRemovedAuditHandler : INotificationHandler<UserPr
             kind: AuditEventKinds.UserProfileRemove,
             actor: null,
             target: notification.Username,
-            message: $"Profile '{notification.ProfileName}' removed from user '{notification.Username}'.");
+            message: string.Format(AuditMessageTemplates.UserProfileRemoved, notification.ProfileName, notification.Username));
 
         await _auditRepository.InsertAsync(entry, cancellationToken);
 
