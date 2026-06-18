@@ -1,4 +1,5 @@
 using AegisIdentity.Backoffice.Services;
+using AegisIdentity.SharedKernel.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -36,7 +37,7 @@ public sealed class UserProfilesController : BackofficeBaseController
         var (success, error) = await _adminApiClient.AssignUserProfileAsync(userId, profileId, ct);
 
         if (!success)
-            TempData["Error"] = error ?? "Erro ao atribuir perfil.";
+            TempData["Error"] = error ?? BackofficeErrorMessages.AssignProfileError;
 
         return RedirectToAction(nameof(Index), new { userId });
     }
@@ -48,7 +49,7 @@ public sealed class UserProfilesController : BackofficeBaseController
         var (success, error) = await _adminApiClient.RemoveUserProfileAsync(userId, profileId, ct);
 
         if (!success)
-            TempData["Error"] = error ?? "Erro ao remover perfil.";
+            TempData["Error"] = error ?? BackofficeErrorMessages.RemoveProfileError;
 
         return RedirectToAction(nameof(Index), new { userId });
     }

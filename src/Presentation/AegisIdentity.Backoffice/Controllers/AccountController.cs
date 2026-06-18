@@ -56,19 +56,19 @@ public sealed class AccountController : Controller
                 return LocalRedirect(returnUrl ?? "/");
 
             case AuthApiClient.LoginResult.InvalidCredentials:
-                ModelState.AddModelError(string.Empty, "Identificador ou senha inválidos.");
+                ModelState.AddModelError(string.Empty, BackofficeErrorMessages.InvalidCredentials);
                 break;
 
             case AuthApiClient.LoginResult.EmailNotConfirmed:
-                ModelState.AddModelError(string.Empty, "Confirme seu endereço de email antes de acessar o backoffice.");
+                ModelState.AddModelError(string.Empty, BackofficeErrorMessages.EmailNotConfirmed);
                 break;
 
             case AuthApiClient.LoginResult.AccountLocked:
-                ModelState.AddModelError(string.Empty, "Conta temporariamente bloqueada por tentativas excessivas. Tente novamente mais tarde.");
+                ModelState.AddModelError(string.Empty, BackofficeErrorMessages.AccountLocked);
                 break;
 
             default:
-                ModelState.AddModelError(string.Empty, "Erro ao comunicar com a Api. Tente novamente.");
+                ModelState.AddModelError(string.Empty, BackofficeErrorMessages.ApiCommunicationError);
                 break;
         }
 

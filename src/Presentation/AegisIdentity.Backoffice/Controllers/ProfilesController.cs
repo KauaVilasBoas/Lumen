@@ -1,4 +1,5 @@
 using AegisIdentity.Backoffice.Services;
+using AegisIdentity.SharedKernel.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -49,7 +50,7 @@ public sealed class ProfilesController : BackofficeBaseController
 
         if (!success)
         {
-            ModelState.AddModelError(string.Empty, error ?? "Erro ao criar perfil.");
+            ModelState.AddModelError(string.Empty, error ?? BackofficeErrorMessages.CreateProfileError);
             return View(form);
         }
 
@@ -82,7 +83,7 @@ public sealed class ProfilesController : BackofficeBaseController
 
         if (!success)
         {
-            ModelState.AddModelError(string.Empty, error ?? "Erro ao atualizar perfil.");
+            ModelState.AddModelError(string.Empty, error ?? BackofficeErrorMessages.UpdateProfileError);
             return View(form);
         }
 
@@ -96,7 +97,7 @@ public sealed class ProfilesController : BackofficeBaseController
         var (success, error) = await _adminApiClient.DeleteProfileAsync(id, ct);
 
         if (!success)
-            TempData["Error"] = error ?? "Erro ao remover perfil.";
+            TempData["Error"] = error ?? BackofficeErrorMessages.DeleteProfileError;
 
         return RedirectToAction(nameof(Index));
     }
@@ -111,7 +112,7 @@ public sealed class ProfilesController : BackofficeBaseController
         var (success, error) = await _adminApiClient.SetProfilePermissionsAsync(id, selectedPermissionIds, ct);
 
         if (!success)
-            TempData["Error"] = error ?? "Erro ao definir permissões do perfil.";
+            TempData["Error"] = error ?? BackofficeErrorMessages.SetPermissionsError;
 
         return RedirectToAction(nameof(Details), new { id });
     }
