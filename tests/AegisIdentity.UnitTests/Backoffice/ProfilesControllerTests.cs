@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using AegisIdentity.Backoffice.Controllers;
 using AegisIdentity.Backoffice.Services;
+using AegisIdentity.Backoffice.ViewModels;
 using AegisIdentity.UnitTests.Infrastructure.Security;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
@@ -123,8 +124,9 @@ public sealed class ProfilesControllerTests
 
         result.Should().BeOfType<ViewResult>();
         var view = (ViewResult)result;
-        view.Model.Should().BeEquivalentTo(profile);
-        view.ViewData["AllPermissions"].Should().NotBeNull();
+        var vm = view.Model.Should().BeOfType<ProfileDetailViewModel>().Subject;
+        vm.Profile.Should().BeEquivalentTo(profile);
+        vm.AllPermissions.Should().NotBeNull();
     }
 
     [Fact]
@@ -158,8 +160,8 @@ public sealed class ProfilesControllerTests
 
         result.Should().BeOfType<ViewResult>();
         var view = (ViewResult)result;
-        var perms = view.ViewData["AllPermissions"] as IReadOnlyList<AdminApiClient.PermissionGroup>;
-        perms.Should().BeEmpty();
+        var vm = view.Model.Should().BeOfType<ProfileDetailViewModel>().Subject;
+        vm.AllPermissions.Should().BeEmpty();
     }
 
     [Fact]
