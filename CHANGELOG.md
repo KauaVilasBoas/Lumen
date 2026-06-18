@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (REFACTOR-03 — Onda 6: constants cleanup)
+- **EmailLinkPaths**: added `EmailLinkPaths.ConfirmEmail` and `ResetPassword` constants; replaced 3 hardcoded `/api/auth/confirm-email` and 1 `/api/auth/reset-password` URL path literals in `RegisterUserCommandHandler`, `ResendConfirmationEmailCommandHandler`, `UpdateUserCommandHandler` and `ForgotPasswordCommandHandler`.
+- **ValidationLimits**: added `UsernameAllowedCharsPattern` (`^[a-zA-Z0-9_-]+$`) and `UserRestoreWindowDays` (30) constants; replaced duplicate regex literals in `RegisterUserCommandHandler` and `UpdateUserCommandHandler` validators.
+- **SystemActorNames**: added `SystemActorNames.SystemActor = "system"` constant; replaced `"system"` literal in `SetProfilePermissionsCommandHandler` fallback actor.
+- **BackofficeErrorMessages**: new class with PT-BR messages for login failures and profile CRUD fallbacks; replaced 4 hardcoded strings in `AccountController`, 4 in `ProfilesController` and 2 in `UserProfilesController`.
+- **AuditMessageTemplates**: new class with parameterized audit message templates; replaced all inline interpolated strings in `UserLoggedInAuditHandler`, `UserLockedOutAuditHandler`, `ProfilePermissionsSetAuditHandler`, `UserProfileAssignedAuditHandler`, `UserProfileRemovedAuditHandler`, `UserPermissionsChangedAuditHandler` and `CleanupJobExecutedAuditHandler`.
+- **ProfileDetailViewModel / UserProfilesViewModel**: added two strongly-typed ViewModels to replace `ViewData["AllPermissions"]`, `ViewData["UserId"]` and `ViewData["AvailableProfiles"]` type-unsafe entries in `ProfilesController.Details` and `UserProfilesController.Index`; updated `Views/Profiles/Details.cshtml` and `Views/UserProfiles/Index.cshtml` accordingly.
+- **PermissionDisplayHelper**: new static helper in `AegisIdentity.Backoffice.Helpers` with `HttpMethod` and `MethodCssColor`; removed duplicate inline Razor functions from `Views/Permissions/Index.cshtml` and `Views/Profiles/Details.cshtml`.
+- **BackofficeDisplayLabels / BackofficeCssTokens**: extracted all lifecycle step labels, date placeholders and CSS color tokens from `UserViewModelBuilder` into dedicated constants classes; also replaced `profile.Name == "Administrator"` comparison with `SystemProfiles.AdministratorId` and literal state strings with `UserStates` constants.
+- **DiagnosticsDefaults / RedisInfoKeys / HangfireStorageKeys**: new constants in SharedKernel; removed `DashboardSeriesDays` private const from `DiagnosticsController`; replaced `"stats"`, `"keyspace_hits"`, `"keyspace_misses"` and `"NextExecution"` literals.
+- **NetworkDefaults.UnknownIpAddress**: replaced `"unknown"` fallback literal in `ApiBaseController.GetClientIpAddress`.
+- **AuthErrorMessages**: added `CannotDeleteBootstrapUser`, `CannotDeleteLastAdministrator`, `UserNotDeleted` and `UserRestoreWindowExpired` (now a `{0}`-days template replacing the hardcoded `"30 dias"` string).
+- **DevDefaults**: internal class in `AegisIdentity.Api.Controllers.Dev` with dev-only test email constants; replaced 5 hardcoded strings in `DevController`.
+
 ## [0.3.0] - 2026-06-15
 
 ### Added (REFACTOR-01 — BaseController hierarchy)
