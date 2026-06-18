@@ -36,7 +36,7 @@ public sealed class UpdateUserCommandHandler
                     .WithMessage(string.Format(AuthErrorMessages.UsernameTooShort, ValidationLimits.UsernameMinLength))
                 .MaximumLength(ValidationLimits.UsernameMaxLength)
                     .WithMessage(string.Format(AuthErrorMessages.UsernameTooLong, ValidationLimits.UsernameMaxLength))
-                .Matches("^[a-zA-Z0-9_-]+$")
+                .Matches(ValidationLimits.UsernameAllowedCharsPattern)
                     .WithMessage(AuthErrorMessages.UsernameInvalidChars)
                 .When(x => !string.IsNullOrWhiteSpace(x.NewUsername));
         }
@@ -154,7 +154,7 @@ public sealed class UpdateUserCommandHandler
         await _tokenRepository.InsertAsync(confirmationToken, ct);
 
         var confirmationUrl =
-            $"{_appSettings.BaseUrl}/api/auth/confirm-email?token={Uri.EscapeDataString(rawToken)}";
+            $"{_appSettings.BaseUrl}{EmailLinkPaths.ConfirmEmail}?token={Uri.EscapeDataString(rawToken)}";
 
         var placeholders = new Dictionary<string, string>
         {

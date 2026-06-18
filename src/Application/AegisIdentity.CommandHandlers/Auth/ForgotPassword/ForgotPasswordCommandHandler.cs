@@ -85,7 +85,7 @@ public sealed class ForgotPasswordCommandHandler
         await _tokenRepository.InsertAsync(resetToken, ct);
 
         var resetUrl =
-            $"{_appSettings.BaseUrl}/api/auth/reset-password?token={Uri.EscapeDataString(rawToken)}";
+            $"{_appSettings.BaseUrl}{EmailLinkPaths.ResetPassword}?token={Uri.EscapeDataString(rawToken)}";
 
         var placeholders = new Dictionary<string, string>
         {

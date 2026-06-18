@@ -14,4 +14,8 @@ public static class ValidationLimits
     public const int AuditTakeMinValue = 1;
     public const int AuditTakeMaxValue = 100;
     public const int AuditTakeDefaultValue = 20;
+
+    public const int UserRestoreWindowDays = 30;
+
+    public const string UsernameAllowedCharsPattern = "^[a-zA-Z0-9_-]+$";
 }

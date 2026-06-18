@@ -75,7 +75,7 @@ public sealed class ResendConfirmationEmailCommandHandler
         await _tokenRepository.InsertAsync(confirmationToken, ct);
 
         var confirmationUrl =
-            $"{_appSettings.BaseUrl}/api/auth/confirm-email?token={Uri.EscapeDataString(rawToken)}";
+            $"{_appSettings.BaseUrl}{EmailLinkPaths.ConfirmEmail}?token={Uri.EscapeDataString(rawToken)}";
 
         var placeholders = new Dictionary<string, string>
         {
