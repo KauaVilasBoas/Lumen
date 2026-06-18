@@ -1,5 +1,6 @@
 using AegisIdentity.Domain.Audit;
 using AegisIdentity.Domain.Authorization;
+using AegisIdentity.SharedKernel.Constants;
 using AegisIdentity.SharedKernel.Exceptions;
 using FluentValidation;
 using MediatR;
@@ -89,6 +90,6 @@ public sealed class SetProfilePermissionsCommandHandler
         foreach (var userId in affectedUserIds)
             await _publisher.Publish(new UserPermissionsChanged(userId), ct);
 
-        await _publisher.Publish(new ProfilePermissionsSet(cmd.ProfileId, profile.Name, cmd.ActorUsername ?? "system"), ct);
+        await _publisher.Publish(new ProfilePermissionsSet(cmd.ProfileId, profile.Name, cmd.ActorUsername ?? SystemActorNames.SystemActor), ct);
     }
 }
