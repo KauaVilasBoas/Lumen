@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using AegisIdentity.SharedKernel.Constants;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AegisIdentity.Api.Controllers;
@@ -22,7 +23,7 @@ public abstract class ApiBaseController : ControllerBase
     }
 
     protected string GetClientIpAddress()
-        => HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        => HttpContext.Connection.RemoteIpAddress?.ToString() ?? NetworkDefaults.UnknownIpAddress;
 
     protected string GetActorIdentifier()
         => User.Identity?.Name
