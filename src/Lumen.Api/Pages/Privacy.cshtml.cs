@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace Lumen.Backoffice.Pages;
+namespace Lumen.Api.Pages;
 
 [AllowAnonymous]
 public class PrivacyModel : PageModel
