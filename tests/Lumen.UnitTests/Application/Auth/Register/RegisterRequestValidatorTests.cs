@@ -1,8 +1,8 @@
-using AegisIdentity.CommandHandlers.Auth.Register;
+using Lumen.CommandHandlers.Auth.Register;
 using FluentAssertions;
 using FluentValidation.TestHelper;
 
-namespace AegisIdentity.UnitTests.Application.Auth.Register;
+namespace Lumen.UnitTests.Application.Auth.Register;
 
 public sealed class RegisterRequestValidatorTests
 {

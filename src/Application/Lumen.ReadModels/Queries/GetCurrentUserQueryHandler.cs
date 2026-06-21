@@ -1,8 +1,8 @@
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.Domain.Users;
+using Lumen.Domain.Authorization;
+using Lumen.Domain.Users;
 using MediatR;
 
-namespace AegisIdentity.ReadModels.Queries;
+namespace Lumen.ReadModels.Queries;
 
 public sealed class GetCurrentUserQueryHandler
     : IRequestHandler<GetCurrentUserQueryHandler.Query, GetCurrentUserQueryHandler.Result?>

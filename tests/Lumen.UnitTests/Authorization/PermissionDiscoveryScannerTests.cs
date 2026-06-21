@@ -1,13 +1,13 @@
 using System.Reflection;
-using AegisIdentity.Api.Authorization;
-using AegisIdentity.SharedKernel.Authorization;
+using Lumen.Api.Authorization;
+using Lumen.SharedKernel.Authorization;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using NSubstitute;
 
-namespace AegisIdentity.UnitTests.Authorization;
+namespace Lumen.UnitTests.Authorization;
 
 public sealed class PermissionDiscoveryScannerTests
 {

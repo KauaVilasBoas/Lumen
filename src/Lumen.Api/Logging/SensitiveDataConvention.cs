@@ -1,4 +1,4 @@
-namespace AegisIdentity.Api.Logging;
+namespace Lumen.Api.Logging;
 
 /// <summary>
 /// Fields that must never appear as structured log arguments. Enforcement is by code review.

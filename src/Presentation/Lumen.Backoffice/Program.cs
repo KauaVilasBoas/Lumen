@@ -1,11 +1,11 @@
-using AegisIdentity.Backoffice.Configuration;
-using AegisIdentity.Backoffice.Middleware;
-using AegisIdentity.Backoffice.Services;
-using AegisIdentity.DataAccess.Cache;
-using AegisIdentity.DataAccess.Persistence;
-using AegisIdentity.Infrastructure.Configuration;
-using AegisIdentity.Jobs.Configuration;
-using AegisIdentity.Jobs.Dashboard;
+using Lumen.Backoffice.Configuration;
+using Lumen.Backoffice.Middleware;
+using Lumen.Backoffice.Services;
+using Lumen.DataAccess.Cache;
+using Lumen.DataAccess.Persistence;
+using Lumen.Infrastructure.Configuration;
+using Lumen.Jobs.Configuration;
+using Lumen.Jobs.Dashboard;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
@@ -24,7 +24,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddSqlServerOptions(builder.Configuration);
 
 // ── Backoffice-specific options ───────────────────────────────────────────────
-// Api:BaseUrl — the upstream AegisIdentity API this host proxies calls to.
+// Api:BaseUrl — the upstream Lumen API this host proxies calls to.
 // Validated on startup so a missing/empty value fails fast before serving traffic.
 builder.Services
     .AddOptions<BackofficeApiOptions>()
@@ -64,7 +64,7 @@ builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
-        options.Cookie.Name = "AegisIdentity.Backoffice.Auth";
+        options.Cookie.Name = "Lumen.Backoffice.Auth";
         options.Cookie.HttpOnly = true;
         // SameAsRequest: HTTP in dev, HTTPS in prod behind a TLS terminator.
         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;

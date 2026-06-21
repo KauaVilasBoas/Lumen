@@ -1,12 +1,12 @@
-using AegisIdentity.Domain.Security;
-using AegisIdentity.Infrastructure.Configuration;
-using AegisIdentity.SharedKernel.Constants;
+using Lumen.Domain.Security;
+using Lumen.Infrastructure.Configuration;
+using Lumen.SharedKernel.Constants;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
-namespace AegisIdentity.Infrastructure.Security;
+namespace Lumen.Infrastructure.Security;
 
 public static class SecurityServiceExtensions
 {

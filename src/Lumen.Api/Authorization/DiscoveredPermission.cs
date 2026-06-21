@@ -1,4 +1,4 @@
-namespace AegisIdentity.Api.Authorization;
+namespace Lumen.Api.Authorization;
 
 public sealed record DiscoveredPermission(
     string Controller,

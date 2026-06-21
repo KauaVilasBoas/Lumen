@@ -1,10 +1,10 @@
-using AegisIdentity.CommandHandlers.Behaviors;
+using Lumen.CommandHandlers.Behaviors;
 using FluentAssertions;
 using FluentValidation;
 using MediatR;
 using NSubstitute;
 
-namespace AegisIdentity.UnitTests.Application.Behaviors;
+namespace Lumen.UnitTests.Application.Behaviors;
 
 public sealed class ValidationBehaviorTests
 {

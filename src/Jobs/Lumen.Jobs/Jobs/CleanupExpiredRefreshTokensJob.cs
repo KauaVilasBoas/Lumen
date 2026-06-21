@@ -1,11 +1,11 @@
-using AegisIdentity.Domain.Audit;
-using AegisIdentity.Domain.Tokens;
-using AegisIdentity.Jobs.Contracts;
-using AegisIdentity.SharedKernel.Constants;
+using Lumen.Domain.Audit;
+using Lumen.Domain.Tokens;
+using Lumen.Jobs.Contracts;
+using Lumen.SharedKernel.Constants;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
-namespace AegisIdentity.Jobs.Jobs;
+namespace Lumen.Jobs.Jobs;
 
 public sealed class CleanupExpiredRefreshTokensJob : IJobDefinition
 {

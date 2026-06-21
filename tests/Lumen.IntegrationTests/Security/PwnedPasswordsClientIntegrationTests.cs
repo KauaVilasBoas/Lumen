@@ -1,10 +1,10 @@
 using System.Net.Http.Headers;
-using AegisIdentity.Integration.Security;
+using Lumen.Integration.Security;
 using FluentAssertions;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace AegisIdentity.IntegrationTests.Security;
+namespace Lumen.IntegrationTests.Security;
 
 // Hits the real HaveIBeenPwned API. Excluded from default runs via the ExternalApi trait so CI
 // stays deterministic; run explicitly with:
@@ -27,7 +27,7 @@ public sealed class PwnedPasswordsClientIntegrationTests
     {
         var client = CreateLiveClient();
         // Cryptographically unique value generated per test run — practically guaranteed to be absent from breaches.
-        var password = "AegisIdentity-Test-" + Guid.NewGuid().ToString("N");
+        var password = "Lumen-Test-" + Guid.NewGuid().ToString("N");
 
         var result = await client.IsPwnedAsync(password);
 
@@ -42,7 +42,7 @@ public sealed class PwnedPasswordsClientIntegrationTests
             Timeout = TimeSpan.FromSeconds(10),
         };
 
-        httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("AegisIdentity-IntegrationTests/1.0");
+        httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("Lumen-IntegrationTests/1.0");
         httpClient.DefaultRequestHeaders.Add("Add-Padding", "true");
         httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("text/plain"));
 

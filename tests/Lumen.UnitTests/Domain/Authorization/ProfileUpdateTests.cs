@@ -1,7 +1,7 @@
 using FluentAssertions;
-using DomainProfile = AegisIdentity.Domain.Authorization.Profile;
+using DomainProfile = Lumen.Domain.Authorization.Profile;
 
-namespace AegisIdentity.UnitTests.Domain.Authorization;
+namespace Lumen.UnitTests.Domain.Authorization;
 
 public sealed class ProfileUpdateTests
 {

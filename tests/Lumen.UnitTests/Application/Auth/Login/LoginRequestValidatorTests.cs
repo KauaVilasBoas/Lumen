@@ -1,8 +1,8 @@
-using AegisIdentity.CommandHandlers.Auth.Login;
+using Lumen.CommandHandlers.Auth.Login;
 using FluentAssertions;
 using FluentValidation.TestHelper;
 
-namespace AegisIdentity.UnitTests.Application.Auth.Login;
+namespace Lumen.UnitTests.Application.Auth.Login;
 
 public sealed class LoginRequestValidatorTests
 {

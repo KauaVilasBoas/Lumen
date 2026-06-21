@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using System.Reflection;
 
-namespace AegisIdentity.Integration.Notifications;
+namespace Lumen.Integration.Notifications;
 
 // Renders email bodies by loading embedded .html/.txt templates and replacing
 // `{{Placeholder}}` tokens with caller-supplied values. Razor was rejected for the
@@ -10,7 +10,7 @@ namespace AegisIdentity.Integration.Notifications;
 public sealed class EmailTemplateRenderer
 {
     private static readonly Assembly TemplateAssembly = typeof(EmailTemplateRenderer).Assembly;
-    private const string ResourceNamespace = "AegisIdentity.Integration.Templates.Email";
+    private const string ResourceNamespace = "Lumen.Integration.Templates.Email";
 
     // Embedded resources never change between calls; cache the raw content per resource name.
     private static readonly ConcurrentDictionary<string, string> ContentCache = new();

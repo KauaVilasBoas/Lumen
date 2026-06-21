@@ -1,8 +1,8 @@
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.SharedKernel.Constants;
+using Lumen.Domain.Authorization;
+using Lumen.SharedKernel.Constants;
 using Microsoft.Extensions.Logging;
 
-namespace AegisIdentity.Api.Authorization;
+namespace Lumen.Api.Authorization;
 
 public sealed class AdministratorPermissionReconciliationService
 {

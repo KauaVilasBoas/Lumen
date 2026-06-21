@@ -1,6 +1,6 @@
-using AegisIdentity.Backoffice.Services;
+using Lumen.Backoffice.Services;
 
-namespace AegisIdentity.Backoffice.ViewModels;
+namespace Lumen.Backoffice.ViewModels;
 
 public sealed record UserProfilesViewModel(
     Guid UserId,

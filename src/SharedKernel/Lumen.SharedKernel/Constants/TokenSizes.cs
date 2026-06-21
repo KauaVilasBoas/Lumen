@@ -1,4 +1,4 @@
-namespace AegisIdentity.SharedKernel.Constants;
+namespace Lumen.SharedKernel.Constants;
 
 /// <summary>
 /// Byte lengths used when generating cryptographically-random tokens.

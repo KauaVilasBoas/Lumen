@@ -1,4 +1,4 @@
-namespace AegisIdentity.SharedKernel.Authorization;
+namespace Lumen.SharedKernel.Authorization;
 
 public static class ControllerNameNormalizer
 {

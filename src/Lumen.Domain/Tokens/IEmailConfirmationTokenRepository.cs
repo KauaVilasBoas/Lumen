@@ -1,4 +1,4 @@
-namespace AegisIdentity.Domain.Tokens;
+namespace Lumen.Domain.Tokens;
 
 public interface IEmailConfirmationTokenRepository
 {

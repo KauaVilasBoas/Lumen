@@ -1,9 +1,9 @@
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.Domain.Users;
-using AegisIdentity.ReadModels.Users;
+using Lumen.Domain.Authorization;
+using Lumen.Domain.Users;
+using Lumen.ReadModels.Users;
 using MediatR;
 
-namespace AegisIdentity.ReadModels.Queries;
+namespace Lumen.ReadModels.Queries;
 
 public sealed class GetAuthorizationGraphQueryHandler
     : IRequestHandler<GetAuthorizationGraphQueryHandler.Query, GetAuthorizationGraphQueryHandler.GraphSnapshot>

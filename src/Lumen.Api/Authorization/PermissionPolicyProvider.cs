@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 
-namespace AegisIdentity.Api.Authorization;
+namespace Lumen.Api.Authorization;
 
 public sealed class PermissionPolicyProvider : IAuthorizationPolicyProvider
 {

@@ -1,4 +1,4 @@
-namespace AegisIdentity.Backoffice.Helpers;
+namespace Lumen.Backoffice.Helpers;
 
 public static class PermissionDisplayHelper
 {

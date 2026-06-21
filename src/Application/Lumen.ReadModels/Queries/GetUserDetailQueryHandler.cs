@@ -1,10 +1,10 @@
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.Domain.Users;
-using AegisIdentity.ReadModels.Users;
-using AegisIdentity.SharedKernel.Exceptions;
+using Lumen.Domain.Authorization;
+using Lumen.Domain.Users;
+using Lumen.ReadModels.Users;
+using Lumen.SharedKernel.Exceptions;
 using MediatR;
 
-namespace AegisIdentity.ReadModels.Queries;
+namespace Lumen.ReadModels.Queries;
 
 public sealed class GetUserDetailQueryHandler
     : IRequestHandler<GetUserDetailQueryHandler.Query, GetUserDetailQueryHandler.Result>

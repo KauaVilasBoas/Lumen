@@ -1,11 +1,11 @@
-using AegisIdentity.Domain.Notifications;
-using AegisIdentity.Infrastructure.Configuration;
+using Lumen.Domain.Notifications;
+using Lumen.Infrastructure.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MimeKit;
 using MimeKit.Text;
 
-namespace AegisIdentity.Integration.Notifications;
+namespace Lumen.Integration.Notifications;
 
 public sealed class MailKitEmailService : IEmailService
 {

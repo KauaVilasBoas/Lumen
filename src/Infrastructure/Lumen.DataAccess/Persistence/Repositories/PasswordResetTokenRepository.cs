@@ -1,13 +1,13 @@
-using AegisIdentity.Domain.Tokens;
+using Lumen.Domain.Tokens;
 using Microsoft.EntityFrameworkCore;
 
-namespace AegisIdentity.DataAccess.Persistence.Repositories;
+namespace Lumen.DataAccess.Persistence.Repositories;
 
 internal sealed class PasswordResetTokenRepository : IPasswordResetTokenRepository
 {
-    private readonly AegisIdentityDbContext _dbContext;
+    private readonly LumenDbContext _dbContext;
 
-    public PasswordResetTokenRepository(AegisIdentityDbContext dbContext)
+    public PasswordResetTokenRepository(LumenDbContext dbContext)
     {
         _dbContext = dbContext;
     }

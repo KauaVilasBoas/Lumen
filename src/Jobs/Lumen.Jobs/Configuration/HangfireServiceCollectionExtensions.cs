@@ -1,13 +1,13 @@
-using AegisIdentity.Infrastructure.Configuration;
-using AegisIdentity.Jobs.Contracts;
-using AegisIdentity.Jobs.Dashboard;
+using Lumen.Infrastructure.Configuration;
+using Lumen.Jobs.Contracts;
+using Lumen.Jobs.Dashboard;
 using Hangfire;
 using Hangfire.SqlServer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
-namespace AegisIdentity.Jobs.Configuration;
+namespace Lumen.Jobs.Configuration;
 
 public static class HangfireServiceCollectionExtensions
 {

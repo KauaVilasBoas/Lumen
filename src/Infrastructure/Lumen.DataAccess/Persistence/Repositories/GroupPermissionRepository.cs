@@ -1,13 +1,13 @@
-using AegisIdentity.Domain.Authorization;
+using Lumen.Domain.Authorization;
 using Microsoft.EntityFrameworkCore;
 
-namespace AegisIdentity.DataAccess.Persistence.Repositories;
+namespace Lumen.DataAccess.Persistence.Repositories;
 
 internal sealed class GroupPermissionRepository : IGroupPermissionRepository
 {
-    private readonly AegisIdentityDbContext _dbContext;
+    private readonly LumenDbContext _dbContext;
 
-    public GroupPermissionRepository(AegisIdentityDbContext dbContext)
+    public GroupPermissionRepository(LumenDbContext dbContext)
     {
         _dbContext = dbContext;
     }

@@ -1,8 +1,8 @@
-using AegisIdentity.CommandHandlers.Auth.ResetPassword;
+using Lumen.CommandHandlers.Auth.ResetPassword;
 using FluentAssertions;
 using FluentValidation.TestHelper;
 
-namespace AegisIdentity.UnitTests.Application.Auth.ResetPassword;
+namespace Lumen.UnitTests.Application.Auth.ResetPassword;
 
 public sealed class ResetPasswordRequestValidatorTests
 {

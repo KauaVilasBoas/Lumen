@@ -1,12 +1,12 @@
 using System.Net;
 using System.Net.WebSockets;
 using System.Security.Claims;
-using AegisIdentity.Backoffice.Configuration;
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.SharedKernel.Constants;
+using Lumen.Backoffice.Configuration;
+using Lumen.Domain.Authorization;
+using Lumen.SharedKernel.Constants;
 using Microsoft.Extensions.Options;
 
-namespace AegisIdentity.Backoffice.Middleware;
+namespace Lumen.Backoffice.Middleware;
 
 public sealed class AuthorizationGraphProxyMiddleware
 {

@@ -1,13 +1,13 @@
-using AegisIdentity.DataAccess.Persistence;
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.Domain.Users;
+using Lumen.DataAccess.Persistence;
+using Lumen.Domain.Authorization;
+using Lumen.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 
-namespace AegisIdentity.IntegrationTests.Infrastructure;
+namespace Lumen.IntegrationTests.Infrastructure;
 
 internal static class AuthorizationSeeder
 {
-    internal static async Task<User> EnsureUserAsync(AegisIdentityDbContext db, Guid userId)
+    internal static async Task<User> EnsureUserAsync(LumenDbContext db, Guid userId)
     {
         var existing = await db.Users
             .IgnoreQueryFilters()
@@ -24,7 +24,7 @@ internal static class AuthorizationSeeder
         return user;
     }
 
-    internal static async Task EnsurePermissionAsync(AegisIdentityDbContext db, string permissionCode)
+    internal static async Task EnsurePermissionAsync(LumenDbContext db, string permissionCode)
     {
         if (await db.Permissions.AnyAsync(p => p.Code == permissionCode))
             return;
@@ -35,7 +35,7 @@ internal static class AuthorizationSeeder
     }
 
     internal static async Task SeedUserWithPermissionAsync(
-        AegisIdentityDbContext db,
+        LumenDbContext db,
         IUserPermissionCache permissionCache,
         Guid userId,
         string permissionCode)

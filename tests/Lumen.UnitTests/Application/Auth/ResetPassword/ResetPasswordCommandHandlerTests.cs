@@ -1,15 +1,15 @@
-using AegisIdentity.CommandHandlers.Auth.ResetPassword;
-using AegisIdentity.Domain.Notifications;
-using AegisIdentity.Domain.Security;
-using AegisIdentity.Domain.Tokens;
-using AegisIdentity.Domain.Users;
-using AegisIdentity.SharedKernel.Exceptions;
-using AegisIdentity.SharedKernel.Util;
+using Lumen.CommandHandlers.Auth.ResetPassword;
+using Lumen.Domain.Notifications;
+using Lumen.Domain.Security;
+using Lumen.Domain.Tokens;
+using Lumen.Domain.Users;
+using Lumen.SharedKernel.Exceptions;
+using Lumen.SharedKernel.Util;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 
-namespace AegisIdentity.UnitTests.Application.Auth.ResetPassword;
+namespace Lumen.UnitTests.Application.Auth.ResetPassword;
 
 public sealed class ResetPasswordCommandHandlerTests
 {

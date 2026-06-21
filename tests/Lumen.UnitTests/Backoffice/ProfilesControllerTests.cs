@@ -1,16 +1,16 @@
 using System.Net;
 using System.Text.Json;
-using AegisIdentity.Backoffice.Controllers;
-using AegisIdentity.Backoffice.Services;
-using AegisIdentity.Backoffice.ViewModels;
-using AegisIdentity.UnitTests.Infrastructure.Security;
+using Lumen.Backoffice.Controllers;
+using Lumen.Backoffice.Services;
+using Lumen.Backoffice.ViewModels;
+using Lumen.UnitTests.Infrastructure.Security;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using NSubstitute;
 
-namespace AegisIdentity.UnitTests.Backoffice;
+namespace Lumen.UnitTests.Backoffice;
 
 public sealed class ProfilesControllerTests
 {

@@ -1,12 +1,12 @@
-using AegisIdentity.CommandHandlers.Users.Update;
-using AegisIdentity.ReadModels.Queries;
-using AegisIdentity.SharedKernel.Authorization;
-using AegisIdentity.SharedKernel.Constants;
+using Lumen.CommandHandlers.Users.Update;
+using Lumen.ReadModels.Queries;
+using Lumen.SharedKernel.Authorization;
+using Lumen.SharedKernel.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AegisIdentity.Api.Controllers;
+namespace Lumen.Api.Controllers;
 
 [Route("api/users")]
 [PermissionGroup(PermissionGroups.Users)]

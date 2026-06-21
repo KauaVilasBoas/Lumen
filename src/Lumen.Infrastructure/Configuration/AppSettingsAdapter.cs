@@ -1,7 +1,7 @@
-using AegisIdentity.Domain.Configuration;
+using Lumen.Domain.Configuration;
 using Microsoft.Extensions.Options;
 
-namespace AegisIdentity.Infrastructure.Configuration;
+namespace Lumen.Infrastructure.Configuration;
 
 // Bridges AppOptions (Infrastructure) to IAppSettings (Application) so that
 // use cases can consume configuration values without referencing IOptions<T>.

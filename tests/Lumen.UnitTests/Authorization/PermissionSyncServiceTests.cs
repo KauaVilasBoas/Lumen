@@ -1,10 +1,10 @@
-using AegisIdentity.Api.Authorization;
-using AegisIdentity.Domain.Authorization;
+using Lumen.Api.Authorization;
+using Lumen.Domain.Authorization;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 
-namespace AegisIdentity.UnitTests.Authorization;
+namespace Lumen.UnitTests.Authorization;
 
 public sealed class PermissionSyncServiceTests
 {

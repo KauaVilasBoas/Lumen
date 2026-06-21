@@ -1,11 +1,11 @@
-using AegisIdentity.Domain.Audit;
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.Domain.Users;
-using AegisIdentity.SharedKernel.Exceptions;
+using Lumen.Domain.Audit;
+using Lumen.Domain.Authorization;
+using Lumen.Domain.Users;
+using Lumen.SharedKernel.Exceptions;
 using FluentValidation;
 using MediatR;
 
-namespace AegisIdentity.CommandHandlers.UserProfiles.AssignUserProfile;
+namespace Lumen.CommandHandlers.UserProfiles.AssignUserProfile;
 
 public sealed class AssignUserProfileCommandHandler
     : IRequestHandler<AssignUserProfileCommandHandler.Command>

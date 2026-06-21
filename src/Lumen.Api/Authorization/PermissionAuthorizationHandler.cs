@@ -1,8 +1,8 @@
 using System.Security.Claims;
-using AegisIdentity.Domain.Authorization;
+using Lumen.Domain.Authorization;
 using Microsoft.AspNetCore.Authorization;
 
-namespace AegisIdentity.Api.Authorization;
+namespace Lumen.Api.Authorization;
 
 public sealed class PermissionAuthorizationHandler
     : AuthorizationHandler<PermissionRequirement>

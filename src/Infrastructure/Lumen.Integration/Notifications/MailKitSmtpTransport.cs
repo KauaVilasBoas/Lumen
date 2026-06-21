@@ -1,10 +1,10 @@
-using AegisIdentity.Infrastructure.Configuration;
+using Lumen.Infrastructure.Configuration;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Options;
 using MimeKit;
 
-namespace AegisIdentity.Integration.Notifications;
+namespace Lumen.Integration.Notifications;
 
 public sealed class MailKitSmtpTransport : ISmtpTransport
 {

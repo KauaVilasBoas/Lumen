@@ -1,17 +1,17 @@
-using AegisIdentity.CommandHandlers.Auth.Login;
-using AegisIdentity.Domain.Configuration;
-using AegisIdentity.Domain.Security;
-using AegisIdentity.Domain.Tokens;
-using AegisIdentity.Domain.Users;
-using AegisIdentity.SharedKernel.Constants;
-using AegisIdentity.SharedKernel.Exceptions;
+using Lumen.CommandHandlers.Auth.Login;
+using Lumen.Domain.Configuration;
+using Lumen.Domain.Security;
+using Lumen.Domain.Tokens;
+using Lumen.Domain.Users;
+using Lumen.SharedKernel.Constants;
+using Lumen.SharedKernel.Exceptions;
 using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;
 
-namespace AegisIdentity.UnitTests.Application.Auth.Login;
+namespace Lumen.UnitTests.Application.Auth.Login;
 
 public sealed class LoginUserCommandHandlerTests
 {

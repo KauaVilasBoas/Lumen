@@ -1,4 +1,4 @@
-namespace AegisIdentity.Domain.Authorization;
+namespace Lumen.Domain.Authorization;
 
 /// <summary>
 /// Read/write cache for the permission codes granted to a user.

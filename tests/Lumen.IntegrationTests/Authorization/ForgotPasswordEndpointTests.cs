@@ -1,13 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
-using AegisIdentity.DataAccess.Persistence;
-using AegisIdentity.Domain.Users;
-using AegisIdentity.IntegrationTests.Infrastructure;
+using Lumen.DataAccess.Persistence;
+using Lumen.Domain.Users;
+using Lumen.IntegrationTests.Infrastructure;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace AegisIdentity.IntegrationTests.Authorization;
+namespace Lumen.IntegrationTests.Authorization;
 
 [Collection(IntegrationCollection.Name)]
 [Trait("Category", "Integration")]
@@ -56,7 +56,7 @@ public sealed class ForgotPasswordEndpointTests
         await client.PostAsJsonAsync(Endpoint, new { email = user.Email });
 
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
         var token = await db.PasswordResetTokens.FirstOrDefaultAsync(t => t.UserId == user.Id);
 
         token.Should().NotBeNull();
@@ -74,7 +74,7 @@ public sealed class ForgotPasswordEndpointTests
         await client.PostAsJsonAsync(Endpoint, new { email = unknownEmail });
 
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
         var anyToken = await db.PasswordResetTokens
             .AnyAsync(t => t.UsedAt == null);
 
@@ -111,7 +111,7 @@ public sealed class ForgotPasswordEndpointTests
     private async Task<User> SeedUserAsync(string deterministicId)
     {
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
 
         var userId = Guid.Parse(deterministicId);
         return await AuthorizationSeeder.EnsureUserAsync(db, userId);

@@ -1,7 +1,7 @@
-using AegisIdentity.Integration.Notifications;
+using Lumen.Integration.Notifications;
 using MimeKit;
 
-namespace AegisIdentity.UnitTests.Infrastructure.Notifications;
+namespace Lumen.UnitTests.Infrastructure.Notifications;
 
 internal sealed class FakeSmtpTransport : ISmtpTransport
 {

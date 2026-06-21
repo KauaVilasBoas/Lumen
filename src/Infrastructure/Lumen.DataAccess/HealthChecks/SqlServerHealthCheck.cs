@@ -1,13 +1,13 @@
-using AegisIdentity.DataAccess.Persistence;
+using Lumen.DataAccess.Persistence;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
-namespace AegisIdentity.DataAccess.HealthChecks;
+namespace Lumen.DataAccess.HealthChecks;
 
 public sealed class SqlServerHealthCheck : IHealthCheck
 {
-    private readonly AegisIdentityDbContext _dbContext;
+    private readonly LumenDbContext _dbContext;
 
-    public SqlServerHealthCheck(AegisIdentityDbContext dbContext)
+    public SqlServerHealthCheck(LumenDbContext dbContext)
     {
         _dbContext = dbContext;
     }

@@ -1,7 +1,7 @@
-using AegisIdentity.Infrastructure.Security;
+using Lumen.Infrastructure.Security;
 using FluentAssertions;
 
-namespace AegisIdentity.UnitTests.Infrastructure.Security;
+namespace Lumen.UnitTests.Infrastructure.Security;
 
 public sealed class BCryptPasswordHasherTests
 {

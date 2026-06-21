@@ -1,8 +1,8 @@
 using System.Net;
-using AegisIdentity.IntegrationTests.Infrastructure;
+using Lumen.IntegrationTests.Infrastructure;
 using FluentAssertions;
 
-namespace AegisIdentity.IntegrationTests.Authorization;
+namespace Lumen.IntegrationTests.Authorization;
 
 [Collection(IntegrationCollection.Name)]
 [Trait("Category", "Integration")]

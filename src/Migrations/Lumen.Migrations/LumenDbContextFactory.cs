@@ -1,13 +1,13 @@
-using AegisIdentity.DataAccess.Persistence;
+using Lumen.DataAccess.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 
-namespace AegisIdentity.Migrations;
+namespace Lumen.Migrations;
 
-public sealed class AegisIdentityDbContextFactory : IDesignTimeDbContextFactory<AegisIdentityDbContext>
+public sealed class LumenDbContextFactory : IDesignTimeDbContextFactory<LumenDbContext>
 {
-    public AegisIdentityDbContext CreateDbContext(string[] args)
+    public LumenDbContext CreateDbContext(string[] args)
     {
         var configuration = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json", optional: true)
@@ -16,13 +16,13 @@ public sealed class AegisIdentityDbContextFactory : IDesignTimeDbContextFactory<
 
         var connectionString = configuration["SqlServer:ConnectionString"]
             ?? Environment.GetEnvironmentVariable("SQLSERVER_CONNECTION_STRING")
-            ?? "Server=localhost;Database=AegisIdentity;Trusted_Connection=True;TrustServerCertificate=True;";
+            ?? "Server=localhost;Database=Lumen;Trusted_Connection=True;TrustServerCertificate=True;";
 
-        var optionsBuilder = new DbContextOptionsBuilder<AegisIdentityDbContext>();
+        var optionsBuilder = new DbContextOptionsBuilder<LumenDbContext>();
         optionsBuilder.UseSqlServer(
             connectionString,
-            sql => sql.MigrationsAssembly(typeof(AegisIdentityDbContextFactory).Assembly.FullName));
+            sql => sql.MigrationsAssembly(typeof(LumenDbContextFactory).Assembly.FullName));
 
-        return new AegisIdentityDbContext(optionsBuilder.Options);
+        return new LumenDbContext(optionsBuilder.Options);
     }
 }

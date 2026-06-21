@@ -1,9 +1,9 @@
-using AegisIdentity.Jobs.Contracts;
+using Lumen.Jobs.Contracts;
 using Hangfire;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace AegisIdentity.Jobs.Scheduling;
+namespace Lumen.Jobs.Scheduling;
 
 /// <summary>
 /// Extension method that resolves every registered <see cref="IJobDefinition"/>

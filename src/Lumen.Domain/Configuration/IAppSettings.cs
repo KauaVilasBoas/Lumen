@@ -1,4 +1,4 @@
-namespace AegisIdentity.Domain.Configuration;
+namespace Lumen.Domain.Configuration;
 
 /// <summary>
 /// Exposes application-level settings to command handlers without coupling them

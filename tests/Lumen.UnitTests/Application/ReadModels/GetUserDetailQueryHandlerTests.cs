@@ -1,12 +1,12 @@
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.Domain.Users;
-using AegisIdentity.ReadModels.Queries;
-using AegisIdentity.SharedKernel.Exceptions;
+using Lumen.Domain.Authorization;
+using Lumen.Domain.Users;
+using Lumen.ReadModels.Queries;
+using Lumen.SharedKernel.Exceptions;
 using FluentAssertions;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;
 
-namespace AegisIdentity.UnitTests.Application.ReadModels;
+namespace Lumen.UnitTests.Application.ReadModels;
 
 public sealed class GetUserDetailQueryHandlerTests
 {

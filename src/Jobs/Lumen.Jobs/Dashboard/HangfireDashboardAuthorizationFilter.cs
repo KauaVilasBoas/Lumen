@@ -4,7 +4,7 @@ using Hangfire.Dashboard;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
-namespace AegisIdentity.Jobs.Dashboard;
+namespace Lumen.Jobs.Dashboard;
 
 /// <summary>
 /// Hangfire dashboard authorization filter that enforces HTTP Basic

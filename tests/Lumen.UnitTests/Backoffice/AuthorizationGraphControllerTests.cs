@@ -1,17 +1,17 @@
 using System.Net;
 using System.Security.Claims;
 using System.Text.Json;
-using AegisIdentity.Backoffice.Controllers;
-using AegisIdentity.Backoffice.Services;
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.SharedKernel.Constants;
-using AegisIdentity.UnitTests.Infrastructure.Security;
+using Lumen.Backoffice.Controllers;
+using Lumen.Backoffice.Services;
+using Lumen.Domain.Authorization;
+using Lumen.SharedKernel.Constants;
+using Lumen.UnitTests.Infrastructure.Security;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 
-namespace AegisIdentity.UnitTests.Backoffice;
+namespace Lumen.UnitTests.Backoffice;
 
 public sealed class AuthorizationGraphControllerTests
 {

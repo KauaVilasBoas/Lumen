@@ -1,11 +1,11 @@
-using AegisIdentity.Domain.Tokens;
-using AegisIdentity.SharedKernel.Constants;
-using AegisIdentity.SharedKernel.Exceptions;
-using AegisIdentity.SharedKernel.Util;
+using Lumen.Domain.Tokens;
+using Lumen.SharedKernel.Constants;
+using Lumen.SharedKernel.Exceptions;
+using Lumen.SharedKernel.Util;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
-namespace AegisIdentity.CommandHandlers.Auth.Logout;
+namespace Lumen.CommandHandlers.Auth.Logout;
 
 public sealed class LogoutUserCommandHandler
     : IRequestHandler<LogoutUserCommandHandler.Command, Unit>

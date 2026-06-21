@@ -1,13 +1,13 @@
 using System.Net;
-using AegisIdentity.DataAccess.Persistence;
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.IntegrationTests.Infrastructure;
-using AegisIdentity.SharedKernel.Constants;
+using Lumen.DataAccess.Persistence;
+using Lumen.Domain.Authorization;
+using Lumen.IntegrationTests.Infrastructure;
+using Lumen.SharedKernel.Constants;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace AegisIdentity.IntegrationTests.Authorization;
+namespace Lumen.IntegrationTests.Authorization;
 
 [Collection(IntegrationCollection.Name)]
 [Trait("Category", "Integration")]
@@ -48,7 +48,7 @@ public sealed class AuthorizationGraphEndpointTests
         const string userId = "88000000-0000-0000-0000-000000000002";
 
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
         var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
         await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(userId), PermissionCodes.AuthorizationGraph.View);
 

@@ -1,10 +1,10 @@
 using NetArchTest.Rules;
 using FluentAssertions;
 
-namespace AegisIdentity.ArchitectureTests;
+namespace Lumen.ArchitectureTests;
 
 /// <summary>
-/// Automated architecture constraints for AegisIdentity.
+/// Automated architecture constraints for Lumen.
 /// Each test enforces a rule described in CLAUDE.md ("Constraints de arquitetura").
 /// A failing test means a layer boundary was violated — fix the dependency, not the test.
 /// </summary>
@@ -13,43 +13,43 @@ public sealed class ArchitectureTests
     // ─── Assembly markers (one public type per layer assembly) ──────────────
 
     private static readonly System.Reflection.Assembly DomainAssembly =
-        typeof(AegisIdentity.Domain.Users.User).Assembly;
+        typeof(Lumen.Domain.Users.User).Assembly;
 
     private static readonly System.Reflection.Assembly SharedKernelAssembly =
-        typeof(AegisIdentity.SharedKernel.Constants.AuthErrorMessages).Assembly;
+        typeof(Lumen.SharedKernel.Constants.AuthErrorMessages).Assembly;
 
     private static readonly System.Reflection.Assembly CommandHandlersAssembly =
-        typeof(AegisIdentity.CommandHandlers.Behaviors.ValidationBehavior<,>).Assembly;
+        typeof(Lumen.CommandHandlers.Behaviors.ValidationBehavior<,>).Assembly;
 
     private static readonly System.Reflection.Assembly ReadModelsAssembly =
-        typeof(AegisIdentity.ReadModels.Queries.GetAuthorizationGraphQueryHandler).Assembly;
+        typeof(Lumen.ReadModels.Queries.GetAuthorizationGraphQueryHandler).Assembly;
 
     private static readonly System.Reflection.Assembly EventHandlersAssembly =
-        typeof(AegisIdentity.EventHandlers.Authorization.UserPermissionsChangedHandler).Assembly;
+        typeof(Lumen.EventHandlers.Authorization.UserPermissionsChangedHandler).Assembly;
 
     private static readonly System.Reflection.Assembly DataAccessAssembly =
-        typeof(AegisIdentity.DataAccess.Persistence.AegisIdentityDbContext).Assembly;
+        typeof(Lumen.DataAccess.Persistence.LumenDbContext).Assembly;
 
     private static readonly System.Reflection.Assembly InfrastructureAssembly =
-        typeof(AegisIdentity.Infrastructure.Configuration.AppOptions).Assembly;
+        typeof(Lumen.Infrastructure.Configuration.AppOptions).Assembly;
 
     private static readonly System.Reflection.Assembly ApiAssembly =
-        typeof(AegisIdentity.Api.Controllers.AuthController).Assembly;
+        typeof(Lumen.Api.Controllers.AuthController).Assembly;
 
     private static readonly System.Reflection.Assembly BackofficeAssembly =
-        typeof(AegisIdentity.Backoffice.Controllers.AccountController).Assembly;
+        typeof(Lumen.Backoffice.Controllers.AccountController).Assembly;
 
     // ─── Namespace constants ─────────────────────────────────────────────────
 
-    private const string DomainNamespace       = "AegisIdentity.Domain";
-    private const string SharedKernelNamespace  = "AegisIdentity.SharedKernel";
-    private const string CommandsNamespace     = "AegisIdentity.CommandHandlers";
-    private const string ReadModelsNamespace   = "AegisIdentity.ReadModels";
-    private const string EventsNamespace       = "AegisIdentity.EventHandlers";
-    private const string DataAccessNamespace   = "AegisIdentity.DataAccess";
-    private const string InfraNamespace        = "AegisIdentity.Infrastructure";
-    private const string ApiNamespace          = "AegisIdentity.Api";
-    private const string BackofficeNamespace   = "AegisIdentity.Backoffice";
+    private const string DomainNamespace       = "Lumen.Domain";
+    private const string SharedKernelNamespace  = "Lumen.SharedKernel";
+    private const string CommandsNamespace     = "Lumen.CommandHandlers";
+    private const string ReadModelsNamespace   = "Lumen.ReadModels";
+    private const string EventsNamespace       = "Lumen.EventHandlers";
+    private const string DataAccessNamespace   = "Lumen.DataAccess";
+    private const string InfraNamespace        = "Lumen.Infrastructure";
+    private const string ApiNamespace          = "Lumen.Api";
+    private const string BackofficeNamespace   = "Lumen.Backoffice";
 
     // ────────────────────────────────────────────────────────────────────────
     // RULE 01 — Domain must not depend on Application, Infrastructure or Presentation
@@ -251,10 +251,10 @@ public sealed class ArchitectureTests
     {
         var domainEntityNamespaces = new[]
         {
-            "AegisIdentity.Domain.Users",
-            "AegisIdentity.Domain.Authorization",
-            "AegisIdentity.Domain.Tokens",
-            "AegisIdentity.Domain.Audit",
+            "Lumen.Domain.Users",
+            "Lumen.Domain.Authorization",
+            "Lumen.Domain.Tokens",
+            "Lumen.Domain.Audit",
         };
 
         var result = Types.InAssembly(ApiAssembly)
@@ -280,9 +280,9 @@ public sealed class ArchitectureTests
     {
         var forbiddenNamespaces = new[]
         {
-            "AegisIdentity.Domain.Users",
-            "AegisIdentity.Domain.Tokens",
-            "AegisIdentity.Domain.Audit",
+            "Lumen.Domain.Users",
+            "Lumen.Domain.Tokens",
+            "Lumen.Domain.Audit",
         };
 
         var result = Types.InAssembly(BackofficeAssembly)

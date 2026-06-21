@@ -1,10 +1,10 @@
-using AegisIdentity.DataAccess.Cache;
-using AegisIdentity.Domain.Authorization;
+using Lumen.DataAccess.Cache;
+using Lumen.Domain.Authorization;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 
-namespace AegisIdentity.UnitTests.Authorization;
+namespace Lumen.UnitTests.Authorization;
 
 public sealed class UserPermissionServiceTests
 {

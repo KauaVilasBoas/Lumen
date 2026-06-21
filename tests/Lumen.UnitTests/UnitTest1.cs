@@ -1,4 +1,4 @@
-namespace AegisIdentity.UnitTests;
+namespace Lumen.UnitTests;
 
 public class UnitTest1
 {

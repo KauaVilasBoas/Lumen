@@ -1,8 +1,8 @@
-using AegisIdentity.CommandHandlers.Users.ChangePassword;
+using Lumen.CommandHandlers.Users.ChangePassword;
 using FluentAssertions;
 using FluentValidation.TestHelper;
 
-namespace AegisIdentity.UnitTests.Application.Users.ChangePassword;
+namespace Lumen.UnitTests.Application.Users.ChangePassword;
 
 public sealed class ChangePasswordRequestValidatorTests
 {

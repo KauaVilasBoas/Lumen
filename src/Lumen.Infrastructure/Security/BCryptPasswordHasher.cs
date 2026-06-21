@@ -1,6 +1,6 @@
-using AegisIdentity.Domain.Security;
+using Lumen.Domain.Security;
 
-namespace AegisIdentity.Infrastructure.Security;
+namespace Lumen.Infrastructure.Security;
 
 // Cost factor 12 is the recommended floor for BCrypt in 2024+.
 // At cost 12, hashing takes ~250 ms on commodity hardware — fast enough for

@@ -1,9 +1,9 @@
-using AegisIdentity.CommandHandlers.Users.ChangePassword;
-using AegisIdentity.ReadModels.Queries;
+using Lumen.CommandHandlers.Users.ChangePassword;
+using Lumen.ReadModels.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AegisIdentity.Api.Controllers;
+namespace Lumen.Api.Controllers;
 
 [Route("api/me")]
 public sealed class MeController : ApiBaseController

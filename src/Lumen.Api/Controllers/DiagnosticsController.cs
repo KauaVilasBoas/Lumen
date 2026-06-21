@@ -1,11 +1,11 @@
-using AegisIdentity.SharedKernel.Authorization;
-using AegisIdentity.SharedKernel.Constants;
+using Lumen.SharedKernel.Authorization;
+using Lumen.SharedKernel.Constants;
 using Hangfire;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StackExchange.Redis;
 
-namespace AegisIdentity.Api.Controllers;
+namespace Lumen.Api.Controllers;
 
 [Route("api/diagnostics")]
 [PermissionGroup(PermissionGroups.Diagnostics)]

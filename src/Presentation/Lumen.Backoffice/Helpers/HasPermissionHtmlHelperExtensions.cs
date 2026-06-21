@@ -1,12 +1,12 @@
 using System.Security.Claims;
 
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.SharedKernel.Authorization;
+using Lumen.Domain.Authorization;
+using Lumen.SharedKernel.Authorization;
 
 using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
-namespace AegisIdentity.Backoffice.Helpers;
+namespace Lumen.Backoffice.Helpers;
 
 /// <summary>
 /// Extension methods on <see cref="IHtmlHelper"/> that expose permission checks to Razor views.

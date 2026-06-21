@@ -1,7 +1,7 @@
-using AegisIdentity.Domain.Authorization;
+using Lumen.Domain.Authorization;
 using FluentAssertions;
 
-namespace AegisIdentity.UnitTests.Domain.Authorization;
+namespace Lumen.UnitTests.Domain.Authorization;
 
 public sealed class PermissionProfileTests
 {

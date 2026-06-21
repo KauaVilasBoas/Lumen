@@ -1,4 +1,4 @@
-namespace AegisIdentity.Domain.Security;
+namespace Lumen.Domain.Security;
 
 /// <summary>
 /// Port for password hashing and verification.

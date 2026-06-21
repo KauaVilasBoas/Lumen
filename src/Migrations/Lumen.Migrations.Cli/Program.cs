@@ -1,4 +1,4 @@
-// AegisIdentity.Migrations.Cli
+// Lumen.Migrations.Cli
 //
 // Thin wrapper around EF Core migrations for use in CI/CD pipelines or local
 // development without the full API host.
@@ -11,17 +11,17 @@
 //             database (read-only).
 //
 // For generating new migrations use the dotnet-ef tooling directly against the
-// AegisIdentity.Migrations project:
+// Lumen.Migrations project:
 //   dotnet ef migrations add <MigrationName> \
-//     --project src/Migrations/AegisIdentity.Migrations \
-//     --startup-project src/Migrations/AegisIdentity.Migrations
+//     --project src/Migrations/Lumen.Migrations \
+//     --startup-project src/Migrations/Lumen.Migrations
 //
 // The connection string is resolved from:
 //   1. Environment variable  SqlServer__ConnectionString
 //   2. SqlServer:ConnectionString in appsettings.json (design-time fallback)
 
-using AegisIdentity.DataAccess.Persistence;
-using AegisIdentity.Infrastructure.Configuration;
+using Lumen.DataAccess.Persistence;
+using Lumen.Infrastructure.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -42,19 +42,19 @@ var builder = Host.CreateApplicationBuilder(new HostApplicationBuilderSettings
 builder.Services.Configure<SqlServerOptions>(
     builder.Configuration.GetSection(SqlServerOptions.SectionName));
 
-builder.Services.AddDbContext<AegisIdentityDbContext>((sp, options) =>
+builder.Services.AddDbContext<LumenDbContext>((sp, options) =>
 {
     var sqlServerOptions = sp.GetRequiredService<IOptions<SqlServerOptions>>().Value;
     options.UseSqlServer(
         sqlServerOptions.ConnectionString,
-        sql => sql.MigrationsAssembly("AegisIdentity.Migrations"));
+        sql => sql.MigrationsAssembly("Lumen.Migrations"));
 });
 
 using var host = builder.Build();
 
 using var scope = host.Services.CreateScope();
-var dbContext = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
-var logger = host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("AegisIdentity.Migrations.Cli");
+var dbContext = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
+var logger = host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Lumen.Migrations.Cli");
 
 // Default to 'up': running the CLI with no arguments always applies pending
 // migrations (listing the status before and after).

@@ -1,4 +1,4 @@
-namespace AegisIdentity.SharedKernel.Constants;
+namespace Lumen.SharedKernel.Constants;
 
 /// <summary>
 /// Placeholder keys used inside email template bodies.

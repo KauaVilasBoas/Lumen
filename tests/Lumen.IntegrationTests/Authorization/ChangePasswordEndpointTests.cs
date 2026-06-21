@@ -1,14 +1,14 @@
 using System.Net;
 using System.Net.Http.Json;
-using AegisIdentity.DataAccess.Persistence;
-using AegisIdentity.Domain.Security;
-using AegisIdentity.Domain.Users;
-using AegisIdentity.IntegrationTests.Infrastructure;
+using Lumen.DataAccess.Persistence;
+using Lumen.Domain.Security;
+using Lumen.Domain.Users;
+using Lumen.IntegrationTests.Infrastructure;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace AegisIdentity.IntegrationTests.Authorization;
+namespace Lumen.IntegrationTests.Authorization;
 
 [Collection(IntegrationCollection.Name)]
 [Trait("Category", "Integration")]
@@ -84,7 +84,7 @@ public sealed class ChangePasswordEndpointTests
         var knownPassword = await SeedUserWithKnownPasswordAsync(userId);
 
         await using var beforeScope = _fixture.Services.CreateAsyncScope();
-        var beforeDb = beforeScope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var beforeDb = beforeScope.ServiceProvider.GetRequiredService<LumenDbContext>();
         var originalHash = (await beforeDb.Users.IgnoreQueryFilters()
             .FirstAsync(u => u.Id == Guid.Parse(userId))).PasswordHash;
 
@@ -96,7 +96,7 @@ public sealed class ChangePasswordEndpointTests
         });
 
         await using var afterScope = _fixture.Services.CreateAsyncScope();
-        var afterDb = afterScope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var afterDb = afterScope.ServiceProvider.GetRequiredService<LumenDbContext>();
         var updatedUser = await afterDb.Users.IgnoreQueryFilters()
             .FirstAsync(u => u.Id == Guid.Parse(userId));
 
@@ -146,7 +146,7 @@ public sealed class ChangePasswordEndpointTests
         const string knownPassword = "Kn0wn!P@ssword42";
 
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
         var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
 
         var userId = Guid.Parse(deterministicId);

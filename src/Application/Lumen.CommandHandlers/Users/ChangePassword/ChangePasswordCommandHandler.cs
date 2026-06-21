@@ -1,14 +1,14 @@
-using AegisIdentity.Domain.Notifications;
-using AegisIdentity.Domain.Security;
-using AegisIdentity.Domain.Tokens;
-using AegisIdentity.Domain.Users;
-using AegisIdentity.SharedKernel.Constants;
-using AegisIdentity.SharedKernel.Exceptions;
+using Lumen.Domain.Notifications;
+using Lumen.Domain.Security;
+using Lumen.Domain.Tokens;
+using Lumen.Domain.Users;
+using Lumen.SharedKernel.Constants;
+using Lumen.SharedKernel.Exceptions;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
-namespace AegisIdentity.CommandHandlers.Users.ChangePassword;
+namespace Lumen.CommandHandlers.Users.ChangePassword;
 
 public sealed class ChangePasswordCommandHandler
     : IRequestHandler<ChangePasswordCommandHandler.Command, Unit>

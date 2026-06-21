@@ -1,22 +1,22 @@
-using AegisIdentity.Api.Authorization;
-using AegisIdentity.Api.ExceptionHandlers;
-using AegisIdentity.Api.Hubs;
-using AegisIdentity.Api.Middleware;
-using AegisIdentity.CommandHandlers.Auth.Register;
-using AegisIdentity.EventHandlers.Authorization;
-using AegisIdentity.ReadModels.Queries;
-using AegisIdentity.CommandHandlers.Behaviors;
-using AegisIdentity.DataAccess.Cache;
-using AegisIdentity.DataAccess.HealthChecks;
-using AegisIdentity.DataAccess.Persistence;
-using AegisIdentity.Infrastructure.Configuration;
-using AegisIdentity.Infrastructure.Security;
-using AegisIdentity.Integration.Notifications;
-using AegisIdentity.Integration.Security;
-using AegisIdentity.Jobs.Configuration;
-using AegisIdentity.Jobs.Scheduling;
-using AegisIdentity.Migrations;
-using AegisIdentity.SharedKernel.Constants;
+using Lumen.Api.Authorization;
+using Lumen.Api.ExceptionHandlers;
+using Lumen.Api.Hubs;
+using Lumen.Api.Middleware;
+using Lumen.CommandHandlers.Auth.Register;
+using Lumen.EventHandlers.Authorization;
+using Lumen.ReadModels.Queries;
+using Lumen.CommandHandlers.Behaviors;
+using Lumen.DataAccess.Cache;
+using Lumen.DataAccess.HealthChecks;
+using Lumen.DataAccess.Persistence;
+using Lumen.Infrastructure.Configuration;
+using Lumen.Infrastructure.Security;
+using Lumen.Integration.Notifications;
+using Lumen.Integration.Security;
+using Lumen.Jobs.Configuration;
+using Lumen.Jobs.Scheduling;
+using Lumen.Migrations;
+using Lumen.SharedKernel.Constants;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -31,7 +31,7 @@ Log.Logger = new LoggerConfiguration()
 
 try
 {
-    Log.Information("Starting AegisIdentity API");
+    Log.Information("Starting Lumen API");
 
     var builder = WebApplication.CreateBuilder(args);
 
@@ -58,7 +58,7 @@ try
     builder.Services.AddPermissionEnforcement();
 
     // ── Background Jobs (Hangfire + SQL Server storage) ──────────────────────
-    // RegisterJobs scans AegisIdentity.Jobs for IJobDefinition implementations
+    // RegisterJobs scans Lumen.Jobs for IJobDefinition implementations
     // and registers them in DI — no manual per-job wiring needed.
     builder.Services.AddAegisHangfire(builder.Configuration);
     builder.Services.AddAegisHangfireServer();
@@ -153,7 +153,7 @@ try
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "AegisIdentity API terminated unexpectedly");
+    Log.Fatal(ex, "Lumen API terminated unexpectedly");
 }
 finally
 {

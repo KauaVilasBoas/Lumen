@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace AegisIdentity.Migrations.EfMigrations
+namespace Lumen.Migrations.EfMigrations
 {
     /// <inheritdoc />
     public partial class AddUserIsBootstrapColumn : Migration

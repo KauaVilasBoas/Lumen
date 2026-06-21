@@ -1,4 +1,4 @@
-namespace AegisIdentity.Domain.Audit;
+namespace Lumen.Domain.Audit;
 
 public interface IAuditRepository
 {

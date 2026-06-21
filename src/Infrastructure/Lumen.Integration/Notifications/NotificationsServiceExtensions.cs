@@ -1,7 +1,7 @@
-using AegisIdentity.Domain.Notifications;
+using Lumen.Domain.Notifications;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace AegisIdentity.Integration.Notifications;
+namespace Lumen.Integration.Notifications;
 
 public static class NotificationsServiceExtensions
 {

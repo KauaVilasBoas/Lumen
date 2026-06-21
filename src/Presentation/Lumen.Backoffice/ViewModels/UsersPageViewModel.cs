@@ -1,4 +1,4 @@
-namespace AegisIdentity.Backoffice.ViewModels;
+namespace Lumen.Backoffice.ViewModels;
 
 public sealed record UsersPageViewModel(
     IReadOnlyList<UserListItemViewModel> Users,

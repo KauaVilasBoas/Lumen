@@ -1,6 +1,6 @@
-using AegisIdentity.SharedKernel.Persistence;
+using Lumen.SharedKernel.Persistence;
 
-namespace AegisIdentity.Domain.Tokens;
+namespace Lumen.Domain.Tokens;
 
 public sealed class RefreshToken : ISoftDeletable
 {

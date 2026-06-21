@@ -1,8 +1,8 @@
-using AegisIdentity.Domain.Authorization;
+using Lumen.Domain.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace AegisIdentity.DataAccess.Persistence.Configurations;
+namespace Lumen.DataAccess.Persistence.Configurations;
 
 internal sealed class PermissionProfileConfiguration : IEntityTypeConfiguration<PermissionProfile>
 {

@@ -1,11 +1,11 @@
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.Domain.Users;
-using AegisIdentity.ReadModels.Users;
-using AegisIdentity.SharedKernel.Constants;
+using Lumen.Domain.Authorization;
+using Lumen.Domain.Users;
+using Lumen.ReadModels.Users;
+using Lumen.SharedKernel.Constants;
 using FluentValidation;
 using MediatR;
 
-namespace AegisIdentity.ReadModels.Queries;
+namespace Lumen.ReadModels.Queries;
 
 public sealed class ListUsersQueryHandler
     : IRequestHandler<ListUsersQueryHandler.Query, ListUsersQueryHandler.PagedResult>

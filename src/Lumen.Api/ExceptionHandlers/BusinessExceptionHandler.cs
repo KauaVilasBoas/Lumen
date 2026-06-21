@@ -1,8 +1,8 @@
-using AegisIdentity.SharedKernel.Exceptions;
+using Lumen.SharedKernel.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AegisIdentity.Api.ExceptionHandlers;
+namespace Lumen.Api.ExceptionHandlers;
 
 public sealed class BusinessExceptionHandler : IExceptionHandler
 {

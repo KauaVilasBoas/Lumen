@@ -1,9 +1,9 @@
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.ReadModels.Queries;
+using Lumen.Domain.Authorization;
+using Lumen.ReadModels.Queries;
 using FluentAssertions;
 using NSubstitute;
 
-namespace AegisIdentity.UnitTests.Application.ReadModels;
+namespace Lumen.UnitTests.Application.ReadModels;
 
 public sealed class ListUserProfilesQueryHandlerTests
 {

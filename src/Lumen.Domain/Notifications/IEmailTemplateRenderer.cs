@@ -1,4 +1,4 @@
-namespace AegisIdentity.Domain.Notifications;
+namespace Lumen.Domain.Notifications;
 
 /// <summary>
 /// Port for rendering transactional email templates.

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 
-namespace AegisIdentity.Api.Authorization;
+namespace Lumen.Api.Authorization;
 
 public sealed class PermissionRequirement : IAuthorizationRequirement
 {

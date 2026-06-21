@@ -1,13 +1,13 @@
-using AegisIdentity.Domain.Authorization;
+using Lumen.Domain.Authorization;
 using Microsoft.EntityFrameworkCore;
 
-namespace AegisIdentity.DataAccess.Persistence.Repositories;
+namespace Lumen.DataAccess.Persistence.Repositories;
 
 internal sealed class UserProfileRepository : IUserProfileRepository
 {
-    private readonly AegisIdentityDbContext _dbContext;
+    private readonly LumenDbContext _dbContext;
 
-    public UserProfileRepository(AegisIdentityDbContext dbContext)
+    public UserProfileRepository(LumenDbContext dbContext)
     {
         _dbContext = dbContext;
     }

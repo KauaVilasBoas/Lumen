@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AegisIdentity.Backoffice.Controllers;
+namespace Lumen.Backoffice.Controllers;
 
 public abstract class BackofficeBaseController : Controller
 {

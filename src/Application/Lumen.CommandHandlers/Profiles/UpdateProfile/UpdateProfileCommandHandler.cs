@@ -1,9 +1,9 @@
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.SharedKernel.Exceptions;
+using Lumen.Domain.Authorization;
+using Lumen.SharedKernel.Exceptions;
 using FluentValidation;
 using MediatR;
 
-namespace AegisIdentity.CommandHandlers.Profiles.UpdateProfile;
+namespace Lumen.CommandHandlers.Profiles.UpdateProfile;
 
 public sealed class UpdateProfileCommandHandler
     : IRequestHandler<UpdateProfileCommandHandler.Command>

@@ -1,10 +1,10 @@
 using System.Net.Http.Headers;
-using AegisIdentity.Domain.Security;
-using AegisIdentity.Infrastructure.Configuration;
+using Lumen.Domain.Security;
+using Lumen.Infrastructure.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
-namespace AegisIdentity.Integration.Security;
+namespace Lumen.Integration.Security;
 
 public static class IntegrationSecurityServiceExtensions
 {

@@ -1,8 +1,8 @@
-using AegisIdentity.CommandHandlers.Auth.ConfirmEmail;
+using Lumen.CommandHandlers.Auth.ConfirmEmail;
 using FluentAssertions;
 using FluentValidation.TestHelper;
 
-namespace AegisIdentity.UnitTests.Application.Auth.ConfirmEmail;
+namespace Lumen.UnitTests.Application.Auth.ConfirmEmail;
 
 public sealed class ConfirmEmailRequestValidatorTests
 {

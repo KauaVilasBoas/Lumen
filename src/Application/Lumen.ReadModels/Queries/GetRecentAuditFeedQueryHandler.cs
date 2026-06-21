@@ -1,9 +1,9 @@
-using AegisIdentity.Domain.Audit;
-using AegisIdentity.SharedKernel.Constants;
+using Lumen.Domain.Audit;
+using Lumen.SharedKernel.Constants;
 using FluentValidation;
 using MediatR;
 
-namespace AegisIdentity.ReadModels.Queries;
+namespace Lumen.ReadModels.Queries;
 
 public sealed class GetRecentAuditFeedQueryHandler
     : IRequestHandler<GetRecentAuditFeedQueryHandler.Query, IReadOnlyList<GetRecentAuditFeedQueryHandler.AuditEntryResult>>

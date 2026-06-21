@@ -1,4 +1,4 @@
-namespace AegisIdentity.SharedKernel.Constants;
+namespace Lumen.SharedKernel.Constants;
 
 /// <summary>
 /// Constants related to password hashing behaviour shared across the application.

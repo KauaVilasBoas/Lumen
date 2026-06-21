@@ -1,8 +1,8 @@
-using AegisIdentity.Api.Middleware;
+using Lumen.Api.Middleware;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 
-namespace AegisIdentity.UnitTests.Middleware;
+namespace Lumen.UnitTests.Middleware;
 
 public sealed class CorrelationIdMiddlewareTests
 {

@@ -1,8 +1,8 @@
-using AegisIdentity.Domain.Tokens;
+using Lumen.Domain.Tokens;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace AegisIdentity.DataAccess.Persistence.Configurations;
+namespace Lumen.DataAccess.Persistence.Configurations;
 
 internal sealed class PasswordResetTokenConfiguration : IEntityTypeConfiguration<PasswordResetToken>
 {

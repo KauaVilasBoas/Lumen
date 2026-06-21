@@ -1,10 +1,10 @@
 using System.Net;
-using AegisIdentity.Integration.Security;
+using Lumen.Integration.Security;
 using FluentAssertions;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace AegisIdentity.UnitTests.Infrastructure.Security;
+namespace Lumen.UnitTests.Infrastructure.Security;
 
 public sealed class PwnedPasswordsClientTests
 {

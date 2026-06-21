@@ -1,12 +1,12 @@
-using AegisIdentity.Domain.Tokens;
-using AegisIdentity.Jobs.Jobs;
+using Lumen.Domain.Tokens;
+using Lumen.Jobs.Jobs;
 using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
-namespace AegisIdentity.UnitTests.Jobs;
+namespace Lumen.UnitTests.Jobs;
 
 public sealed class CleanupExpiredRefreshTokensJobTests
 {

@@ -1,11 +1,11 @@
 using System.Text.Json;
-using AegisIdentity.Backoffice.Services;
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.SharedKernel.Constants;
+using Lumen.Backoffice.Services;
+using Lumen.Domain.Authorization;
+using Lumen.SharedKernel.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AegisIdentity.Backoffice.Controllers;
+namespace Lumen.Backoffice.Controllers;
 
 [Authorize]
 public sealed class AuthorizationGraphController : BackofficeBaseController

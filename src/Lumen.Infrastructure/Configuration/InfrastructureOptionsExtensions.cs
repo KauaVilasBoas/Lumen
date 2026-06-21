@@ -1,9 +1,9 @@
-using AegisIdentity.Domain.Configuration;
+using Lumen.Domain.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
-namespace AegisIdentity.Infrastructure.Configuration;
+namespace Lumen.Infrastructure.Configuration;
 
 public static class InfrastructureOptionsExtensions
 {

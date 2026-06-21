@@ -1,8 +1,8 @@
 using System.Security.Claims;
-using AegisIdentity.SharedKernel.Constants;
+using Lumen.SharedKernel.Constants;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AegisIdentity.Api.Controllers;
+namespace Lumen.Api.Controllers;
 
 [ApiController]
 [Produces("application/json")]

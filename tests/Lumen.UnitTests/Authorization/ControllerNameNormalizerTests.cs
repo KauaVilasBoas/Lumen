@@ -1,7 +1,7 @@
-using AegisIdentity.SharedKernel.Authorization;
+using Lumen.SharedKernel.Authorization;
 using FluentAssertions;
 
-namespace AegisIdentity.UnitTests.Authorization;
+namespace Lumen.UnitTests.Authorization;
 
 public sealed class ControllerNameNormalizerTests
 {

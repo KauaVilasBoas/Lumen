@@ -1,7 +1,7 @@
-using AegisIdentity.Domain.Authorization;
+using Lumen.Domain.Authorization;
 using Microsoft.Extensions.Logging;
 
-namespace AegisIdentity.Api.Authorization;
+namespace Lumen.Api.Authorization;
 
 public sealed class PermissionSyncService
 {

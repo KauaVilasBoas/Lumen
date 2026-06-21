@@ -1,15 +1,15 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using AegisIdentity.DataAccess.Persistence;
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.Domain.Users;
-using AegisIdentity.IntegrationTests.Infrastructure;
+using Lumen.DataAccess.Persistence;
+using Lumen.Domain.Authorization;
+using Lumen.Domain.Users;
+using Lumen.IntegrationTests.Infrastructure;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace AegisIdentity.IntegrationTests.Authorization;
+namespace Lumen.IntegrationTests.Authorization;
 
 [Collection(IntegrationCollection.Name)]
 [Trait("Category", "Integration")]
@@ -55,7 +55,7 @@ public sealed class UsersEndpointTests
         const string userId = "99000000-0000-0000-0000-000000000002";
 
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
         var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
         await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(userId), "Users.List");
 
@@ -76,7 +76,7 @@ public sealed class UsersEndpointTests
         const string userId = "99000000-0000-0000-0000-000000000003";
 
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
         var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
         await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(userId), "Users.List");
 
@@ -105,7 +105,7 @@ public sealed class UsersEndpointTests
         const string userId = "99000000-0000-0000-0000-000000000004";
 
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
         var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
         await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(userId), "Users.List");
 
@@ -121,7 +121,7 @@ public sealed class UsersEndpointTests
         const string userId = "99000000-0000-0000-0000-000000000005";
 
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
         var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
         await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(userId), "Users.List");
 
@@ -141,7 +141,7 @@ public sealed class UsersEndpointTests
         const string requestingUserId = "99000000-0000-0000-0000-000000000006";
 
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
         var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
         await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(requestingUserId), "Users.List");
 
@@ -173,7 +173,7 @@ public sealed class UsersEndpointTests
         const string requestingUserId = "99000000-0000-0000-0000-000000000007";
 
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
         var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
         await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(requestingUserId), "Users.List");
 

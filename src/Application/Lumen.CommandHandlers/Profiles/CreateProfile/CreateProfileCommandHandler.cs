@@ -1,9 +1,9 @@
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.SharedKernel.Exceptions;
+using Lumen.Domain.Authorization;
+using Lumen.SharedKernel.Exceptions;
 using FluentValidation;
 using MediatR;
 
-namespace AegisIdentity.CommandHandlers.Profiles.CreateProfile;
+namespace Lumen.CommandHandlers.Profiles.CreateProfile;
 
 public sealed class CreateProfileCommandHandler
     : IRequestHandler<CreateProfileCommandHandler.Command, CreateProfileCommandHandler.Result>

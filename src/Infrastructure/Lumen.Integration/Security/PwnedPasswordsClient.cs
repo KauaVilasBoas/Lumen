@@ -1,10 +1,10 @@
 using System.Security.Cryptography;
 using System.Text;
-using AegisIdentity.Domain.Security;
+using Lumen.Domain.Security;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 
-namespace AegisIdentity.Integration.Security;
+namespace Lumen.Integration.Security;
 
 public sealed class PwnedPasswordsClient : IPwnedPasswordsClient
 {

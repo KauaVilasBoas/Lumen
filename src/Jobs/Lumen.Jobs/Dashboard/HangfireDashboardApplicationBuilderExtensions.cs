@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
-namespace AegisIdentity.Jobs.Dashboard;
+namespace Lumen.Jobs.Dashboard;
 
 /// <summary>
 /// Extension method that mounts the Hangfire dashboard with Basic

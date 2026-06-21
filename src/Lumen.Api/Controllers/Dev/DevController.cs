@@ -1,12 +1,12 @@
-using AegisIdentity.Api.Controllers;
-using AegisIdentity.Domain.Notifications;
-using AegisIdentity.Infrastructure.Configuration;
-using AegisIdentity.Integration.Notifications;
+using Lumen.Api.Controllers;
+using Lumen.Domain.Notifications;
+using Lumen.Infrastructure.Configuration;
+using Lumen.Integration.Notifications;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
-namespace AegisIdentity.Api.Controllers.Dev;
+namespace Lumen.Api.Controllers.Dev;
 
 [Route("dev")]
 [ApiExplorerSettings(GroupName = "Dev")]

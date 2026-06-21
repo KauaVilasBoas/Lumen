@@ -1,7 +1,7 @@
-using AegisIdentity.ReadModels.Queries;
+using Lumen.ReadModels.Queries;
 using FluentAssertions;
 
-namespace AegisIdentity.UnitTests.Application.ReadModels;
+namespace Lumen.UnitTests.Application.ReadModels;
 
 public sealed class ListUsersQueryValidatorTests
 {

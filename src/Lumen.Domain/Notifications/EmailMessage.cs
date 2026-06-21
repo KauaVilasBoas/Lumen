@@ -1,4 +1,4 @@
-namespace AegisIdentity.Domain.Notifications;
+namespace Lumen.Domain.Notifications;
 
 public sealed record EmailMessage(
     string To,

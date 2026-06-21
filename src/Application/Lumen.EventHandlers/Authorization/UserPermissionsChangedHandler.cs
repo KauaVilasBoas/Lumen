@@ -1,8 +1,8 @@
-using AegisIdentity.Domain.Authorization;
+using Lumen.Domain.Authorization;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
-namespace AegisIdentity.EventHandlers.Authorization;
+namespace Lumen.EventHandlers.Authorization;
 
 public sealed class UserPermissionsChangedHandler : INotificationHandler<UserPermissionsChanged>
 {

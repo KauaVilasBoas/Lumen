@@ -1,4 +1,4 @@
-namespace AegisIdentity.SharedKernel.Exceptions;
+namespace Lumen.SharedKernel.Exceptions;
 
 public sealed class ForbiddenException : BusinessException
 {

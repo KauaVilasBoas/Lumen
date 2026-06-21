@@ -1,8 +1,8 @@
 using System.Net;
 
-using AegisIdentity.Backoffice.Models;
+using Lumen.Backoffice.Models;
 
-namespace AegisIdentity.Backoffice.Services;
+namespace Lumen.Backoffice.Services;
 
 public sealed class AuthApiClient
 {

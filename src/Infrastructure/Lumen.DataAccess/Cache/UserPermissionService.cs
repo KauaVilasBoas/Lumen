@@ -1,7 +1,7 @@
-using AegisIdentity.Domain.Authorization;
+using Lumen.Domain.Authorization;
 using Microsoft.Extensions.Logging;
 
-namespace AegisIdentity.DataAccess.Cache;
+namespace Lumen.DataAccess.Cache;
 
 internal sealed class UserPermissionService : IUserPermissionService
 {

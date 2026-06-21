@@ -1,14 +1,14 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using AegisIdentity.Domain.Users;
-using AegisIdentity.Infrastructure.Configuration;
-using AegisIdentity.Infrastructure.Security;
+using Lumen.Domain.Users;
+using Lumen.Infrastructure.Configuration;
+using Lumen.Infrastructure.Security;
 using FluentAssertions;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
-namespace AegisIdentity.UnitTests.Infrastructure.Security;
+namespace Lumen.UnitTests.Infrastructure.Security;
 
 public sealed class JwtServiceTests
 {

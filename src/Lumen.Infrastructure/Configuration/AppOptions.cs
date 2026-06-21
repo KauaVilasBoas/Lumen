@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace AegisIdentity.Infrastructure.Configuration;
+namespace Lumen.Infrastructure.Configuration;
 
 public sealed class AppOptions
 {

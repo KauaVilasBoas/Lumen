@@ -1,8 +1,8 @@
-using AegisIdentity.Domain.Audit;
+using Lumen.Domain.Audit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace AegisIdentity.DataAccess.Persistence.Configurations;
+namespace Lumen.DataAccess.Persistence.Configurations;
 
 internal sealed class AuditEntryConfiguration : IEntityTypeConfiguration<AuditEntry>
 {

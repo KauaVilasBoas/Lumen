@@ -1,13 +1,13 @@
-using AegisIdentity.CommandHandlers.Auth.ForgotPassword;
-using AegisIdentity.Domain.Configuration;
-using AegisIdentity.Domain.Notifications;
-using AegisIdentity.Domain.Tokens;
-using AegisIdentity.Domain.Users;
+using Lumen.CommandHandlers.Auth.ForgotPassword;
+using Lumen.Domain.Configuration;
+using Lumen.Domain.Notifications;
+using Lumen.Domain.Tokens;
+using Lumen.Domain.Users;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 
-namespace AegisIdentity.UnitTests.Application.Auth.ForgotPassword;
+namespace Lumen.UnitTests.Application.Auth.ForgotPassword;
 
 public sealed class ForgotPasswordCommandHandlerTests
 {

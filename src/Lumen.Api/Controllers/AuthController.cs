@@ -1,16 +1,16 @@
-using AegisIdentity.CommandHandlers.Auth.ConfirmEmail;
-using AegisIdentity.CommandHandlers.Auth.ForgotPassword;
-using AegisIdentity.CommandHandlers.Auth.Login;
-using AegisIdentity.CommandHandlers.Auth.Logout;
-using AegisIdentity.CommandHandlers.Auth.Refresh;
-using AegisIdentity.CommandHandlers.Auth.Register;
-using AegisIdentity.CommandHandlers.Auth.ResendConfirmationEmail;
-using AegisIdentity.CommandHandlers.Auth.ResetPassword;
+using Lumen.CommandHandlers.Auth.ConfirmEmail;
+using Lumen.CommandHandlers.Auth.ForgotPassword;
+using Lumen.CommandHandlers.Auth.Login;
+using Lumen.CommandHandlers.Auth.Logout;
+using Lumen.CommandHandlers.Auth.Refresh;
+using Lumen.CommandHandlers.Auth.Register;
+using Lumen.CommandHandlers.Auth.ResendConfirmationEmail;
+using Lumen.CommandHandlers.Auth.ResetPassword;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AegisIdentity.Api.Controllers;
+namespace Lumen.Api.Controllers;
 
 [Route("api/auth")]
 public sealed class AuthController : ApiBaseController

@@ -1,4 +1,4 @@
-namespace AegisIdentity.SharedKernel.Constants;
+namespace Lumen.SharedKernel.Constants;
 
 /// <summary>
 /// Canonical names of the transactional email templates embedded in the Infrastructure assembly.

@@ -1,7 +1,7 @@
-using AegisIdentity.Domain.Tokens;
+using Lumen.Domain.Tokens;
 using FluentAssertions;
 
-namespace AegisIdentity.UnitTests.Domain.Tokens;
+namespace Lumen.UnitTests.Domain.Tokens;
 
 public sealed class PasswordResetTokenTests
 {

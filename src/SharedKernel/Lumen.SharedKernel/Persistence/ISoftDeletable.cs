@@ -1,4 +1,4 @@
-namespace AegisIdentity.SharedKernel.Persistence;
+namespace Lumen.SharedKernel.Persistence;
 
 /// <summary>
 /// Marks an entity as soft-deletable. EF Core applies a global query filter

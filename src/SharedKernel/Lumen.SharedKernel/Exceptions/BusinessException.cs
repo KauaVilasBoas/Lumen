@@ -1,4 +1,4 @@
-namespace AegisIdentity.SharedKernel.Exceptions;
+namespace Lumen.SharedKernel.Exceptions;
 
 public abstract class BusinessException : Exception
 {

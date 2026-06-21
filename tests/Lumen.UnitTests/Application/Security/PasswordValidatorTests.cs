@@ -1,9 +1,9 @@
-using AegisIdentity.Infrastructure.Security;
-using AegisIdentity.Domain.Security;
+using Lumen.Infrastructure.Security;
+using Lumen.Domain.Security;
 using FluentAssertions;
 using NSubstitute;
 
-namespace AegisIdentity.UnitTests.Application.Security;
+namespace Lumen.UnitTests.Application.Security;
 
 public sealed class PasswordValidatorTests
 {

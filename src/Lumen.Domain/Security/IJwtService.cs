@@ -1,7 +1,7 @@
 using System.Security.Claims;
-using AegisIdentity.Domain.Users;
+using Lumen.Domain.Users;
 
-namespace AegisIdentity.Domain.Security;
+namespace Lumen.Domain.Security;
 
 /// <summary>
 /// Port for JWT generation, refresh-token value creation, and token validation.

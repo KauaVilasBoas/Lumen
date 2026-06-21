@@ -1,4 +1,4 @@
-namespace AegisIdentity.Domain.Authorization;
+namespace Lumen.Domain.Authorization;
 
 public interface IProfileRepository
 {

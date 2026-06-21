@@ -1,14 +1,14 @@
-using AegisIdentity.DataAccess.Persistence;
-using AegisIdentity.IntegrationTests.Infrastructure;
+using Lumen.DataAccess.Persistence;
+using Lumen.IntegrationTests.Infrastructure;
 using FluentAssertions;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
-namespace AegisIdentity.IntegrationTests.Persistence;
+namespace Lumen.IntegrationTests.Persistence;
 
 [Collection(IntegrationCollection.Name)]
 [Trait("Category", "Integration")]
-public sealed class AegisIdentityDbContextIntegrationTests(IntegrationFixture fixture)
+public sealed class LumenDbContextIntegrationTests(IntegrationFixture fixture)
 {
     [Fact]
     public async Task MigrateAsync_AppliesAllMigrations_WithoutError()

@@ -1,9 +1,9 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Claims;
-using AegisIdentity.Backoffice.Configuration;
+using Lumen.Backoffice.Configuration;
 
-namespace AegisIdentity.Backoffice.Services;
+namespace Lumen.Backoffice.Services;
 
 public sealed class AdminApiClient
 {

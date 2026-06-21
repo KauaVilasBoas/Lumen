@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 
-namespace AegisIdentity.Migrations;
+namespace Lumen.Migrations;
 
 public static class EfMigrationsServiceCollectionExtensions
 {

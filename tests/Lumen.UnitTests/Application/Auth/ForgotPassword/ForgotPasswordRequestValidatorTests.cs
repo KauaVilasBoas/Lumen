@@ -1,8 +1,8 @@
-using AegisIdentity.CommandHandlers.Auth.ForgotPassword;
+using Lumen.CommandHandlers.Auth.ForgotPassword;
 using FluentAssertions;
 using FluentValidation.TestHelper;
 
-namespace AegisIdentity.UnitTests.Application.Auth.ForgotPassword;
+namespace Lumen.UnitTests.Application.Auth.ForgotPassword;
 
 public sealed class ForgotPasswordRequestValidatorTests
 {

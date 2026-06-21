@@ -1,14 +1,14 @@
-using AegisIdentity.CommandHandlers.Users.ChangePassword;
-using AegisIdentity.Domain.Notifications;
-using AegisIdentity.Domain.Security;
-using AegisIdentity.Domain.Tokens;
-using AegisIdentity.Domain.Users;
-using AegisIdentity.SharedKernel.Exceptions;
+using Lumen.CommandHandlers.Users.ChangePassword;
+using Lumen.Domain.Notifications;
+using Lumen.Domain.Security;
+using Lumen.Domain.Tokens;
+using Lumen.Domain.Users;
+using Lumen.SharedKernel.Exceptions;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 
-namespace AegisIdentity.UnitTests.Application.Users.ChangePassword;
+namespace Lumen.UnitTests.Application.Users.ChangePassword;
 
 public sealed class ChangePasswordCommandHandlerTests
 {

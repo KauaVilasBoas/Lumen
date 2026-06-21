@@ -1,17 +1,17 @@
 using System.Linq.Expressions;
-using AegisIdentity.Domain.Audit;
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.Domain.Tokens;
-using AegisIdentity.Domain.Users;
-using AegisIdentity.SharedKernel.Persistence;
+using Lumen.Domain.Audit;
+using Lumen.Domain.Authorization;
+using Lumen.Domain.Tokens;
+using Lumen.Domain.Users;
+using Lumen.SharedKernel.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
-namespace AegisIdentity.DataAccess.Persistence;
+namespace Lumen.DataAccess.Persistence;
 
-public sealed class AegisIdentityDbContext : DbContext
+public sealed class LumenDbContext : DbContext
 {
-    public AegisIdentityDbContext(DbContextOptions<AegisIdentityDbContext> options)
+    public LumenDbContext(DbContextOptions<LumenDbContext> options)
         : base(options)
     {
     }
@@ -38,7 +38,7 @@ public sealed class AegisIdentityDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AegisIdentityDbContext).Assembly);
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(LumenDbContext).Assembly);
         ApplySoftDeleteFilters(modelBuilder);
     }
 

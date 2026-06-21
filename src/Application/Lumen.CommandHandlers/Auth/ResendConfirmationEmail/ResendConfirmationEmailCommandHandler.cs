@@ -1,14 +1,14 @@
 using System.Security.Cryptography;
-using AegisIdentity.Domain.Configuration;
-using AegisIdentity.Domain.Notifications;
-using AegisIdentity.Domain.Tokens;
-using AegisIdentity.Domain.Users;
-using AegisIdentity.SharedKernel.Constants;
-using AegisIdentity.SharedKernel.Util;
+using Lumen.Domain.Configuration;
+using Lumen.Domain.Notifications;
+using Lumen.Domain.Tokens;
+using Lumen.Domain.Users;
+using Lumen.SharedKernel.Constants;
+using Lumen.SharedKernel.Util;
 using FluentValidation;
 using MediatR;
 
-namespace AegisIdentity.CommandHandlers.Auth.ResendConfirmationEmail;
+namespace Lumen.CommandHandlers.Auth.ResendConfirmationEmail;
 
 public sealed class ResendConfirmationEmailCommandHandler
     : IRequestHandler<ResendConfirmationEmailCommandHandler.Command, Unit>

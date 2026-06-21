@@ -1,4 +1,4 @@
-﻿namespace AegisIdentity.Domain;
+﻿namespace Lumen.Domain;
 
 public class Class1
 {

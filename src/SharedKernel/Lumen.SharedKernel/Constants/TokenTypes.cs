@@ -1,4 +1,4 @@
-namespace AegisIdentity.SharedKernel.Constants;
+namespace Lumen.SharedKernel.Constants;
 
 /// <summary>
 /// Well-known token type identifiers used in authentication responses.

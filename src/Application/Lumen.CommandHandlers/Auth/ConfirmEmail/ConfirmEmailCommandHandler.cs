@@ -1,12 +1,12 @@
-using AegisIdentity.Domain.Tokens;
-using AegisIdentity.Domain.Users;
-using AegisIdentity.SharedKernel.Constants;
-using AegisIdentity.SharedKernel.Exceptions;
-using AegisIdentity.SharedKernel.Util;
+using Lumen.Domain.Tokens;
+using Lumen.Domain.Users;
+using Lumen.SharedKernel.Constants;
+using Lumen.SharedKernel.Exceptions;
+using Lumen.SharedKernel.Util;
 using FluentValidation;
 using MediatR;
 
-namespace AegisIdentity.CommandHandlers.Auth.ConfirmEmail;
+namespace Lumen.CommandHandlers.Auth.ConfirmEmail;
 
 public sealed class ConfirmEmailCommandHandler
     : IRequestHandler<ConfirmEmailCommandHandler.Command, Unit>

@@ -1,17 +1,17 @@
-using AegisIdentity.Domain.Users;
+using Lumen.Domain.Users;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
-namespace AegisIdentity.DataAccess.Persistence.Repositories;
+namespace Lumen.DataAccess.Persistence.Repositories;
 
 internal sealed class UserRepository : IUserRepository
 {
     private const int SqlServerUniqueConstraintViolation = 2627;
     private const int SqlServerUniqueIndexViolation = 2601;
 
-    private readonly AegisIdentityDbContext _dbContext;
+    private readonly LumenDbContext _dbContext;
 
-    public UserRepository(AegisIdentityDbContext dbContext)
+    public UserRepository(LumenDbContext dbContext)
     {
         _dbContext = dbContext;
     }

@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace AegisIdentity.Migrations.EfMigrations
+namespace Lumen.Migrations.EfMigrations
 {
     public partial class SeedAuthorizationGraphPermission : Migration
     {

@@ -1,16 +1,16 @@
-using AegisIdentity.CommandHandlers.Users.Update;
-using AegisIdentity.Domain.Audit;
-using AegisIdentity.Domain.Configuration;
-using AegisIdentity.Domain.Notifications;
-using AegisIdentity.Domain.Tokens;
-using AegisIdentity.Domain.Users;
-using AegisIdentity.SharedKernel.Exceptions;
+using Lumen.CommandHandlers.Users.Update;
+using Lumen.Domain.Audit;
+using Lumen.Domain.Configuration;
+using Lumen.Domain.Notifications;
+using Lumen.Domain.Tokens;
+using Lumen.Domain.Users;
+using Lumen.SharedKernel.Exceptions;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
-namespace AegisIdentity.UnitTests.Application.Users;
+namespace Lumen.UnitTests.Application.Users;
 
 public sealed class UpdateUserCommandHandlerTests
 {

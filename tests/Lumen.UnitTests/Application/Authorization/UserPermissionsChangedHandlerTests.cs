@@ -1,11 +1,11 @@
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.EventHandlers.Authorization;
+using Lumen.Domain.Authorization;
+using Lumen.EventHandlers.Authorization;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
-namespace AegisIdentity.UnitTests.Application.Authorization;
+namespace Lumen.UnitTests.Application.Authorization;
 
 public sealed class UserPermissionsChangedHandlerTests
 {

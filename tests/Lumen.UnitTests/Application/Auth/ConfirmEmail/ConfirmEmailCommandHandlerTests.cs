@@ -1,12 +1,12 @@
-using AegisIdentity.CommandHandlers.Auth.ConfirmEmail;
-using AegisIdentity.Domain.Tokens;
-using AegisIdentity.Domain.Users;
-using AegisIdentity.SharedKernel.Exceptions;
-using AegisIdentity.SharedKernel.Util;
+using Lumen.CommandHandlers.Auth.ConfirmEmail;
+using Lumen.Domain.Tokens;
+using Lumen.Domain.Users;
+using Lumen.SharedKernel.Exceptions;
+using Lumen.SharedKernel.Util;
 using FluentAssertions;
 using NSubstitute;
 
-namespace AegisIdentity.UnitTests.Application.Auth.ConfirmEmail;
+namespace Lumen.UnitTests.Application.Auth.ConfirmEmail;
 
 public sealed class ConfirmEmailCommandHandlerTests
 {

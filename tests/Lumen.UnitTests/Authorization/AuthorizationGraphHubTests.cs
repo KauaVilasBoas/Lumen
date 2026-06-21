@@ -1,12 +1,12 @@
 using System.Security.Claims;
-using AegisIdentity.Api.Hubs;
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.SharedKernel.Constants;
+using Lumen.Api.Hubs;
+using Lumen.Domain.Authorization;
+using Lumen.SharedKernel.Constants;
 using FluentAssertions;
 using Microsoft.AspNetCore.SignalR;
 using NSubstitute;
 
-namespace AegisIdentity.UnitTests.Authorization;
+namespace Lumen.UnitTests.Authorization;
 
 public sealed class AuthorizationGraphHubTests
 {

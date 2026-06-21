@@ -1,4 +1,4 @@
-namespace AegisIdentity.Domain.Users;
+namespace Lumen.Domain.Users;
 
 public interface IUserRepository
 {

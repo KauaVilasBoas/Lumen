@@ -1,4 +1,4 @@
-namespace AegisIdentity.IntegrationTests;
+namespace Lumen.IntegrationTests;
 
 public class UnitTest1
 {

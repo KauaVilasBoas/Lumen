@@ -1,7 +1,7 @@
-using AegisIdentity.Domain.Users;
+using Lumen.Domain.Users;
 using FluentAssertions;
 
-namespace AegisIdentity.UnitTests.Domain.Users;
+namespace Lumen.UnitTests.Domain.Users;
 
 public sealed class UserTests
 {

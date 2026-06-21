@@ -1,12 +1,12 @@
-using AegisIdentity.Domain.Notifications;
-using AegisIdentity.Infrastructure.Configuration;
-using AegisIdentity.Integration.Notifications;
+using Lumen.Domain.Notifications;
+using Lumen.Infrastructure.Configuration;
+using Lumen.Integration.Notifications;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using MimeKit;
 
-namespace AegisIdentity.UnitTests.Infrastructure.Notifications;
+namespace Lumen.UnitTests.Infrastructure.Notifications;
 
 public sealed class MailKitEmailServiceTests
 {

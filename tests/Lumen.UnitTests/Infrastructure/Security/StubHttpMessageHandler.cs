@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace AegisIdentity.UnitTests.Infrastructure.Security;
+namespace Lumen.UnitTests.Infrastructure.Security;
 
 internal sealed class StubHttpMessageHandler : HttpMessageHandler
 {

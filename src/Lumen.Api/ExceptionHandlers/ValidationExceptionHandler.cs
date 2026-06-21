@@ -2,7 +2,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AegisIdentity.Api.ExceptionHandlers;
+namespace Lumen.Api.ExceptionHandlers;
 
 public sealed class ValidationExceptionHandler : IExceptionHandler
 {

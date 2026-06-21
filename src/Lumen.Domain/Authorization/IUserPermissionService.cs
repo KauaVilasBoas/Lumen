@@ -1,4 +1,4 @@
-namespace AegisIdentity.Domain.Authorization;
+namespace Lumen.Domain.Authorization;
 
 /// <summary>
 /// Resolves the permission codes granted to a user, consulting the distributed cache

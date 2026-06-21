@@ -1,6 +1,6 @@
-using AegisIdentity.Domain.Notifications;
+using Lumen.Domain.Notifications;
 
-namespace AegisIdentity.Integration.Notifications;
+namespace Lumen.Integration.Notifications;
 
 // Adapts the concrete EmailTemplateRenderer to IEmailTemplateRenderer so that
 // Application use cases can depend on the abstraction rather than the Integration type.

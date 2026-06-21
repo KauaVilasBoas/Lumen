@@ -1,10 +1,10 @@
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.SharedKernel.Constants;
+using Lumen.Domain.Authorization;
+using Lumen.SharedKernel.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using System.Security.Claims;
 
-namespace AegisIdentity.Api.Hubs;
+namespace Lumen.Api.Hubs;
 
 [Authorize(Policy = PermissionCodes.AuthorizationGraph.View)]
 public sealed class AuthorizationGraphHub : Hub<IAuthorizationGraphHubClient>

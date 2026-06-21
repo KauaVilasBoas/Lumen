@@ -1,14 +1,14 @@
 using System.Reflection;
-using AegisIdentity.Api.Authorization;
-using AegisIdentity.Api.Controllers;
-using AegisIdentity.SharedKernel.Constants;
+using Lumen.Api.Authorization;
+using Lumen.Api.Controllers;
+using Lumen.SharedKernel.Constants;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using NSubstitute;
 
-namespace AegisIdentity.UnitTests.Authorization;
+namespace Lumen.UnitTests.Authorization;
 
 public sealed class ConventionPermissionRegressionTests
 {

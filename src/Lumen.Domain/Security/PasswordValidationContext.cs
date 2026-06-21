@@ -1,4 +1,4 @@
-namespace AegisIdentity.Domain.Security;
+namespace Lumen.Domain.Security;
 
 /// <summary>
 /// Input context for password policy validation.

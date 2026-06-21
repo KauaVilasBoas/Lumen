@@ -1,9 +1,9 @@
-using AegisIdentity.Domain.Audit;
-using AegisIdentity.SharedKernel.Constants;
+using Lumen.Domain.Audit;
+using Lumen.SharedKernel.Constants;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
-namespace AegisIdentity.EventHandlers.Audit;
+namespace Lumen.EventHandlers.Audit;
 
 public sealed class UserProfileRemovedAuditHandler : INotificationHandler<UserProfileRemoved>
 {

@@ -1,7 +1,7 @@
-using AegisIdentity.Domain.Users;
-using AegisIdentity.SharedKernel.Constants;
+using Lumen.Domain.Users;
+using Lumen.SharedKernel.Constants;
 
-namespace AegisIdentity.ReadModels.Users;
+namespace Lumen.ReadModels.Users;
 
 public static class UserStateResolver
 {

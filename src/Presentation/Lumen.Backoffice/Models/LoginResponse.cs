@@ -1,4 +1,4 @@
-namespace AegisIdentity.Backoffice.Models;
+namespace Lumen.Backoffice.Models;
 
 /// <summary>
 /// JSON response from <c>POST /api/auth/login</c>.

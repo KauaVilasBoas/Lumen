@@ -1,13 +1,13 @@
-using AegisIdentity.CommandHandlers.UserProfiles.AssignUserProfile;
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.Domain.Users;
-using AegisIdentity.SharedKernel.Exceptions;
+using Lumen.CommandHandlers.UserProfiles.AssignUserProfile;
+using Lumen.Domain.Authorization;
+using Lumen.Domain.Users;
+using Lumen.SharedKernel.Exceptions;
 using FluentAssertions;
 using MediatR;
 using NSubstitute;
-using DomainProfile = AegisIdentity.Domain.Authorization.Profile;
+using DomainProfile = Lumen.Domain.Authorization.Profile;
 
-namespace AegisIdentity.UnitTests.Application.UserProfiles;
+namespace Lumen.UnitTests.Application.UserProfiles;
 
 public sealed class AssignUserProfileCommandHandlerTests
 {

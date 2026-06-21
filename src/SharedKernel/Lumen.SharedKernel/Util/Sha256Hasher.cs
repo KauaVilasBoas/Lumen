@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace AegisIdentity.SharedKernel.Util;
+namespace Lumen.SharedKernel.Util;
 
 /// <summary>
 /// Deterministic SHA-256 hashing helpers used throughout the application to

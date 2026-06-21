@@ -1,8 +1,8 @@
-using AegisIdentity.CommandHandlers.Users.Update;
+using Lumen.CommandHandlers.Users.Update;
 using FluentAssertions;
 using FluentValidation.TestHelper;
 
-namespace AegisIdentity.UnitTests.Application.Users;
+namespace Lumen.UnitTests.Application.Users;
 
 public sealed class UpdateUserRequestValidatorTests
 {

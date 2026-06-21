@@ -1,9 +1,9 @@
-using AegisIdentity.Api.ExceptionHandlers;
-using AegisIdentity.SharedKernel.Exceptions;
+using Lumen.Api.ExceptionHandlers;
+using Lumen.SharedKernel.Exceptions;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 
-namespace AegisIdentity.UnitTests.ExceptionHandlers;
+namespace Lumen.UnitTests.ExceptionHandlers;
 
 public sealed class BusinessExceptionHandlerTests
 {

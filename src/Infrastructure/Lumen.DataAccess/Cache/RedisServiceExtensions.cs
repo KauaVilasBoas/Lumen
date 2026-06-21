@@ -1,13 +1,13 @@
-using AegisIdentity.DataAccess.HealthChecks;
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.Infrastructure.Configuration;
+using Lumen.DataAccess.HealthChecks;
+using Lumen.Domain.Authorization;
+using Lumen.Infrastructure.Configuration;
 using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using StackExchange.Redis;
 
-namespace AegisIdentity.DataAccess.Cache;
+namespace Lumen.DataAccess.Cache;
 
 public static class RedisServiceExtensions
 {

@@ -1,4 +1,4 @@
-namespace AegisIdentity.SharedKernel.Util;
+namespace Lumen.SharedKernel.Util;
 
 /// <summary>
 /// URL-safe Base64 encoding without padding characters.

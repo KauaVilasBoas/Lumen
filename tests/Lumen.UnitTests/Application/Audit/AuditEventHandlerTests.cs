@@ -1,12 +1,12 @@
-using AegisIdentity.Domain.Audit;
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.EventHandlers.Audit;
-using AegisIdentity.SharedKernel.Constants;
+using Lumen.Domain.Audit;
+using Lumen.Domain.Authorization;
+using Lumen.EventHandlers.Audit;
+using Lumen.SharedKernel.Constants;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 
-namespace AegisIdentity.UnitTests.Application.Audit;
+namespace Lumen.UnitTests.Application.Audit;
 
 public sealed class AuditEventHandlerTests
 {

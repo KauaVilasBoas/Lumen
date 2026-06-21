@@ -1,12 +1,12 @@
-using AegisIdentity.DataAccess.Persistence;
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.IntegrationTests.Infrastructure;
-using AegisIdentity.SharedKernel.Constants;
+using Lumen.DataAccess.Persistence;
+using Lumen.Domain.Authorization;
+using Lumen.IntegrationTests.Infrastructure;
+using Lumen.SharedKernel.Constants;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace AegisIdentity.IntegrationTests.Authorization;
+namespace Lumen.IntegrationTests.Authorization;
 
 [Collection(IntegrationCollection.Name)]
 [Trait("Category", "Integration")]
@@ -65,7 +65,7 @@ public sealed class DefaultProfilesTests
     public async Task AdministratorPermissionReconciliation_AfterDiscovery_AdminHoldsAllPermissions()
     {
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
 
         var allPermissionIds = await db.Permissions
             .Where(p => !p.IsDeleted)
@@ -88,7 +88,7 @@ public sealed class DefaultProfilesTests
     public async Task AdministratorPermissionReconciliation_IsAdditive_DoesNotRemoveExistingAssignments()
     {
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
 
         var existingAssignmentIds = await db.PermissionProfiles
             .Where(pp => pp.ProfileId == SystemProfiles.AdministratorId && !pp.IsDeleted)
@@ -100,7 +100,7 @@ public sealed class DefaultProfilesTests
         await db.SaveChangesAsync();
 
         var reconciliationService = scope.ServiceProvider
-            .GetRequiredService<AegisIdentity.Api.Authorization.AdministratorPermissionReconciliationService>();
+            .GetRequiredService<Lumen.Api.Authorization.AdministratorPermissionReconciliationService>();
 
         await reconciliationService.ReconcileAsync();
 

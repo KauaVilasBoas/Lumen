@@ -1,15 +1,15 @@
-using AegisIdentity.CommandHandlers.Profiles.CreateProfile;
-using AegisIdentity.CommandHandlers.Profiles.DeleteProfile;
-using AegisIdentity.CommandHandlers.Profiles.SetProfilePermissions;
-using AegisIdentity.CommandHandlers.Profiles.UpdateProfile;
-using AegisIdentity.ReadModels.Queries;
-using AegisIdentity.SharedKernel.Authorization;
-using AegisIdentity.SharedKernel.Constants;
+using Lumen.CommandHandlers.Profiles.CreateProfile;
+using Lumen.CommandHandlers.Profiles.DeleteProfile;
+using Lumen.CommandHandlers.Profiles.SetProfilePermissions;
+using Lumen.CommandHandlers.Profiles.UpdateProfile;
+using Lumen.ReadModels.Queries;
+using Lumen.SharedKernel.Authorization;
+using Lumen.SharedKernel.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AegisIdentity.Api.Controllers;
+namespace Lumen.Api.Controllers;
 
 [Route("api/profiles")]
 [PermissionGroup(PermissionGroups.Profiles)]

@@ -1,6 +1,6 @@
-using AegisIdentity.ReadModels.Queries;
+using Lumen.ReadModels.Queries;
 
-namespace AegisIdentity.Api.Hubs;
+namespace Lumen.Api.Hubs;
 
 public interface IAuthorizationGraphHubClient
 {

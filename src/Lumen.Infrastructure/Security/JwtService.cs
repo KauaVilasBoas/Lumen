@@ -2,13 +2,13 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using AegisIdentity.Domain.Security;
-using AegisIdentity.Domain.Users;
-using AegisIdentity.Infrastructure.Configuration;
+using Lumen.Domain.Security;
+using Lumen.Domain.Users;
+using Lumen.Infrastructure.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
-namespace AegisIdentity.Infrastructure.Security;
+namespace Lumen.Infrastructure.Security;
 
 public sealed class JwtService : IJwtService
 {

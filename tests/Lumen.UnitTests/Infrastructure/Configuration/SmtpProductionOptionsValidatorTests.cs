@@ -1,7 +1,7 @@
-using AegisIdentity.Infrastructure.Configuration;
+using Lumen.Infrastructure.Configuration;
 using FluentAssertions;
 
-namespace AegisIdentity.UnitTests.Infrastructure.Configuration;
+namespace Lumen.UnitTests.Infrastructure.Configuration;
 
 public sealed class SmtpProductionOptionsValidatorTests
 {

@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Caching.Distributed;
 
-namespace AegisIdentity.IntegrationTests.Infrastructure;
+namespace Lumen.IntegrationTests.Infrastructure;
 
 public sealed class BrokenDistributedCache : IDistributedCache
 {

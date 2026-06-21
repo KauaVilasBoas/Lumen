@@ -1,12 +1,12 @@
 using System.Security.Claims;
-using AegisIdentity.Backoffice.TagHelpers;
-using AegisIdentity.Domain.Authorization;
+using Lumen.Backoffice.TagHelpers;
+using Lumen.Domain.Authorization;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 using NSubstitute;
 
-namespace AegisIdentity.UnitTests.Backoffice;
+namespace Lumen.UnitTests.Backoffice;
 
 public sealed class RequirePermissionTagHelperTests
 {

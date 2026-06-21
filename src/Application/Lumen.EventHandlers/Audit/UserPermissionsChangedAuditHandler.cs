@@ -1,10 +1,10 @@
-using AegisIdentity.Domain.Audit;
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.SharedKernel.Constants;
+using Lumen.Domain.Audit;
+using Lumen.Domain.Authorization;
+using Lumen.SharedKernel.Constants;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
-namespace AegisIdentity.EventHandlers.Audit;
+namespace Lumen.EventHandlers.Audit;
 
 public sealed class UserPermissionsChangedAuditHandler : INotificationHandler<UserPermissionsChanged>
 {

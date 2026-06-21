@@ -1,5 +1,5 @@
 using MediatR;
 
-namespace AegisIdentity.Domain.Audit;
+namespace Lumen.Domain.Audit;
 
 public sealed record ProfilePermissionsSet(Guid ProfileId, string ProfileName, string ActorUsername) : INotification;

@@ -1,11 +1,11 @@
-using AegisIdentity.CommandHandlers.Profiles.UpdateProfile;
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.SharedKernel.Exceptions;
+using Lumen.CommandHandlers.Profiles.UpdateProfile;
+using Lumen.Domain.Authorization;
+using Lumen.SharedKernel.Exceptions;
 using FluentAssertions;
 using NSubstitute;
-using DomainProfile = AegisIdentity.Domain.Authorization.Profile;
+using DomainProfile = Lumen.Domain.Authorization.Profile;
 
-namespace AegisIdentity.UnitTests.Application.Profiles;
+namespace Lumen.UnitTests.Application.Profiles;
 
 public sealed class UpdateProfileCommandHandlerTests
 {

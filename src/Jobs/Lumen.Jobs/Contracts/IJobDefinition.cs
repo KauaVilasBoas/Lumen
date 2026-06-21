@@ -1,13 +1,13 @@
-namespace AegisIdentity.Jobs.Contracts;
+namespace Lumen.Jobs.Contracts;
 
 /// <summary>
 /// Defines a self-describing recurring Hangfire job.
 ///
 /// Implement this interface on every recurring job class.  The auto-registration
-/// mechanism in <see cref="AegisIdentity.Jobs.Configuration.HangfireServiceCollectionExtensions"/>
+/// mechanism in <see cref="Lumen.Jobs.Configuration.HangfireServiceCollectionExtensions"/>
 /// discovers all concrete implementations via reflection and registers them in
 /// the DI container.  The scheduler extension in
-/// <see cref="AegisIdentity.Jobs.Scheduling.HangfireSchedulerExtensions"/>
+/// <see cref="Lumen.Jobs.Scheduling.HangfireSchedulerExtensions"/>
 /// resolves every registered <see cref="IJobDefinition"/> and calls
 /// <c>RecurringJob.AddOrUpdate</c> automatically — no manual wiring in
 /// Program.cs is needed when a new job is added.

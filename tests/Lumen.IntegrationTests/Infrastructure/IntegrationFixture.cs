@@ -1,7 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using AegisIdentity.DataAccess.Persistence;
+using Lumen.DataAccess.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -15,7 +15,7 @@ using Microsoft.IdentityModel.Tokens;
 using Testcontainers.MsSql;
 using Testcontainers.Redis;
 
-namespace AegisIdentity.IntegrationTests.Infrastructure;
+namespace Lumen.IntegrationTests.Infrastructure;
 
 /// <summary>
 /// Single shared fixture for the entire integration test suite.
@@ -60,16 +60,16 @@ public sealed class IntegrationFixture : WebApplicationFactory<Program>, IAsyncL
         await base.DisposeAsync();
     }
 
-    /// <summary>Creates a <see cref="AegisIdentityDbContext"/> connected to the shared SQL Server container.</summary>
-    public AegisIdentityDbContext CreateDbContext()
+    /// <summary>Creates a <see cref="LumenDbContext"/> connected to the shared SQL Server container.</summary>
+    public LumenDbContext CreateDbContext()
     {
-        var options = new DbContextOptionsBuilder<AegisIdentityDbContext>()
+        var options = new DbContextOptionsBuilder<LumenDbContext>()
             .UseSqlServer(
                 _sqlContainer.GetConnectionString(),
-                sql => sql.MigrationsAssembly("AegisIdentity.Migrations"))
+                sql => sql.MigrationsAssembly("Lumen.Migrations"))
             .Options;
 
-        return new AegisIdentityDbContext(options);
+        return new LumenDbContext(options);
     }
 
     public HttpClient CreateAnonymousClient() => CreateClient();
@@ -142,7 +142,7 @@ public sealed class IntegrationFixture : WebApplicationFactory<Program>, IAsyncL
                 ["Smtp:Host"] = "localhost",
                 ["Smtp:Port"] = "1025",
                 ["Smtp:From"] = "test@aegis.local",
-                ["Hibp:UserAgent"] = "AegisIdentity-Tests/1.0",
+                ["Hibp:UserAgent"] = "Lumen-Tests/1.0",
                 ["Hibp:ApiBaseUrl"] = "https://api.pwnedpasswords.com/",
                 ["App:BaseUrl"] = "http://localhost:5000",
                 ["App:LockoutThreshold"] = "5",

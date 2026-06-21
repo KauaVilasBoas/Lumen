@@ -1,6 +1,6 @@
 using Serilog.Context;
 
-namespace AegisIdentity.Api.Middleware;
+namespace Lumen.Api.Middleware;
 
 /// <summary>
 /// Reads or generates a correlation id per request and propagates it via the

@@ -1,13 +1,13 @@
-using AegisIdentity.CommandHandlers.UserProfiles.RemoveUserProfile;
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.Domain.Users;
-using AegisIdentity.SharedKernel.Exceptions;
+using Lumen.CommandHandlers.UserProfiles.RemoveUserProfile;
+using Lumen.Domain.Authorization;
+using Lumen.Domain.Users;
+using Lumen.SharedKernel.Exceptions;
 using FluentAssertions;
 using MediatR;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;
 
-namespace AegisIdentity.UnitTests.Application.UserProfiles;
+namespace Lumen.UnitTests.Application.UserProfiles;
 
 public sealed class RemoveUserProfileCommandHandlerTests
 {

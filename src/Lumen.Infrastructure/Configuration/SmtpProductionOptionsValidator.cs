@@ -1,7 +1,7 @@
-using AegisIdentity.SharedKernel.Constants;
+using Lumen.SharedKernel.Constants;
 using Microsoft.Extensions.Options;
 
-namespace AegisIdentity.Infrastructure.Configuration;
+namespace Lumen.Infrastructure.Configuration;
 
 /// <summary>
 /// Production-only validation for <see cref="SmtpOptions"/>, registered by

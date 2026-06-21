@@ -1,20 +1,20 @@
-using AegisIdentity.DataAccess.Persistence.Repositories;
-using AegisIdentity.Domain.Audit;
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.Domain.Tokens;
-using AegisIdentity.Domain.Users;
-using AegisIdentity.Infrastructure.Configuration;
+using Lumen.DataAccess.Persistence.Repositories;
+using Lumen.Domain.Audit;
+using Lumen.Domain.Authorization;
+using Lumen.Domain.Tokens;
+using Lumen.Domain.Users;
+using Lumen.Infrastructure.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
-namespace AegisIdentity.DataAccess.Persistence;
+namespace Lumen.DataAccess.Persistence;
 
 public static class SqlServerServiceExtensions
 {
     public static IServiceCollection AddRelationalDataAccess(this IServiceCollection services)
     {
-        services.AddDbContext<AegisIdentityDbContext>((serviceProvider, options) =>
+        services.AddDbContext<LumenDbContext>((serviceProvider, options) =>
         {
             var sqlServerOptions = serviceProvider
                 .GetRequiredService<IOptions<SqlServerOptions>>()
@@ -22,7 +22,7 @@ public static class SqlServerServiceExtensions
 
             options.UseSqlServer(
                 sqlServerOptions.ConnectionString,
-                sql => sql.MigrationsAssembly("AegisIdentity.Migrations"));
+                sql => sql.MigrationsAssembly("Lumen.Migrations"));
         });
 
         services.AddScoped<IUserRepository, UserRepository>();

@@ -1,6 +1,6 @@
-using AegisIdentity.SharedKernel.Persistence;
+using Lumen.SharedKernel.Persistence;
 
-namespace AegisIdentity.Domain.Users;
+namespace Lumen.Domain.Users;
 
 public sealed class User : ISoftDeletable
 {

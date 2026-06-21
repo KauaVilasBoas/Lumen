@@ -1,10 +1,10 @@
 using System.Text.Json;
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.SharedKernel.Constants;
+using Lumen.Domain.Authorization;
+using Lumen.SharedKernel.Constants;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 
-namespace AegisIdentity.DataAccess.Cache;
+namespace Lumen.DataAccess.Cache;
 
 /// <summary>
 /// Distributed-cache implementation of <see cref="IUserPermissionCache"/> backed by Redis.

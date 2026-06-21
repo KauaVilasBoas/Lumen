@@ -1,15 +1,15 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
-using AegisIdentity.DataAccess.Persistence;
-using AegisIdentity.Domain.Tokens;
-using AegisIdentity.IntegrationTests.Infrastructure;
-using AegisIdentity.SharedKernel.Util;
+using Lumen.DataAccess.Persistence;
+using Lumen.Domain.Tokens;
+using Lumen.IntegrationTests.Infrastructure;
+using Lumen.SharedKernel.Util;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace AegisIdentity.IntegrationTests.Authorization;
+namespace Lumen.IntegrationTests.Authorization;
 
 [Collection(IntegrationCollection.Name)]
 [Trait("Category", "Integration")]
@@ -78,7 +78,7 @@ public sealed class ResetPasswordEndpointTests
         await client.PostAsJsonAsync(Endpoint, new { token = rawToken, newPassword = "NewStr0ng!Pass123" });
 
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
         var tokenHash = Sha256Hasher.ComputeHex(rawToken);
         var token = await db.PasswordResetTokens
             .IgnoreQueryFilters()
@@ -94,13 +94,13 @@ public sealed class ResetPasswordEndpointTests
         var client = _fixture.CreateAnonymousClient();
 
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
         var originalHash = (await db.Users.IgnoreQueryFilters().FirstAsync(u => u.Id == userId)).PasswordHash;
 
         await client.PostAsJsonAsync(Endpoint, new { token = rawToken, newPassword = "NewStr0ng!Pass123" });
 
         await using var verifyScope = _fixture.Services.CreateAsyncScope();
-        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<LumenDbContext>();
         var updatedUser = await verifyDb.Users.IgnoreQueryFilters().FirstAsync(u => u.Id == userId);
 
         updatedUser.PasswordHash.Should().NotBe(originalHash);
@@ -133,7 +133,7 @@ public sealed class ResetPasswordEndpointTests
     private async Task<(Guid UserId, string RawToken)> SeedUserWithResetTokenAsync(string deterministicId)
     {
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
 
         var userId = Guid.Parse(deterministicId);
         var user = await AuthorizationSeeder.EnsureUserAsync(db, userId);

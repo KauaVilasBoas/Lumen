@@ -1,10 +1,10 @@
-using AegisIdentity.Domain.Audit;
-using AegisIdentity.ReadModels.Queries;
-using AegisIdentity.SharedKernel.Constants;
+using Lumen.Domain.Audit;
+using Lumen.ReadModels.Queries;
+using Lumen.SharedKernel.Constants;
 using FluentAssertions;
 using NSubstitute;
 
-namespace AegisIdentity.UnitTests.Application.ReadModels;
+namespace Lumen.UnitTests.Application.ReadModels;
 
 public sealed class GetRecentAuditFeedQueryHandlerTests
 {

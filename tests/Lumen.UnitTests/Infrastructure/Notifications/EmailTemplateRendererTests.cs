@@ -1,7 +1,7 @@
-using AegisIdentity.Integration.Notifications;
+using Lumen.Integration.Notifications;
 using FluentAssertions;
 
-namespace AegisIdentity.UnitTests.Infrastructure.Notifications;
+namespace Lumen.UnitTests.Infrastructure.Notifications;
 
 public sealed class EmailTemplateRendererTests
 {

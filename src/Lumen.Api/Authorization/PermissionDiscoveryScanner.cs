@@ -1,9 +1,9 @@
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.SharedKernel.Authorization;
+using Lumen.Domain.Authorization;
+using Lumen.SharedKernel.Authorization;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 
-namespace AegisIdentity.Api.Authorization;
+namespace Lumen.Api.Authorization;
 
 public sealed class PermissionDiscoveryScanner
 {

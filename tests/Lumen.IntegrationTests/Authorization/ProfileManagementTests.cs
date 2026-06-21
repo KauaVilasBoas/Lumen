@@ -1,12 +1,12 @@
-using AegisIdentity.DataAccess.Persistence;
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.IntegrationTests.Infrastructure;
-using AegisIdentity.SharedKernel.Constants;
+using Lumen.DataAccess.Persistence;
+using Lumen.Domain.Authorization;
+using Lumen.IntegrationTests.Infrastructure;
+using Lumen.SharedKernel.Constants;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace AegisIdentity.IntegrationTests.Authorization;
+namespace Lumen.IntegrationTests.Authorization;
 
 [Collection(IntegrationCollection.Name)]
 [Trait("Category", "Integration")]
@@ -205,7 +205,7 @@ public sealed class ProfileManagementTests
         var userGuid = Guid.Parse(userId);
 
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
         var cache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
 
         var permission = Permission.Create("Documents", "Read", "Documents — Read");
@@ -260,7 +260,7 @@ public sealed class ProfileManagementTests
         await using var scope = _fixture.Services.CreateAsyncScope();
         var repository = scope.ServiceProvider.GetRequiredService<IProfileRepository>();
         var userProfileRepository = scope.ServiceProvider.GetRequiredService<IUserProfileRepository>();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
 
         var permission = Permission.Create("Items", "Delete", "Items — Delete");
         db.Permissions.Add(permission);
@@ -318,7 +318,7 @@ public sealed class ProfileManagementTests
     {
         await using var scope = _fixture.Services.CreateAsyncScope();
         var repository = scope.ServiceProvider.GetRequiredService<IProfileRepository>();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
 
         var profile = Domain.Authorization.Profile.Create("IsolatedProfile", "No associations");
         db.Profiles.Add(profile);

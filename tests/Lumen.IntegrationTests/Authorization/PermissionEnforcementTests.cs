@@ -1,14 +1,14 @@
 using System.Net;
-using AegisIdentity.DataAccess.Persistence;
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.IntegrationTests.Infrastructure;
-using AegisIdentity.SharedKernel.Authorization;
+using Lumen.DataAccess.Persistence;
+using Lumen.Domain.Authorization;
+using Lumen.IntegrationTests.Infrastructure;
+using Lumen.SharedKernel.Authorization;
 using FluentAssertions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace AegisIdentity.IntegrationTests.Authorization;
+namespace Lumen.IntegrationTests.Authorization;
 
 [Collection(IntegrationCollection.Name)]
 [Trait("Category", "Integration")]
@@ -25,7 +25,7 @@ public sealed class PermissionEnforcementTests
     public async Task AuthenticatedUser_WithoutRequiredPermission_Returns403()
     {
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
         await AuthorizationSeeder.EnsurePermissionAsync(db, PermissionProbeController.ProbePermissionCode);
 
         var client = _fixture.CreateProbeClientWithUser("00000000-0000-0000-0000-000000000005");
@@ -49,7 +49,7 @@ public sealed class PermissionEnforcementTests
         const string userId = "00000000-0000-0000-0000-000000000002";
 
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
         var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
         await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(userId), PermissionProbeController.ProbePermissionCode);
 
@@ -66,7 +66,7 @@ public sealed class PermissionEnforcementTests
         var userGuid = Guid.Parse(userId);
 
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
         var cache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
 
         await AuthorizationSeeder.EnsurePermissionAsync(db, PermissionProbeController.ProbePermissionCode);
@@ -88,7 +88,7 @@ public sealed class PermissionEnforcementTests
         const string userId = "00000000-0000-0000-0000-000000000004";
 
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
         var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
         await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(userId), PermissionProbeController.ProbePermissionCode);
 

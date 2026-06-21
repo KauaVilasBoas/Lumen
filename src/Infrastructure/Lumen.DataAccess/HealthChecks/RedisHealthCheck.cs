@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
-namespace AegisIdentity.DataAccess.HealthChecks;
+namespace Lumen.DataAccess.HealthChecks;
 
 /// <summary>
 /// Health check that probes Redis by writing and removing a sentinel key via

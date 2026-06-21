@@ -1,15 +1,15 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using AegisIdentity.DataAccess.Persistence;
-using AegisIdentity.Domain.Audit;
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.IntegrationTests.Infrastructure;
+using Lumen.DataAccess.Persistence;
+using Lumen.Domain.Audit;
+using Lumen.Domain.Authorization;
+using Lumen.IntegrationTests.Infrastructure;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace AegisIdentity.IntegrationTests.Authorization;
+namespace Lumen.IntegrationTests.Authorization;
 
 [Collection(IntegrationCollection.Name)]
 [Trait("Category", "Integration")]
@@ -58,7 +58,7 @@ public sealed class AuditRecentEndpointTests
         const string requestingUserId = "97000000-0000-0000-0000-000000000002";
 
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
         var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
         await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(requestingUserId), "Audit.Read");
         await SeedAuditEntryAsync(db);
@@ -86,7 +86,7 @@ public sealed class AuditRecentEndpointTests
         const string requestingUserId = "97000000-0000-0000-0000-000000000003";
 
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
         var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
         await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(requestingUserId), "Audit.Read");
         await SeedAuditEntryAsync(db);
@@ -108,7 +108,7 @@ public sealed class AuditRecentEndpointTests
         const string requestingUserId = "97000000-0000-0000-0000-000000000004";
 
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
         var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
         await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(requestingUserId), "Audit.Read");
 
@@ -122,7 +122,7 @@ public sealed class AuditRecentEndpointTests
     // Helpers
     // ──────────────────────────────────────────────────────────────────────────
 
-    private static async Task SeedAuditEntryAsync(AegisIdentityDbContext db)
+    private static async Task SeedAuditEntryAsync(LumenDbContext db)
     {
         db.AuditEntries.Add(AuditEntry.Create(
             kind: "auth.login",

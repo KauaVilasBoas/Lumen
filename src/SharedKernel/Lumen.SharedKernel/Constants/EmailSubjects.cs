@@ -1,4 +1,4 @@
-namespace AegisIdentity.SharedKernel.Constants;
+namespace Lumen.SharedKernel.Constants;
 
 /// <summary>
 /// Subject lines for outbound transactional emails.
@@ -7,11 +7,11 @@ namespace AegisIdentity.SharedKernel.Constants;
 public static class EmailSubjects
 {
     /// <summary>Subject for the email-address confirmation message sent after registration.</summary>
-    public const string EmailConfirmation = "Confirme seu email — AegisIdentity";
+    public const string EmailConfirmation = "Confirme seu email — Lumen";
 
     /// <summary>Subject for the password-reset link email.</summary>
-    public const string PasswordReset = "Redefina sua senha — AegisIdentity";
+    public const string PasswordReset = "Redefina sua senha — Lumen";
 
     /// <summary>Subject for the password-changed notification email.</summary>
-    public const string PasswordChanged = "Sua senha foi alterada — AegisIdentity";
+    public const string PasswordChanged = "Sua senha foi alterada — Lumen";
 }

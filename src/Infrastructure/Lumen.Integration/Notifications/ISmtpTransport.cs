@@ -1,6 +1,6 @@
 using MimeKit;
 
-namespace AegisIdentity.Integration.Notifications;
+namespace Lumen.Integration.Notifications;
 
 // Seam between MailKitEmailService and the MailKit SmtpClient so the service
 // can be unit-tested without standing up a real SMTP server. Production binds

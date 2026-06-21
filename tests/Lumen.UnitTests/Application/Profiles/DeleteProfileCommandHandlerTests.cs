@@ -1,13 +1,13 @@
-using AegisIdentity.CommandHandlers.Profiles.DeleteProfile;
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.SharedKernel.Exceptions;
+using Lumen.CommandHandlers.Profiles.DeleteProfile;
+using Lumen.Domain.Authorization;
+using Lumen.SharedKernel.Exceptions;
 using FluentAssertions;
 using MediatR;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
-using DomainProfile = AegisIdentity.Domain.Authorization.Profile;
+using DomainProfile = Lumen.Domain.Authorization.Profile;
 
-namespace AegisIdentity.UnitTests.Application.Profiles;
+namespace Lumen.UnitTests.Application.Profiles;
 
 public sealed class DeleteProfileCommandHandlerTests
 {

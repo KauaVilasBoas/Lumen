@@ -1,13 +1,13 @@
-using AegisIdentity.CommandHandlers.Profiles.SetProfilePermissions;
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.SharedKernel.Exceptions;
+using Lumen.CommandHandlers.Profiles.SetProfilePermissions;
+using Lumen.Domain.Authorization;
+using Lumen.SharedKernel.Exceptions;
 using FluentAssertions;
 using FluentValidation.TestHelper;
 using MediatR;
 using NSubstitute;
-using DomainProfile = AegisIdentity.Domain.Authorization.Profile;
+using DomainProfile = Lumen.Domain.Authorization.Profile;
 
-namespace AegisIdentity.UnitTests.Application.Profiles;
+namespace Lumen.UnitTests.Application.Profiles;
 
 public sealed class SetProfilePermissionsCommandHandlerTests
 {

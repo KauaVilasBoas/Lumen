@@ -1,13 +1,13 @@
-using AegisIdentity.DataAccess.Cache;
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.SharedKernel.Constants;
+using Lumen.DataAccess.Cache;
+using Lumen.Domain.Authorization;
+using Lumen.SharedKernel.Constants;
 using FluentAssertions;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
-namespace AegisIdentity.UnitTests.Infrastructure.Cache;
+namespace Lumen.UnitTests.Infrastructure.Cache;
 
 /// <summary>
 /// Simulates a Redis client that always throws on every operation.

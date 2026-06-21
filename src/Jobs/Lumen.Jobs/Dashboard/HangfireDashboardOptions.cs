@@ -1,4 +1,4 @@
-namespace AegisIdentity.Jobs.Dashboard;
+namespace Lumen.Jobs.Dashboard;
 
 /// <summary>
 /// Strongly-typed options for the Hangfire dashboard, bound from the

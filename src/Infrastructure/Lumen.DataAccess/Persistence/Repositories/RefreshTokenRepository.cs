@@ -1,13 +1,13 @@
-using AegisIdentity.Domain.Tokens;
+using Lumen.Domain.Tokens;
 using Microsoft.EntityFrameworkCore;
 
-namespace AegisIdentity.DataAccess.Persistence.Repositories;
+namespace Lumen.DataAccess.Persistence.Repositories;
 
 internal sealed class RefreshTokenRepository : IRefreshTokenRepository
 {
-    private readonly AegisIdentityDbContext _dbContext;
+    private readonly LumenDbContext _dbContext;
 
-    public RefreshTokenRepository(AegisIdentityDbContext dbContext)
+    public RefreshTokenRepository(LumenDbContext dbContext)
     {
         _dbContext = dbContext;
     }

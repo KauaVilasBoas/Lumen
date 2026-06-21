@@ -1,7 +1,7 @@
-using AegisIdentity.Backoffice.ViewModels;
+using Lumen.Backoffice.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AegisIdentity.Backoffice.ViewComponents;
+namespace Lumen.Backoffice.ViewComponents;
 
 public sealed class UserListViewComponent : ViewComponent
 {

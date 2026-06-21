@@ -1,13 +1,13 @@
-using AegisIdentity.Domain.Audit;
+using Lumen.Domain.Audit;
 using Microsoft.EntityFrameworkCore;
 
-namespace AegisIdentity.DataAccess.Persistence.Repositories;
+namespace Lumen.DataAccess.Persistence.Repositories;
 
 internal sealed class AuditRepository : IAuditRepository
 {
-    private readonly AegisIdentityDbContext _dbContext;
+    private readonly LumenDbContext _dbContext;
 
-    public AuditRepository(AegisIdentityDbContext dbContext)
+    public AuditRepository(LumenDbContext dbContext)
     {
         _dbContext = dbContext;
     }

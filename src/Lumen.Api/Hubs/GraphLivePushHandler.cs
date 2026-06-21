@@ -1,11 +1,11 @@
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.Domain.Users;
-using AegisIdentity.ReadModels.Queries;
-using AegisIdentity.ReadModels.Users;
+using Lumen.Domain.Authorization;
+using Lumen.Domain.Users;
+using Lumen.ReadModels.Queries;
+using Lumen.ReadModels.Users;
 using MediatR;
 using Microsoft.AspNetCore.SignalR;
 
-namespace AegisIdentity.Api.Hubs;
+namespace Lumen.Api.Hubs;
 
 public sealed class GraphLivePushHandler : INotificationHandler<UserPermissionsChanged>
 {

@@ -1,14 +1,14 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using AegisIdentity.Backoffice.Configuration;
-using AegisIdentity.Backoffice.Services;
-using AegisIdentity.SharedKernel.Constants;
+using Lumen.Backoffice.Configuration;
+using Lumen.Backoffice.Services;
+using Lumen.SharedKernel.Constants;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AegisIdentity.Backoffice.Controllers;
+namespace Lumen.Backoffice.Controllers;
 
 public sealed class AccountController : Controller
 {

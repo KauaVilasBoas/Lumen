@@ -1,13 +1,13 @@
-using AegisIdentity.CommandHandlers.UserProfiles.AssignUserProfile;
-using AegisIdentity.CommandHandlers.UserProfiles.RemoveUserProfile;
-using AegisIdentity.ReadModels.Queries;
-using AegisIdentity.SharedKernel.Authorization;
-using AegisIdentity.SharedKernel.Constants;
+using Lumen.CommandHandlers.UserProfiles.AssignUserProfile;
+using Lumen.CommandHandlers.UserProfiles.RemoveUserProfile;
+using Lumen.ReadModels.Queries;
+using Lumen.SharedKernel.Authorization;
+using Lumen.SharedKernel.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AegisIdentity.Api.Controllers;
+namespace Lumen.Api.Controllers;
 
 [Route("api/users/{userId:guid}/profiles")]
 [PermissionGroup(PermissionGroups.UserProfiles)]

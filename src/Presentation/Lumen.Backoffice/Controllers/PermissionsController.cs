@@ -1,8 +1,8 @@
-using AegisIdentity.Backoffice.Services;
+using Lumen.Backoffice.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AegisIdentity.Backoffice.Controllers;
+namespace Lumen.Backoffice.Controllers;
 
 [Authorize]
 public sealed class PermissionsController : BackofficeBaseController

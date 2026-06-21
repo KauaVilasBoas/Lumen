@@ -1,7 +1,7 @@
-using AegisIdentity.Backoffice.Services;
-using AegisIdentity.SharedKernel.Constants;
+using Lumen.Backoffice.Services;
+using Lumen.SharedKernel.Constants;
 
-namespace AegisIdentity.Backoffice.ViewModels;
+namespace Lumen.Backoffice.ViewModels;
 
 public static class UserViewModelBuilder
 {

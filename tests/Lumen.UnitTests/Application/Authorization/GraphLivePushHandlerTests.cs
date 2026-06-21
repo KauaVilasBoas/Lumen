@@ -1,13 +1,13 @@
-using AegisIdentity.Api.Hubs;
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.Domain.Users;
-using AegisIdentity.ReadModels.Queries;
+using Lumen.Api.Hubs;
+using Lumen.Domain.Authorization;
+using Lumen.Domain.Users;
+using Lumen.ReadModels.Queries;
 using FluentAssertions;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 
-namespace AegisIdentity.UnitTests.Application.Authorization;
+namespace Lumen.UnitTests.Application.Authorization;
 
 public sealed class GraphLivePushHandlerTests
 {

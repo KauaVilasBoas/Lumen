@@ -1,7 +1,7 @@
 using FluentValidation;
 using MediatR;
 
-namespace AegisIdentity.CommandHandlers.Behaviors;
+namespace Lumen.CommandHandlers.Behaviors;
 
 public sealed class ValidationBehavior<TRequest, TResponse>
     : IPipelineBehavior<TRequest, TResponse>

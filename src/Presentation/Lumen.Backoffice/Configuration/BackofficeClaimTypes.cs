@@ -1,4 +1,4 @@
-namespace AegisIdentity.Backoffice.Configuration;
+namespace Lumen.Backoffice.Configuration;
 
 public static class BackofficeClaimTypes
 {

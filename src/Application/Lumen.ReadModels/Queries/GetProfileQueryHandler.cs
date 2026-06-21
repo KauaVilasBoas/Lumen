@@ -1,7 +1,7 @@
-using AegisIdentity.Domain.Authorization;
+using Lumen.Domain.Authorization;
 using MediatR;
 
-namespace AegisIdentity.ReadModels.Queries;
+namespace Lumen.ReadModels.Queries;
 
 public sealed class GetProfileQueryHandler
     : IRequestHandler<GetProfileQueryHandler.Query, GetProfileQueryHandler.Result?>

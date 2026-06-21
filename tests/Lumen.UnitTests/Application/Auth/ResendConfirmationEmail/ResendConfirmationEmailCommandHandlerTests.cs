@@ -1,12 +1,12 @@
-using AegisIdentity.CommandHandlers.Auth.ResendConfirmationEmail;
-using AegisIdentity.Domain.Configuration;
-using AegisIdentity.Domain.Notifications;
-using AegisIdentity.Domain.Tokens;
-using AegisIdentity.Domain.Users;
+using Lumen.CommandHandlers.Auth.ResendConfirmationEmail;
+using Lumen.Domain.Configuration;
+using Lumen.Domain.Notifications;
+using Lumen.Domain.Tokens;
+using Lumen.Domain.Users;
 using FluentAssertions;
 using NSubstitute;
 
-namespace AegisIdentity.UnitTests.Application.Auth.ResendConfirmationEmail;
+namespace Lumen.UnitTests.Application.Auth.ResendConfirmationEmail;
 
 public sealed class ResendConfirmationEmailCommandHandlerTests
 {

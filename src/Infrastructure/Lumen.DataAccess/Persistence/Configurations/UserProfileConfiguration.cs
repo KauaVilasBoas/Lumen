@@ -1,9 +1,9 @@
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.Domain.Users;
+using Lumen.Domain.Authorization;
+using Lumen.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace AegisIdentity.DataAccess.Persistence.Configurations;
+namespace Lumen.DataAccess.Persistence.Configurations;
 
 internal sealed class UserProfileConfiguration : IEntityTypeConfiguration<UserProfile>
 {

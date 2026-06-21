@@ -1,9 +1,9 @@
 using System.Security.Claims;
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.SharedKernel.Authorization;
+using Lumen.Domain.Authorization;
+using Lumen.SharedKernel.Authorization;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 
-namespace AegisIdentity.Backoffice.TagHelpers;
+namespace Lumen.Backoffice.TagHelpers;
 
 /// <summary>
 /// Suppresses an HTML element when the current user lacks the specified permission.

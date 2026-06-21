@@ -1,11 +1,11 @@
-using AegisIdentity.DataAccess.Persistence;
-using AegisIdentity.DataAccess.Persistence.Repositories;
-using AegisIdentity.Domain.Users;
-using AegisIdentity.IntegrationTests.Infrastructure;
+using Lumen.DataAccess.Persistence;
+using Lumen.DataAccess.Persistence.Repositories;
+using Lumen.Domain.Users;
+using Lumen.IntegrationTests.Infrastructure;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 
-namespace AegisIdentity.IntegrationTests.Persistence;
+namespace Lumen.IntegrationTests.Persistence;
 
 [Collection(IntegrationCollection.Name)]
 [Trait("Category", "Integration")]

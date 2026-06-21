@@ -1,8 +1,8 @@
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.SharedKernel.Exceptions;
+using Lumen.Domain.Authorization;
+using Lumen.SharedKernel.Exceptions;
 using MediatR;
 
-namespace AegisIdentity.CommandHandlers.Profiles.DeleteProfile;
+namespace Lumen.CommandHandlers.Profiles.DeleteProfile;
 
 public sealed class DeleteProfileCommandHandler
     : IRequestHandler<DeleteProfileCommandHandler.Command>

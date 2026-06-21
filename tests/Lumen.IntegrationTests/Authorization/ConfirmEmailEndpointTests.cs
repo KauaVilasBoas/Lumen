@@ -1,16 +1,16 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
-using AegisIdentity.DataAccess.Persistence;
-using AegisIdentity.Domain.Tokens;
-using AegisIdentity.Domain.Users;
-using AegisIdentity.IntegrationTests.Infrastructure;
-using AegisIdentity.SharedKernel.Util;
+using Lumen.DataAccess.Persistence;
+using Lumen.Domain.Tokens;
+using Lumen.Domain.Users;
+using Lumen.IntegrationTests.Infrastructure;
+using Lumen.SharedKernel.Util;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace AegisIdentity.IntegrationTests.Authorization;
+namespace Lumen.IntegrationTests.Authorization;
 
 [Collection(IntegrationCollection.Name)]
 [Trait("Category", "Integration")]
@@ -48,7 +48,7 @@ public sealed class ConfirmEmailEndpointTests
         await client.GetAsync($"{ConfirmEndpoint}?token={Uri.EscapeDataString(rawToken)}");
 
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
         var user = await db.Users.IgnoreQueryFilters().FirstAsync(u => u.Id == userId);
 
         user.IsActive.Should().BeTrue();
@@ -64,7 +64,7 @@ public sealed class ConfirmEmailEndpointTests
         await client.GetAsync($"{ConfirmEndpoint}?token={Uri.EscapeDataString(rawToken)}");
 
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
         var tokenHash = Sha256Hasher.ComputeHex(rawToken);
         var token = await db.EmailConfirmationTokens
             .IgnoreQueryFilters()
@@ -137,7 +137,7 @@ public sealed class ConfirmEmailEndpointTests
         await client.PostAsJsonAsync(ResendEndpoint, new { email = user.Email });
 
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
         var anyToken = await db.EmailConfirmationTokens.AnyAsync(t => t.UserId == user.Id);
 
         anyToken.Should().BeTrue();
@@ -158,7 +158,7 @@ public sealed class ConfirmEmailEndpointTests
     private async Task<(Guid UserId, string RawToken)> SeedPendingUserWithTokenAsync(string deterministicId)
     {
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
 
         var userId = Guid.Parse(deterministicId);
         var user = await AuthorizationSeeder.EnsureUserAsync(db, userId);
@@ -180,7 +180,7 @@ public sealed class ConfirmEmailEndpointTests
     private async Task<User> SeedPendingUserOnlyAsync(string deterministicId)
     {
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
 
         var userId = Guid.Parse(deterministicId);
         return await AuthorizationSeeder.EnsureUserAsync(db, userId);

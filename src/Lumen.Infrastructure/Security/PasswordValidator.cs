@@ -1,8 +1,8 @@
-using AegisIdentity.Domain.Security;
-using AegisIdentity.SharedKernel.Constants;
+using Lumen.Domain.Security;
+using Lumen.SharedKernel.Constants;
 using FluentValidation;
 
-namespace AegisIdentity.Infrastructure.Security;
+namespace Lumen.Infrastructure.Security;
 
 /// <summary>
 /// Validates a password against structural rules (length, complexity) and the

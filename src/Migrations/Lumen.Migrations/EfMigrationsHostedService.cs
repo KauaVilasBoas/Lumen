@@ -1,10 +1,10 @@
-using AegisIdentity.DataAccess.Persistence;
+using Lumen.DataAccess.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace AegisIdentity.Migrations;
+namespace Lumen.Migrations;
 
 public sealed class EfMigrationsHostedService : IHostedService
 {
@@ -24,7 +24,7 @@ public sealed class EfMigrationsHostedService : IHostedService
         _logger.LogInformation("Applying EF Core migrations...");
 
         await using var scope = _scopeFactory.CreateAsyncScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<AegisIdentityDbContext>();
+        var dbContext = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
 
         var pendingMigrations = (await dbContext.Database.GetPendingMigrationsAsync(cancellationToken)).ToList();
 

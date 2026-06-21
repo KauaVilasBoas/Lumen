@@ -1,9 +1,9 @@
-using AegisIdentity.Backoffice.Services;
-using AegisIdentity.Backoffice.ViewModels;
+using Lumen.Backoffice.Services;
+using Lumen.Backoffice.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AegisIdentity.Backoffice.Controllers;
+namespace Lumen.Backoffice.Controllers;
 
 [Authorize]
 public sealed class HomeController : BackofficeBaseController

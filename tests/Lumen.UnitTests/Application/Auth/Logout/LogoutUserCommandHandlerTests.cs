@@ -1,15 +1,15 @@
 using System.Reflection;
-using AegisIdentity.CommandHandlers.Auth.Logout;
-using AegisIdentity.Domain.Tokens;
-using AegisIdentity.SharedKernel.Constants;
-using AegisIdentity.SharedKernel.Exceptions;
-using AegisIdentity.SharedKernel.Util;
+using Lumen.CommandHandlers.Auth.Logout;
+using Lumen.Domain.Tokens;
+using Lumen.SharedKernel.Constants;
+using Lumen.SharedKernel.Exceptions;
+using Lumen.SharedKernel.Util;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using NSubstitute.ReturnsExtensions;
 
-namespace AegisIdentity.UnitTests.Application.Auth.Logout;
+namespace Lumen.UnitTests.Application.Auth.Logout;
 
 public sealed class LogoutUserCommandHandlerTests
 {
