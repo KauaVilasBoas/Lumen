@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (branding — new AegisIdentity logos)
+- **Brand assets**: added the official logo set under `AegisIdentity.Backoffice/wwwroot/img/brand/` — `aegis-mark.png` (icon), `aegis-lockup.png` (full horizontal lockup with tagline), `aegis-lockup-compact.png` (compact wordmark) and `aegis-app-icon.png` (app icon); cropped from the source artwork to remove transparent padding.
+- **Login screen**: replaced the placeholder `_AegisMark` SVG + text brand with the full `aegis-lockup.png` image in `Views/Account/Login.cshtml`.
+- **Console sidebar**: replaced the placeholder mark + text with the `aegis-lockup-compact.png` image in `Views/Shared/_Layout.cshtml`; the brand now links to Home.
+- **Favicons**: generated `favicon.ico`, `favicon-32.png` and `apple-touch-icon.png` from the new app icon; wired `<link rel="icon">`/`apple-touch-icon` into the Backoffice layout (previously had none) and replaced the API `wwwroot/favicon.ico`.
+- **Cleanup**: removed the now-unused `_AegisMark.cshtml` partial and the orphaned `.login-brand-name`, `.login-brand-sub`, `.sidebar-brand-name` CSS rules; added `.login-logo` and `.sidebar-logo` rules.
+
 ### Changed (REFACTOR-03 — Onda 6: constants cleanup)
 - **EmailLinkPaths**: added `EmailLinkPaths.ConfirmEmail` and `ResetPassword` constants; replaced 3 hardcoded `/api/auth/confirm-email` and 1 `/api/auth/reset-password` URL path literals in `RegisterUserCommandHandler`, `ResendConfirmationEmailCommandHandler`, `UpdateUserCommandHandler` and `ForgotPasswordCommandHandler`.
 - **ValidationLimits**: added `UsernameAllowedCharsPattern` (`^[a-zA-Z0-9_-]+$`) and `UserRestoreWindowDays` (30) constants; replaced duplicate regex literals in `RegisterUserCommandHandler` and `UpdateUserCommandHandler` validators.
