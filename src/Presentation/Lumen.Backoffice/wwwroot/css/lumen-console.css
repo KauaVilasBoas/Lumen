@@ -293,7 +293,7 @@ h1,h2,h3,h4 { font-family: var(--display); font-weight: 600; letter-spacing: -0.
   min-height: 0;
 }
 .sidebar-brand { display: flex; flex-direction: column; align-items: flex-start; gap: 7px; padding: 6px 8px 18px; text-decoration: none; }
-.sidebar-logo { height: 34px; width: auto; display: block; filter: drop-shadow(0 3px 12px rgba(139,109,255,0.30)); }
+.sidebar-logo { height: 52px; width: auto; display: block; filter: drop-shadow(0 3px 12px rgba(139,109,255,0.30)); }
 .sidebar-brand-sub { font-size: 9.5px; letter-spacing: 0.18em; color: var(--text-faint); }
 
 .sidebar-nav { display: flex; flex-direction: column; gap: 3px; flex: 1; min-height: 0; }
@@ -568,7 +568,7 @@ h1,h2,h3,h4 { font-family: var(--display); font-weight: 600; letter-spacing: -0.
   padding: 54px 56px;
 }
 .login-brandrow { display: flex; align-items: center; gap: 14px; }
-.login-logo { height: 58px; width: auto; display: block; filter: drop-shadow(0 4px 18px rgba(139,109,255,0.28)); }
+.login-logo { height: 88px; width: auto; display: block; filter: drop-shadow(0 4px 18px rgba(139,109,255,0.28)); }
 
 .login-pitch h1 { font-size: 40px; line-height: 1.08; font-weight: 600; letter-spacing: -0.03em; }
 .login-pitch p { color: var(--text-dim); font-size: 15px; line-height: 1.6; max-width: 440px; margin: 20px 0 0; }
