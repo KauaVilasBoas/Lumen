@@ -28,13 +28,13 @@ jobs:
 
       - name: Unit tests
         run: >
-          dotnet test tests/AegisIdentity.UnitTests
+          dotnet test tests/Lumen.UnitTests
           --no-build --configuration Release
           --logger "trx;LogFileName=unit-tests.trx"
 
       - name: Integration tests (Testcontainers)
         run: >
-          dotnet test tests/AegisIdentity.IntegrationTests
+          dotnet test tests/Lumen.IntegrationTests
           --no-build --configuration Release
           --filter "Category!=ExternalApi"
           --logger "trx;LogFileName=integration-tests.trx"
