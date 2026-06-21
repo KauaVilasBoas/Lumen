@@ -14,7 +14,7 @@ namespace Lumen.Migrations.EfMigrations
         // Default bootstrap credential (BCrypt, work factor 12) — rotate before production.
         // See docs/adr/0002-admin-bootstrap-credential.md.
         private const string AdminPasswordHash =
-            "$2a$12$6SQF6.kItSzz8QssA9f96eIHQAZtPeXcvZ.QvV/WvO7Ko13BfIpYu";
+            "$2a$12$AuUTEwUsGRxQl6D0SQHl3eb0QhRHdH/tmJxlt5cTm4ZE4lnoxr6Zi";
 
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -32,7 +32,7 @@ namespace Lumen.Migrations.EfMigrations
                 values: new object[]
                 {
                     AdminUserId,
-                    "admin@aegisidentity.local",
+                    "admin@lumen.local",
                     "admin",
                     AdminPasswordHash,
                     "user,admin",
