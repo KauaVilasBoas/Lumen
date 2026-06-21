@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Estrutura de solução**: `AegisIdentity.sln` → `Lumen.sln`; todos os 16 projetos `.csproj` e suas pastas renomeados para `Lumen.*`.
 - **Namespaces**: ~387 arquivos `.cs` atualizados de `AegisIdentity.*` para `Lumen.*`; `AegisIdentityDbContext` → `LumenDbContext`.
 - **Banco de dados**: `Initial Catalog=AegisIdentity` → `Lumen` e `AegisIdentity_hangfire` → `Lumen_hangfire` em todos os appsettings.
+- **Credencial bootstrap do admin**: email do admin semeado `admin@aegisidentity.local` → `admin@lumen.local` e hash de senha bootstrap rotacionado na migration `SeedInitialAdminUser`; referências atualizadas em `docs/adr/0002-admin-bootstrap-credential.md`, `README.md` e `docs/configuration.md` (incl. `Smtp:From` → `no-reply@lumen.local`).
 - **Configuração**: `Jwt.Issuer`, `Jwt.Audience`, `Smtp.From`, `Hibp.UserAgent`, `Redis.InstanceName` e paths de log atualizados para `Lumen`.
 - **Docker Compose**: containers `aegis-*` → `lumen-*`; senha SA `Dev@AegisIdentity2024!` → `Dev@Lumen2024!`.
 - **Assets de marca**: novos logos Lumen adicionados em `wwwroot/img/brand/` (lumen-lockup.png, lumen-lockup-compact.png, lumen-mark.png, lumen-app-icon.png).
@@ -25,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Console sidebar**: replaced the placeholder mark + text with the `aegis-lockup-compact.png` image in `Views/Shared/_Layout.cshtml`; the brand now links to Home.
 - **Favicons**: generated `favicon.ico`, `favicon-32.png` and `apple-touch-icon.png` from the new app icon; wired `<link rel="icon">`/`apple-touch-icon` into the Backoffice layout (previously had none) and replaced the API `wwwroot/favicon.ico`.
 - **Cleanup**: removed the now-unused `_AegisMark.cshtml` partial and the orphaned `.login-brand-name`, `.login-brand-sub`, `.sidebar-brand-name` CSS rules; added `.login-logo` and `.sidebar-logo` rules.
+- **Logo sizing**: enlarged `.login-logo` (58px → 88px) and `.sidebar-logo` (34px → 52px); re-cropped `lumen-lockup.png` and `lumen-lockup-compact.png` to remove the residual transparent canvas so the wordmark fills the rendered height.
 
 ### Changed (REFACTOR-03 — Onda 6: constants cleanup)
 - **EmailLinkPaths**: added `EmailLinkPaths.ConfirmEmail` and `ResetPassword` constants; replaced 3 hardcoded `/api/auth/confirm-email` and 1 `/api/auth/reset-password` URL path literals in `RegisterUserCommandHandler`, `ResendConfirmationEmailCommandHandler`, `UpdateUserCommandHandler` and `ForgotPasswordCommandHandler`.
