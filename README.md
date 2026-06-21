@@ -301,7 +301,7 @@ dotnet run --project src/Lumen.Api
 dotnet run --project src/Presentation/Lumen.Backoffice
 ```
 
-The data migrations create the bootstrap admin (`admin@aegisidentity.local`), the system
+The data migrations create the bootstrap admin (`admin@lumen.local`), the system
 profiles `Administrator` / `User`, and the admin binding — see
 [ADR-0002](docs/adr/0002-admin-bootstrap-credential.md) for the credential policy.
 

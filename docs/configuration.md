@@ -81,7 +81,7 @@ dotnet user-secrets set "Redis:ConnectionString" "localhost:6379"
 dotnet user-secrets set "Jwt:Secret" "<your-random-key-at-least-32-chars>"
 dotnet user-secrets set "Smtp:Host" "localhost"
 dotnet user-secrets set "Smtp:Port" "1025"
-dotnet user-secrets set "Smtp:From" "no-reply@aegisidentity.local"
+dotnet user-secrets set "Smtp:From" "no-reply@lumen.local"
 
 # Backoffice
 cd src/Presentation/Lumen.Backoffice

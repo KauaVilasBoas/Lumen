@@ -17,7 +17,7 @@ The initial admin is inserted via EF Core migration `SeedInitialAdminUser`.
 | Field            | Value                                    |
 |------------------|------------------------------------------|
 | `Id`             | `10000000-0000-0000-0000-000000000001`   |
-| `Email`          | `admin@aegisidentity.local`              |
+| `Email`          | `admin@lumen.local`              |
 | `Username`       | `admin`                                  |
 | `Password`       | not committed — shared out-of-band by the maintainer |
 | `Roles`          | `user,admin`                             |
@@ -33,7 +33,7 @@ migration `SeedInitialAdminUser` (`AdminPasswordHash` constant). The plain-text 
 exposed publicly or deployed to any non-development environment.**
 
 Steps to rotate:
-1. Log in as `admin@aegisidentity.local` with the bootstrap password (provided out-of-band).
+1. Log in as `admin@lumen.local` with the bootstrap password (provided out-of-band).
 2. Use the change-password endpoint (AUTH-08) to set a strong, environment-specific password.
 3. Optionally update the email to a real operations address.
 
