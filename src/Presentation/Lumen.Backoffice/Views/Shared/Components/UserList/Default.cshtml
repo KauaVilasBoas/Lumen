@@ -1,4 +1,4 @@
-@model AegisIdentity.Backoffice.ViewComponents.UserListComponentViewModel
+@model Lumen.Backoffice.ViewComponents.UserListComponentViewModel
 @{
     string Badge(string s) => s switch { "active" => "ok", "locked" => "danger", "pending" => "warn", _ => "muted" };
     string Label(string s) => s switch { "active" => "Active", "locked" => "Locked", "pending" => "Pending email", "deleted" => "Soft-deleted", _ => s };

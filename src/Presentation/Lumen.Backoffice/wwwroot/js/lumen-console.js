@@ -1,5 +1,5 @@
 /* ============================================================
-   AegisIdentity Console — interactivity (vanilla JS)
+   Lumen Console — interactivity (vanilla JS)
    Page-aware: each module initialises only if its root exists.
    ============================================================ */
 (function () {
@@ -71,10 +71,10 @@
       toggle.classList.toggle('on', on);
       const sw = $('.reveal-toggle-switch', toggle);
       if (sw) sw.classList.toggle('on', on);
-      try { localStorage.setItem('aegis.reveal', on ? '1' : '0'); } catch (e) {}
+      try { localStorage.setItem('lumen.reveal', on ? '1' : '0'); } catch (e) {}
     };
     let on = false;
-    try { on = localStorage.getItem('aegis.reveal') === '1'; } catch (e) {}
+    try { on = localStorage.getItem('lumen.reveal') === '1'; } catch (e) {}
     apply(on);
     toggle.addEventListener('click', () => apply(!document.body.classList.contains('reveal-on')));
 

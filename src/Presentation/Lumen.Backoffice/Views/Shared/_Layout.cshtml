@@ -19,11 +19,11 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>@title — AegisIdentity Console</title>
+    <title>@title — Lumen Console</title>
     <link rel="icon" href="~/favicon.ico" sizes="any"/>
     <link rel="icon" type="image/png" href="~/favicon-32.png" sizes="32x32"/>
     <link rel="apple-touch-icon" href="~/apple-touch-icon.png"/>
-    <link rel="stylesheet" href="~/css/aegis-console.css" asp-append-version="true"/>
+    <link rel="stylesheet" href="~/css/lumen-console.css" asp-append-version="true"/>
 </head>
 <body>
 @if (!authed)
@@ -36,8 +36,8 @@ else
     <div class="app">
         <aside class="sidebar">
             <a class="sidebar-brand" asp-controller="Home" asp-action="Index">
-                <img class="sidebar-logo" src="~/img/brand/aegis-lockup-compact.png" asp-append-version="true"
-                     alt="AegisIdentity" />
+                <img class="sidebar-logo" src="~/img/brand/lumen-lockup-compact.png" asp-append-version="true"
+                     alt="Lumen" />
                 <span class="sidebar-brand-sub mono">CONSOLE · v0.9</span>
             </a>
 
@@ -139,7 +139,7 @@ else
     </div>
 }
 
-<script src="~/js/aegis-console.js" asp-append-version="true"></script>
+<script src="~/js/lumen-console.js" asp-append-version="true"></script>
 @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
