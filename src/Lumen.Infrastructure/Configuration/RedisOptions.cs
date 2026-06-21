@@ -10,5 +10,5 @@ public sealed class RedisOptions
     public string ConnectionString { get; init; } = string.Empty;
 
     [Required(AllowEmptyStrings = false, ErrorMessage = "Redis:InstanceName is required.")]
-    public string InstanceName { get; init; } = "aegis:";
+    public string InstanceName { get; init; } = "lumen:";
 }
