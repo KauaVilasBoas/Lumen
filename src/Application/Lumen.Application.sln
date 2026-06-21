@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AegisIdentity.CommandHandlers", "AegisIdentity.CommandHandlers\AegisIdentity.CommandHandlers.csproj", "{19D03BFD-838F-4C60-BEBE-774B7BB8998B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lumen.CommandHandlers", "Lumen.CommandHandlers\Lumen.CommandHandlers.csproj", "{19D03BFD-838F-4C60-BEBE-774B7BB8998B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AegisIdentity.ReadModels", "AegisIdentity.ReadModels\AegisIdentity.ReadModels.csproj", "{8B527981-95CB-4125-9D45-0853405EC564}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lumen.ReadModels", "Lumen.ReadModels\Lumen.ReadModels.csproj", "{8B527981-95CB-4125-9D45-0853405EC564}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AegisIdentity.EventHandlers", "AegisIdentity.EventHandlers\AegisIdentity.EventHandlers.csproj", "{D39F6672-E3D9-4108-A747-BCDABD7E89AC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lumen.EventHandlers", "Lumen.EventHandlers\Lumen.EventHandlers.csproj", "{D39F6672-E3D9-4108-A747-BCDABD7E89AC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

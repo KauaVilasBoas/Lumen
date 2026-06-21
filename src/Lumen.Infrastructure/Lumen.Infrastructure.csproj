@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\AegisIdentity.Domain\AegisIdentity.Domain.csproj" />
-    <ProjectReference Include="..\SharedKernel\AegisIdentity.SharedKernel\AegisIdentity.SharedKernel.csproj" />
+    <ProjectReference Include="..\Lumen.Domain\Lumen.Domain.csproj" />
+    <ProjectReference Include="..\SharedKernel\Lumen.SharedKernel\Lumen.SharedKernel.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <!-- Expose internal configuration types to the test project. -->
-    <InternalsVisibleTo Include="AegisIdentity.UnitTests" />
+    <InternalsVisibleTo Include="Lumen.UnitTests" />
   </ItemGroup>
 
   <ItemGroup>

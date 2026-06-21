@@ -20,16 +20,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\AegisIdentity.Domain\AegisIdentity.Domain.csproj" />
-    <ProjectReference Include="..\..\src\Application\AegisIdentity.CommandHandlers\AegisIdentity.CommandHandlers.csproj" />
-    <ProjectReference Include="..\..\src\Application\AegisIdentity.ReadModels\AegisIdentity.ReadModels.csproj" />
-    <ProjectReference Include="..\..\src\AegisIdentity.Infrastructure\AegisIdentity.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\src\Infrastructure\AegisIdentity.Integration\AegisIdentity.Integration.csproj" />
-    <ProjectReference Include="..\..\src\AegisIdentity.Api\AegisIdentity.Api.csproj" />
-    <ProjectReference Include="..\..\src\Jobs\AegisIdentity.Jobs\AegisIdentity.Jobs.csproj" />
-    <ProjectReference Include="..\..\src\Infrastructure\AegisIdentity.DataAccess\AegisIdentity.DataAccess.csproj" />
-    <ProjectReference Include="..\..\src\Presentation\AegisIdentity.Backoffice\AegisIdentity.Backoffice.csproj" />
-    <ProjectReference Include="..\..\src\Application\AegisIdentity.EventHandlers\AegisIdentity.EventHandlers.csproj" />
+    <ProjectReference Include="..\..\src\Lumen.Domain\Lumen.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Application\Lumen.CommandHandlers\Lumen.CommandHandlers.csproj" />
+    <ProjectReference Include="..\..\src\Application\Lumen.ReadModels\Lumen.ReadModels.csproj" />
+    <ProjectReference Include="..\..\src\Lumen.Infrastructure\Lumen.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Infrastructure\Lumen.Integration\Lumen.Integration.csproj" />
+    <ProjectReference Include="..\..\src\Lumen.Api\Lumen.Api.csproj" />
+    <ProjectReference Include="..\..\src\Jobs\Lumen.Jobs\Lumen.Jobs.csproj" />
+    <ProjectReference Include="..\..\src\Infrastructure\Lumen.DataAccess\Lumen.DataAccess.csproj" />
+    <ProjectReference Include="..\..\src\Presentation\Lumen.Backoffice\Lumen.Backoffice.csproj" />
+    <ProjectReference Include="..\..\src\Application\Lumen.EventHandlers\Lumen.EventHandlers.csproj" />
   </ItemGroup>
 
 </Project>

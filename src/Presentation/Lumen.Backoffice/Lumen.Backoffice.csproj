@@ -1,21 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <RootNamespace>AegisIdentity.Backoffice</RootNamespace>
-    <AssemblyName>AegisIdentity.Backoffice</AssemblyName>
+    <RootNamespace>Lumen.Backoffice</RootNamespace>
+    <AssemblyName>Lumen.Backoffice</AssemblyName>
     <UserSecretsId>85b3077f-d7a9-4beb-8cf6-cd486aea60e3</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\SharedKernel\AegisIdentity.SharedKernel\AegisIdentity.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\SharedKernel\Lumen.SharedKernel\Lumen.SharedKernel.csproj" />
     <!--
       Jobs: provides HangfireDashboardAuthorizationFilter and AddAegisHangfire.
       The Backoffice acts as the dashboard UI host only — it calls AddAegisHangfire
       but does NOT call AddAegisHangfireServer to avoid a competing job-processor.
     -->
-    <ProjectReference Include="..\..\Jobs\AegisIdentity.Jobs\AegisIdentity.Jobs.csproj" />
-    <ProjectReference Include="..\..\AegisIdentity.Infrastructure\AegisIdentity.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\Infrastructure\AegisIdentity.DataAccess\AegisIdentity.DataAccess.csproj" />
+    <ProjectReference Include="..\..\Jobs\Lumen.Jobs\Lumen.Jobs.csproj" />
+    <ProjectReference Include="..\..\Lumen.Infrastructure\Lumen.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\Lumen.DataAccess\Lumen.DataAccess.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -23,11 +23,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\AegisIdentity.Api\AegisIdentity.Api.csproj" />
-    <ProjectReference Include="..\..\src\AegisIdentity.Infrastructure\AegisIdentity.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\src\Infrastructure\AegisIdentity.DataAccess\AegisIdentity.DataAccess.csproj" />
-    <ProjectReference Include="..\..\src\Infrastructure\AegisIdentity.Integration\AegisIdentity.Integration.csproj" />
-    <ProjectReference Include="..\..\src\Migrations\AegisIdentity.Migrations\AegisIdentity.Migrations.csproj" />
+    <ProjectReference Include="..\..\src\Lumen.Api\Lumen.Api.csproj" />
+    <ProjectReference Include="..\..\src\Lumen.Infrastructure\Lumen.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Infrastructure\Lumen.DataAccess\Lumen.DataAccess.csproj" />
+    <ProjectReference Include="..\..\src\Infrastructure\Lumen.Integration\Lumen.Integration.csproj" />
+    <ProjectReference Include="..\..\src\Migrations\Lumen.Migrations\Lumen.Migrations.csproj" />
   </ItemGroup>
 
 </Project>

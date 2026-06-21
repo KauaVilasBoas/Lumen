@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <RootNamespace>AegisIdentity.Migrations</RootNamespace>
-    <AssemblyName>AegisIdentity.Migrations</AssemblyName>
+    <RootNamespace>Lumen.Migrations</RootNamespace>
+    <AssemblyName>Lumen.Migrations</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Infrastructure\AegisIdentity.DataAccess\AegisIdentity.DataAccess.csproj" />
-    <ProjectReference Include="..\..\AegisIdentity.Infrastructure\AegisIdentity.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Infrastructure\Lumen.DataAccess\Lumen.DataAccess.csproj" />
+    <ProjectReference Include="..\..\Lumen.Infrastructure\Lumen.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

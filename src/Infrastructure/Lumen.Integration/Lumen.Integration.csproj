@@ -11,13 +11,13 @@
 
   <ItemGroup>
     <!-- Expose internal hooks (MaxAttempts, RetryDelay, ConnectTimeout) to the test project. -->
-    <InternalsVisibleTo Include="AegisIdentity.UnitTests" />
+    <InternalsVisibleTo Include="Lumen.UnitTests" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\AegisIdentity.Domain\AegisIdentity.Domain.csproj" />
-    <ProjectReference Include="..\..\AegisIdentity.Infrastructure\AegisIdentity.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\SharedKernel\AegisIdentity.SharedKernel\AegisIdentity.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\Lumen.Domain\Lumen.Domain.csproj" />
+    <ProjectReference Include="..\..\Lumen.Infrastructure\Lumen.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\SharedKernel\Lumen.SharedKernel\Lumen.SharedKernel.csproj" />
   </ItemGroup>
 
   <ItemGroup>

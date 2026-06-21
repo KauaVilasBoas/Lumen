@@ -1,15 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\..\AegisIdentity.Infrastructure\AegisIdentity.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\AegisIdentity.Domain\AegisIdentity.Domain.csproj" />
-    <ProjectReference Include="..\..\SharedKernel\AegisIdentity.SharedKernel\AegisIdentity.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\Lumen.Infrastructure\Lumen.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Lumen.Domain\Lumen.Domain.csproj" />
+    <ProjectReference Include="..\..\SharedKernel\Lumen.SharedKernel\Lumen.SharedKernel.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <!-- Expose internal repositories to test projects. -->
-    <InternalsVisibleTo Include="AegisIdentity.UnitTests" />
-    <InternalsVisibleTo Include="AegisIdentity.IntegrationTests" />
+    <InternalsVisibleTo Include="Lumen.UnitTests" />
+    <InternalsVisibleTo Include="Lumen.IntegrationTests" />
   </ItemGroup>
 
   <ItemGroup>

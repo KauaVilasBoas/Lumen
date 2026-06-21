@@ -5,14 +5,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Application\AegisIdentity.CommandHandlers\AegisIdentity.CommandHandlers.csproj" />
-    <ProjectReference Include="..\Application\AegisIdentity.EventHandlers\AegisIdentity.EventHandlers.csproj" />
-    <ProjectReference Include="..\Application\AegisIdentity.ReadModels\AegisIdentity.ReadModels.csproj" />
-    <ProjectReference Include="..\AegisIdentity.Infrastructure\AegisIdentity.Infrastructure.csproj" />
-    <ProjectReference Include="..\Infrastructure\AegisIdentity.DataAccess\AegisIdentity.DataAccess.csproj" />
-    <ProjectReference Include="..\Infrastructure\AegisIdentity.Integration\AegisIdentity.Integration.csproj" />
-    <ProjectReference Include="..\Jobs\AegisIdentity.Jobs\AegisIdentity.Jobs.csproj" />
-    <ProjectReference Include="..\Migrations\AegisIdentity.Migrations\AegisIdentity.Migrations.csproj" />
+    <ProjectReference Include="..\Application\Lumen.CommandHandlers\Lumen.CommandHandlers.csproj" />
+    <ProjectReference Include="..\Application\Lumen.EventHandlers\Lumen.EventHandlers.csproj" />
+    <ProjectReference Include="..\Application\Lumen.ReadModels\Lumen.ReadModels.csproj" />
+    <ProjectReference Include="..\Lumen.Infrastructure\Lumen.Infrastructure.csproj" />
+    <ProjectReference Include="..\Infrastructure\Lumen.DataAccess\Lumen.DataAccess.csproj" />
+    <ProjectReference Include="..\Infrastructure\Lumen.Integration\Lumen.Integration.csproj" />
+    <ProjectReference Include="..\Jobs\Lumen.Jobs\Lumen.Jobs.csproj" />
+    <ProjectReference Include="..\Migrations\Lumen.Migrations\Lumen.Migrations.csproj" />
   </ItemGroup>
 
   <ItemGroup>

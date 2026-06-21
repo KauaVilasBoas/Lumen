@@ -2,12 +2,12 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <RootNamespace>AegisIdentity.Migrations.Cli</RootNamespace>
-    <AssemblyName>AegisIdentity.Migrations.Cli</AssemblyName>
+    <RootNamespace>Lumen.Migrations.Cli</RootNamespace>
+    <AssemblyName>Lumen.Migrations.Cli</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AegisIdentity.Migrations\AegisIdentity.Migrations.csproj" />
+    <ProjectReference Include="..\Lumen.Migrations\Lumen.Migrations.csproj" />
   </ItemGroup>
 
   <ItemGroup>
