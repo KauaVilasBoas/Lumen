@@ -1,6 +1,6 @@
-# AegisIdentity
+# Lumen
 
-Plataforma de identidade e autorização (.NET 8) construída com Clean Architecture, DDD e CQRS. Expõe uma **API REST** (`AegisIdentity.Api`) para autenticação/identidade e um **Backoffice MVC** (`AegisIdentity.Backoffice`) para administração. Este documento é a fonte de verdade da stack e das convenções arquiteturais — todo agente e contribuição deve se basear aqui.
+Plataforma de identidade e autorização (.NET 8) construída com Clean Architecture, DDD e CQRS. Expõe uma **API REST** (`Lumen.Api`) para autenticação/identidade e um **Backoffice MVC** (`Lumen.Backoffice`) para administração. Este documento é a fonte de verdade da stack e das convenções arquiteturais — todo agente e contribuição deve se basear aqui.
 
 ## Stack
 
@@ -25,30 +25,30 @@ Plataforma de identidade e autorização (.NET 8) construída com Clean Architec
 
 > Versões são centralizadas. **Nunca** fixe versão em `.csproj`; adicione/atualize em `Directory.Packages.props` e referencie sem `Version` no projeto.
 
-## Estrutura da solução (`AegisIdentity.sln`)
+## Estrutura da solução (`Lumen.sln`)
 
 ```
 src/
-  AegisIdentity.Domain/                 Entidades, agregados, interfaces de repositório, domain services
-  SharedKernel/AegisIdentity.SharedKernel/  Constants, Exceptions, Util (cross-cutting, sem dependências de infra)
+  Lumen.Domain/                 Entidades, agregados, interfaces de repositório, domain services
+  SharedKernel/Lumen.SharedKernel/  Constants, Exceptions, Util (cross-cutting, sem dependências de infra)
   Application/
-    AegisIdentity.CommandHandlers/      Commands + CommandHandlers (escrita) + Behaviors (ValidationBehavior)
-    AegisIdentity.ReadModels/           Queries + QueryHandlers (leitura)
-    AegisIdentity.EventHandlers/        Handlers de domain/integration events
+    Lumen.CommandHandlers/      Commands + CommandHandlers (escrita) + Behaviors (ValidationBehavior)
+    Lumen.ReadModels/           Queries + QueryHandlers (leitura)
+    Lumen.EventHandlers/        Handlers de domain/integration events
   Infrastructure/
-    AegisIdentity.DataAccess/           DbContext EF Core, Configurations, Repositories
-    AegisIdentity.Integration/          Integrações externas (HTTP, etc.)
-  AegisIdentity.Infrastructure/         Composição de infra (Security, DI, serviços)
+    Lumen.DataAccess/           DbContext EF Core, Configurations, Repositories
+    Lumen.Integration/          Integrações externas (HTTP, etc.)
+  Lumen.Infrastructure/         Composição de infra (Security, DI, serviços)
   Migrations/
-    AegisIdentity.Migrations/           Migrations EF Core
-    AegisIdentity.Migrations.Cli/       CLI para aplicar migrations
-  Jobs/AegisIdentity.Jobs/              Hangfire (registro de jobs e dashboard)
+    Lumen.Migrations/           Migrations EF Core
+    Lumen.Migrations.Cli/       CLI para aplicar migrations
+  Jobs/Lumen.Jobs/              Hangfire (registro de jobs e dashboard)
   Presentation/
-    AegisIdentity.Backoffice/           Backoffice MVC (Controllers, Views, ViewComponents)
-  AegisIdentity.Api/                    Host da API REST (Controllers, Program.cs, DI root)
+    Lumen.Backoffice/           Backoffice MVC (Controllers, Views, ViewComponents)
+  Lumen.Api/                    Host da API REST (Controllers, Program.cs, DI root)
 tests/
-  AegisIdentity.UnitTests/              Testes de handlers/validators (xUnit + NSubstitute + FluentAssertions)
-  AegisIdentity.IntegrationTests/       Testes de endpoint (WebApplicationFactory + Testcontainers — exigem Docker)
+  Lumen.UnitTests/              Testes de handlers/validators (xUnit + NSubstitute + FluentAssertions)
+  Lumen.IntegrationTests/       Testes de endpoint (WebApplicationFactory + Testcontainers — exigem Docker)
 ```
 
 ## Regras arquiteturais (OBRIGATÓRIAS)
@@ -94,39 +94,39 @@ tests/
 
 ## Testes
 
-- **Unit** (`AegisIdentity.UnitTests`): handlers e validators com xUnit + NSubstitute + FluentAssertions. Toda nova feature deve ter testes de handler e de validator.
-- **Integration** (`AegisIdentity.IntegrationTests`): endpoints via `WebApplicationFactory` + Testcontainers (SQL Server + Redis). **Exigem Docker rodando**; rodam no CI. Quando não executados localmente, declare isso explicitamente.
-- **Architecture** (`AegisIdentity.ArchitectureTests`): testes de dependência de assembly via NetArchTest.Rules. Devem ser rodados junto com os unit tests. **Não exigem Docker.**
+- **Unit** (`Lumen.UnitTests`): handlers e validators com xUnit + NSubstitute + FluentAssertions. Toda nova feature deve ter testes de handler e de validator.
+- **Integration** (`Lumen.IntegrationTests`): endpoints via `WebApplicationFactory` + Testcontainers (SQL Server + Redis). **Exigem Docker rodando**; rodam no CI. Quando não executados localmente, declare isso explicitamente.
+- **Architecture** (`Lumen.ArchitectureTests`): testes de dependência de assembly via NetArchTest.Rules. Devem ser rodados junto com os unit tests. **Não exigem Docker.**
 
 ## Constraints de arquitetura (testes automatizados)
 
-Projeto `tests/AegisIdentity.ArchitectureTests` — rodar com `dotnet test tests/AegisIdentity.ArchitectureTests`.
+Projeto `tests/Lumen.ArchitectureTests` — rodar com `dotnet test tests/Lumen.ArchitectureTests`.
 Cada regra abaixo tem um teste correspondente em `ArchitectureTests.cs`.
 
 | # | Regra | Falha quando |
 |---|-------|-------------|
-| 01 | Domain não depende de Application | Tipo em `AegisIdentity.Domain` importa namespace de CommandHandlers, ReadModels ou EventHandlers |
-| 01b | Domain não depende de Infrastructure | Tipo em `AegisIdentity.Domain` importa `AegisIdentity.DataAccess` ou `AegisIdentity.Infrastructure` |
-| 01c | Domain não depende de Presentation | Tipo em `AegisIdentity.Domain` importa `AegisIdentity.Api` ou `AegisIdentity.Backoffice` |
-| 02 | SharedKernel não depende de nenhuma camada superior | Tipo em `AegisIdentity.SharedKernel` importa Application, Infrastructure ou Presentation |
-| 03 | Application não depende de Infrastructure concreta | `CommandHandlers`, `ReadModels` ou `EventHandlers` importam `AegisIdentity.DataAccess` ou `AegisIdentity.Infrastructure` |
-| 04 | Application não depende de Presentation | `CommandHandlers`, `ReadModels` ou `EventHandlers` importam `AegisIdentity.Api` ou `AegisIdentity.Backoffice` |
-| 05 | CQRS: CommandHandlers não chamam QueryHandlers | Tipo em `CommandHandlers` importa namespace `AegisIdentity.ReadModels` |
-| 06 | CQRS: ReadModels não chamam CommandHandlers | Tipo em `ReadModels` importa namespace `AegisIdentity.CommandHandlers` |
-| 07 | API Controllers não referenciam entidades de Domain diretamente | Controller em `AegisIdentity.Api` importa `Domain.Users`, `Domain.Authorization`, `Domain.Tokens` ou `Domain.Audit` |
-| 08 | Backoffice Controllers não referenciam entidades de Domain diretamente | Controller em `AegisIdentity.Backoffice` importa `Domain.Users`, `Domain.Tokens` ou `Domain.Audit` |
-| 09 | API Controllers não referenciam DataAccess (DbContext, Repositories) | Controller em `AegisIdentity.Api` importa `AegisIdentity.DataAccess` |
-| 10 | Application assemblies sem dependência transitiva de DataAccess | Qualquer tipo de Application importa `AegisIdentity.DataAccess` |
+| 01 | Domain não depende de Application | Tipo em `Lumen.Domain` importa namespace de CommandHandlers, ReadModels ou EventHandlers |
+| 01b | Domain não depende de Infrastructure | Tipo em `Lumen.Domain` importa `Lumen.DataAccess` ou `Lumen.Infrastructure` |
+| 01c | Domain não depende de Presentation | Tipo em `Lumen.Domain` importa `Lumen.Api` ou `Lumen.Backoffice` |
+| 02 | SharedKernel não depende de nenhuma camada superior | Tipo em `Lumen.SharedKernel` importa Application, Infrastructure ou Presentation |
+| 03 | Application não depende de Infrastructure concreta | `CommandHandlers`, `ReadModels` ou `EventHandlers` importam `Lumen.DataAccess` ou `Lumen.Infrastructure` |
+| 04 | Application não depende de Presentation | `CommandHandlers`, `ReadModels` ou `EventHandlers` importam `Lumen.Api` ou `Lumen.Backoffice` |
+| 05 | CQRS: CommandHandlers não chamam QueryHandlers | Tipo em `CommandHandlers` importa namespace `Lumen.ReadModels` |
+| 06 | CQRS: ReadModels não chamam CommandHandlers | Tipo em `ReadModels` importa namespace `Lumen.CommandHandlers` |
+| 07 | API Controllers não referenciam entidades de Domain diretamente | Controller em `Lumen.Api` importa `Domain.Users`, `Domain.Authorization`, `Domain.Tokens` ou `Domain.Audit` |
+| 08 | Backoffice Controllers não referenciam entidades de Domain diretamente | Controller em `Lumen.Backoffice` importa `Domain.Users`, `Domain.Tokens` ou `Domain.Audit` |
+| 09 | API Controllers não referenciam DataAccess (DbContext, Repositories) | Controller em `Lumen.Api` importa `Lumen.DataAccess` |
+| 10 | Application assemblies sem dependência transitiva de DataAccess | Qualquer tipo de Application importa `Lumen.DataAccess` |
 
 > Violação detectada = **build de testes falha**. Corrija a dependência, não o teste.
 
 ## Comandos
 
 ```bash
-dotnet build AegisIdentity.sln                 # build (warnings = erro)
-dotnet test tests/AegisIdentity.UnitTests       # testes unitários
-dotnet test tests/AegisIdentity.IntegrationTests # integração (requer Docker)
-dotnet ef migrations add <Nome> -p src/Migrations/AegisIdentity.Migrations   # nova migration
+dotnet build Lumen.sln                 # build (warnings = erro)
+dotnet test tests/Lumen.UnitTests       # testes unitários
+dotnet test tests/Lumen.IntegrationTests # integração (requer Docker)
+dotnet ef migrations add <Nome> -p src/Migrations/Lumen.Migrations   # nova migration
 ```
 
 > Decisões arquiteturais não cobertas aqui são definidas durante o desenvolvimento. Ao encontrar um caso novo, proponha uma abordagem com o trade-off (ganhos/perdas), confirme, e então atualize este documento.

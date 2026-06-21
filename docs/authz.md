@@ -1,6 +1,6 @@
 # Authorization Model
 
-AegisIdentity uses a permission-based authorization model introduced across AUTH-08 through
+Lumen uses a permission-based authorization model introduced across AUTH-08 through
 AUTH-16. This document describes the full model, enforcement mechanics, data lifecycle, and
 operational guides.
 

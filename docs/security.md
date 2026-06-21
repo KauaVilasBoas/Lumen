@@ -3,7 +3,7 @@
 ## Password policy
 
 Every password accepted by the system (registration, change, reset) is validated by
-`IPasswordValidator` (implementation in `src/AegisIdentity.Infrastructure/Security/`). The rules:
+`IPasswordValidator` (implementation in `src/Lumen.Infrastructure/Security/`). The rules:
 
 - Minimum **12 characters**.
 - At least **one uppercase letter**, **one lowercase letter**, **one digit** and **one special character** from ``!@#$%^&*()-_=+[]{};:'",.<>/?\|`~``.

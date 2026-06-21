@@ -1,15 +1,15 @@
-<h1 align="center">AegisIdentity</h1>
+<h1 align="center">Lumen</h1>
 
 <p align="center">
   <i>Identity & Access Management service in .NET 8 — Clean Architecture, CQRS, permission-based authorization with Redis caching, a real-time authorization graph over SignalR, and a Razor backoffice that consumes its own JWT API.</i>
 </p>
 
 <p align="center">
-  <a href="https://github.com/KauaVilasBoas/AegisIdentity/actions/workflows/ci.yml">
-    <img src="https://github.com/KauaVilasBoas/AegisIdentity/actions/workflows/ci.yml/badge.svg" alt="CI"/>
+  <a href="https://github.com/KauaVilasBoas/Lumen/actions/workflows/ci.yml">
+    <img src="https://github.com/KauaVilasBoas/Lumen/actions/workflows/ci.yml/badge.svg" alt="CI"/>
   </a>
-  <a href="https://github.com/KauaVilasBoas/AegisIdentity/releases">
-    <img src="https://img.shields.io/github/v/release/KauaVilasBoas/AegisIdentity?sort=semver&display_name=tag&color=43B581" alt="Latest release"/>
+  <a href="https://github.com/KauaVilasBoas/Lumen/releases">
+    <img src="https://img.shields.io/github/v/release/KauaVilasBoas/Lumen?sort=semver&display_name=tag&color=43B581" alt="Latest release"/>
   </a>
   <img src="https://img.shields.io/badge/.NET-8-512BD4?logo=dotnet&logoColor=white" alt=".NET 8"/>
   <a href="https://www.conventionalcommits.org/">
@@ -25,7 +25,7 @@
 ## What is this?
 
 Every multi-product company eventually rebuilds the same three answers: **who is this user**,
-**what are they allowed to do**, and **who changed that permission, and when**. AegisIdentity is a
+**what are they allowed to do**, and **who changed that permission, and when**. Lumen is a
 standalone **Identity & Access Management (IAM)** service that answers all three — with an audit
 trail and a **live authorization graph** that updates in real time as permissions change.
 
@@ -100,8 +100,8 @@ flowchart TB
     BROWSER(["👤 Admin Browser"])
 
     subgraph PRES["🎯 Presentation"]
-        API["<b>AegisIdentity.Api</b><br/><sub>Controllers · IMediator · SignalR AuthorizationGraphHub</sub>"]
-        BO["<b>AegisIdentity.Backoffice</b><br/><sub>ASP.NET MVC · cookie auth + JWT · live graph client</sub>"]
+        API["<b>Lumen.Api</b><br/><sub>Controllers · IMediator · SignalR AuthorizationGraphHub</sub>"]
+        BO["<b>Lumen.Backoffice</b><br/><sub>ASP.NET MVC · cookie auth + JWT · live graph client</sub>"]
     end
 
     subgraph APP["⚡ Application · CQRS via MediatR"]
@@ -123,11 +123,11 @@ flowchart TB
     end
 
     subgraph JOB["⏰ Jobs · Hangfire + Hangfire.SqlServer"]
-        HF["<b>AegisIdentity.Jobs</b><br/><sub>Recurring scheduler</sub>"]
+        HF["<b>Lumen.Jobs</b><br/><sub>Recurring scheduler</sub>"]
         CLEAN["<b>CleanupExpiredRefreshTokensJob</b><br/><sub>cron · 03:00 UTC daily</sub>"]
     end
 
-    DB[("🗄️ <b>SQL Server</b><br/>AegisIdentity (schema dbo)<br/>HangFire (schema HangFire)")]
+    DB[("🗄️ <b>SQL Server</b><br/>Lumen (schema dbo)<br/>HangFire (schema HangFire)")]
     CACHE[("⚡ <b>Redis</b><br/>user:permissions:{userId}")]
     SMTP[/"📧 SMTP server"/]
     HIBP[/"🛡️ HaveIBeenPwned API<br/><sub>k-anonymity range query</sub>"/]
@@ -292,13 +292,13 @@ curl -X POST http://localhost:5237/api/auth/login `
 docker compose up -d
 
 # 2. Database: EF Core migrations (also applied automatically at startup)
-dotnet run --project src/Migrations/AegisIdentity.Migrations.Cli
+dotnet run --project src/Migrations/Lumen.Migrations.Cli
 
 # 3. API — http://localhost:5237 / https://localhost:7068
-dotnet run --project src/AegisIdentity.Api
+dotnet run --project src/Lumen.Api
 
 # 4. Backoffice (optional)
-dotnet run --project src/Presentation/AegisIdentity.Backoffice
+dotnet run --project src/Presentation/Lumen.Backoffice
 ```
 
 The data migrations create the bootstrap admin (`admin@aegisidentity.local`), the system
@@ -334,7 +334,7 @@ an atomic Conventional-Commits branch, delivered by PR, and recorded in the
 [CHANGELOG](CHANGELOG.md) and [ADRs](docs/adr/):
 
 - **[Semantic Versioning](https://semver.org/)** — releases are tagged (`vMAJOR.MINOR.PATCH`)
-  and published on the [Releases page](https://github.com/KauaVilasBoas/AegisIdentity/releases).
+  and published on the [Releases page](https://github.com/KauaVilasBoas/Lumen/releases).
   The release badge at the top of this README always reflects the latest version; everything
   newer than it is visible in the [`Unreleased` section of the CHANGELOG](CHANGELOG.md).
 - **[Keep a Changelog](https://keepachangelog.com/)** — every card lands with a CHANGELOG entry.
