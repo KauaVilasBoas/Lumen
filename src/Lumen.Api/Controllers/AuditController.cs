@@ -1,0 +1,37 @@
+using Lumen.ReadModels.Queries;
+using Lumen.SharedKernel.Authorization;
+using Lumen.SharedKernel.Constants;
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace Lumen.Api.Controllers;
+
+[Route("api/audit")]
+[PermissionGroup(PermissionGroups.Audit)]
+public sealed class AuditController : ApiBaseController
+{
+    private readonly IMediator _mediator;
+
+    public AuditController(IMediator mediator)
+    {
+        _mediator = mediator;
+    }
+
+    [HttpGet("recent")]
+    [RequirePermission]
+    [Authorize(Policy = PermissionCodes.Audit.Read)]
+    [ProducesResponseType(typeof(IReadOnlyList<GetRecentAuditFeedQueryHandler.AuditEntryResult>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> Read(
+        [FromQuery] int take = ValidationLimits.AuditTakeDefaultValue,
+        CancellationToken ct = default)
+    {
+        var query = new GetRecentAuditFeedQueryHandler.Query(take);
+        var result = await _mediator.Send(query, ct);
+
+        return Ok(result);
+    }
+}

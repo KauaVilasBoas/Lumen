@@ -1,0 +1,113 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using Lumen.Backoffice.Configuration;
+using Lumen.Backoffice.Services;
+using Lumen.SharedKernel.Constants;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace Lumen.Backoffice.Controllers;
+
+public sealed class AccountController : Controller
+{
+
+    private readonly AuthApiClient _authApiClient;
+
+    public AccountController(AuthApiClient authApiClient) => _authApiClient = authApiClient;
+
+    public sealed record LoginFormModel(string Identifier = "", string Password = "");
+
+    [HttpGet]
+    [AllowAnonymous]
+    public IActionResult Login(string? returnUrl = null)
+    {
+        ViewData["ReturnUrl"] = returnUrl;
+        return View(new LoginFormModel());
+    }
+
+    [HttpPost]
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Login(
+        LoginFormModel form,
+        string? returnUrl,
+        CancellationToken ct)
+    {
+        ViewData["ReturnUrl"] = returnUrl;
+
+        var result = await _authApiClient.LoginAsync(form.Identifier, form.Password, ct);
+
+        switch (result)
+        {
+            case AuthApiClient.LoginResult.Success success:
+                var principal = BuildPrincipal(success.Response.AccessToken);
+                var props = new AuthenticationProperties
+                {
+                    IsPersistent = false,
+                    ExpiresUtc = DateTimeOffset.UtcNow.AddSeconds(success.Response.ExpiresIn),
+                };
+                await HttpContext.SignInAsync(
+                    CookieAuthenticationDefaults.AuthenticationScheme,
+                    principal,
+                    props);
+
+                return LocalRedirect(returnUrl ?? "/");
+
+            case AuthApiClient.LoginResult.InvalidCredentials:
+                ModelState.AddModelError(string.Empty, BackofficeErrorMessages.InvalidCredentials);
+                break;
+
+            case AuthApiClient.LoginResult.EmailNotConfirmed:
+                ModelState.AddModelError(string.Empty, BackofficeErrorMessages.EmailNotConfirmed);
+                break;
+
+            case AuthApiClient.LoginResult.AccountLocked:
+                ModelState.AddModelError(string.Empty, BackofficeErrorMessages.AccountLocked);
+                break;
+
+            default:
+                ModelState.AddModelError(string.Empty, BackofficeErrorMessages.ApiCommunicationError);
+                break;
+        }
+
+        return View(form);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Logout()
+    {
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        return RedirectToAction(nameof(Login));
+    }
+
+    private static ClaimsPrincipal BuildPrincipal(string rawJwt)
+    {
+        var handler = new JwtSecurityTokenHandler();
+        var token = handler.ReadJwtToken(rawJwt);
+
+        var claims = token.Claims.ToList();
+
+        var subClaim = claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub);
+        if (subClaim is not null && claims.All(c => c.Type != ClaimTypes.NameIdentifier))
+            claims.Add(new Claim(ClaimTypes.NameIdentifier, subClaim.Value));
+
+        var emailClaim = claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Email);
+        if (emailClaim is not null && claims.All(c => c.Type != ClaimTypes.Email))
+            claims.Add(new Claim(ClaimTypes.Email, emailClaim.Value));
+
+        var usernameClaim = claims.FirstOrDefault(c => c.Type == JwtClaimTypes.Username);
+        if (usernameClaim is not null && claims.All(c => c.Type != ClaimTypes.Name))
+            claims.Add(new Claim(ClaimTypes.Name, usernameClaim.Value));
+
+        claims.Add(new Claim(BackofficeClaimTypes.AccessToken, rawJwt));
+
+        var identity = new ClaimsIdentity(
+            claims,
+            CookieAuthenticationDefaults.AuthenticationScheme);
+
+        return new ClaimsPrincipal(identity);
+    }
+}

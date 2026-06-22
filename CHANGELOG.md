@@ -7,28 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added (USER-04 — DELETE /api/users/{id} soft delete + POST /api/users/{id}/restore)
-- `DELETE /api/users/{id}` with `[RequirePermission]` + `Users.Delete` policy; soft-deletes the user via `User.SoftDelete()`, revokes all active refresh tokens, publishes `UserPermissionsChanged` (cache invalidation), writes audit entry `user.deleted`. Returns 204 on success, 404 when user not found, 403 when target is the bootstrap admin, 409 when target is the only active Administrator.
-- `POST /api/users/{id}/restore` with `[RequirePermission]` + `Users.Restore` policy; uses `FindByIdIgnoringFiltersAsync` to reach soft-deleted records, validates 30-day restore window, calls `User.Restore()`, writes audit entry `user.restored`. Returns 204 on success, 404 when not found or not deleted, 409 when restore window expired.
-- `User.Restore()` domain method added — clears `IsDeleted`/`DeletedAt` and bumps `UpdatedAt`.
-- `IUserRepository.CountActiveAdministratorsAsync(administratorProfileId)` added to domain port and implemented in `UserRepository` (subquery join via EF Core `AsNoTracking`).
-- `PermissionCodes.Users.Delete` and `PermissionCodes.Users.Restore` added to `SharedKernel/Constants/Permissions.cs`.
-- `AuditEventKinds.UserDeleted` (`user.deleted`) and `AuditEventKinds.UserRestored` (`user.restored`) added to `SharedKernel/Constants/AuditEventKinds.cs`.
-- `AuthErrorMessages.CannotDeleteBootstrapUser`, `CannotDeleteLastAdministrator`, `UserAlreadyDeleted`, `UserRestoreWindowExpired`, `UserNotDeleted` added to `SharedKernel/Constants/AuthErrorMessages.cs`.
-- `ValidationLimits.UserRestoreWindowDays = 30` added to `SharedKernel/Constants/ValidationLimits.cs`.
-- Migration `20260615000000_SeedUsersDeleteRestorePermissions` seeds `Users.Delete` and `Users.Restore` permissions under the Users group (idempotent `IF NOT EXISTS`).
-- 18 unit tests (11 delete handler, 7 restore handler) covering: 404 not found, 403 bootstrap guard, 409 last-admin guard, soft-delete state, refresh token revocation, audit entry content, cache invalidation publish, and restore window expiry.
+### Changed (RENAME — AegisIdentity → Lumen)
+- **Rename completo**: todos os projetos, namespaces, assets e configurações renomeados de `AegisIdentity` para `Lumen`.
+- **Estrutura de solução**: `AegisIdentity.sln` → `Lumen.sln`; todos os 16 projetos `.csproj` e suas pastas renomeados para `Lumen.*`.
+- **Namespaces**: ~387 arquivos `.cs` atualizados de `AegisIdentity.*` para `Lumen.*`; `AegisIdentityDbContext` → `LumenDbContext`.
+- **Banco de dados**: `Initial Catalog=AegisIdentity` → `Lumen` e `AegisIdentity_hangfire` → `Lumen_hangfire` em todos os appsettings.
+- **Credencial bootstrap do admin**: email do admin semeado `admin@aegisidentity.local` → `admin@lumen.local` e hash de senha bootstrap rotacionado na migration `SeedInitialAdminUser`; referências atualizadas em `docs/adr/0002-admin-bootstrap-credential.md`, `README.md` e `docs/configuration.md` (incl. `Smtp:From` → `no-reply@lumen.local`).
+- **Configuração**: `Jwt.Issuer`, `Jwt.Audience`, `Smtp.From`, `Hibp.UserAgent`, `Redis.InstanceName` e paths de log atualizados para `Lumen`.
+- **Docker Compose**: containers `aegis-*` → `lumen-*`; senha SA `Dev@AegisIdentity2024!` → `Dev@Lumen2024!`.
+- **Assets de marca**: novos logos Lumen adicionados em `wwwroot/img/brand/` (lumen-lockup.png, lumen-lockup-compact.png, lumen-mark.png, lumen-app-icon.png).
+- **Frontend**: `aegis-console.css` → `lumen-console.css`, `aegis-console.js` → `lumen-console.js`; localStorage key `aegis.reveal` → `lumen.reveal`; cookie `Lumen.Backoffice.Auth`.
+- **Email templates**: branding `AegisIdentity` → `Lumen` nos templates HTML/TXT transacionais.
+- **CI**: paths de test no GitHub Actions atualizados para `tests/Lumen.*`.
+- **Fix pós-merge**: a feature de delete/restore de usuário havia sido parcialmente revertida para a estrutura `AegisIdentity` (fora do `Lumen.sln`), quebrando o build do CI. Handlers e testes movidos para `Lumen.CommandHandlers`/`Lumen.UnitTests`, `using` restaurados em `UsersController`, namespace da migration `SeedUsersDeleteRestorePermissions` corrigido e seu `.Designer.cs` ausente recriado, e pastas órfãs `AegisIdentity.*` removidas.
+
+### Changed (branding — new Lumen logos)
+- **Brand assets**: added the official logo set under `Lumen.Backoffice/wwwroot/img/brand/` — `aegis-mark.png` (icon), `aegis-lockup.png` (full horizontal lockup with tagline), `aegis-lockup-compact.png` (compact wordmark) and `aegis-app-icon.png` (app icon); cropped from the source artwork to remove transparent padding.
+- **Login screen**: replaced the placeholder `_AegisMark` SVG + text brand with the full `aegis-lockup.png` image in `Views/Account/Login.cshtml`.
+- **Console sidebar**: replaced the placeholder mark + text with the `aegis-lockup-compact.png` image in `Views/Shared/_Layout.cshtml`; the brand now links to Home.
+- **Favicons**: generated `favicon.ico`, `favicon-32.png` and `apple-touch-icon.png` from the new app icon; wired `<link rel="icon">`/`apple-touch-icon` into the Backoffice layout (previously had none) and replaced the API `wwwroot/favicon.ico`.
+- **Cleanup**: removed the now-unused `_AegisMark.cshtml` partial and the orphaned `.login-brand-name`, `.login-brand-sub`, `.sidebar-brand-name` CSS rules; added `.login-logo` and `.sidebar-logo` rules.
+- **Logo sizing**: enlarged `.login-logo` (58px → 88px) and `.sidebar-logo` (34px → 52px); re-cropped `lumen-lockup.png` and `lumen-lockup-compact.png` to remove the residual transparent canvas so the wordmark fills the rendered height.
+
+### Changed (REFACTOR-03 — Onda 6: constants cleanup)
+- **EmailLinkPaths**: added `EmailLinkPaths.ConfirmEmail` and `ResetPassword` constants; replaced 3 hardcoded `/api/auth/confirm-email` and 1 `/api/auth/reset-password` URL path literals in `RegisterUserCommandHandler`, `ResendConfirmationEmailCommandHandler`, `UpdateUserCommandHandler` and `ForgotPasswordCommandHandler`.
+- **ValidationLimits**: added `UsernameAllowedCharsPattern` (`^[a-zA-Z0-9_-]+$`) and `UserRestoreWindowDays` (30) constants; replaced duplicate regex literals in `RegisterUserCommandHandler` and `UpdateUserCommandHandler` validators.
+- **SystemActorNames**: added `SystemActorNames.SystemActor = "system"` constant; replaced `"system"` literal in `SetProfilePermissionsCommandHandler` fallback actor.
+- **BackofficeErrorMessages**: new class with PT-BR messages for login failures and profile CRUD fallbacks; replaced 4 hardcoded strings in `AccountController`, 4 in `ProfilesController` and 2 in `UserProfilesController`.
+- **AuditMessageTemplates**: new class with parameterized audit message templates; replaced all inline interpolated strings in `UserLoggedInAuditHandler`, `UserLockedOutAuditHandler`, `ProfilePermissionsSetAuditHandler`, `UserProfileAssignedAuditHandler`, `UserProfileRemovedAuditHandler`, `UserPermissionsChangedAuditHandler` and `CleanupJobExecutedAuditHandler`.
+- **ProfileDetailViewModel / UserProfilesViewModel**: added two strongly-typed ViewModels to replace `ViewData["AllPermissions"]`, `ViewData["UserId"]` and `ViewData["AvailableProfiles"]` type-unsafe entries in `ProfilesController.Details` and `UserProfilesController.Index`; updated `Views/Profiles/Details.cshtml` and `Views/UserProfiles/Index.cshtml` accordingly.
+- **PermissionDisplayHelper**: new static helper in `Lumen.Backoffice.Helpers` with `HttpMethod` and `MethodCssColor`; removed duplicate inline Razor functions from `Views/Permissions/Index.cshtml` and `Views/Profiles/Details.cshtml`.
+- **BackofficeDisplayLabels / BackofficeCssTokens**: extracted all lifecycle step labels, date placeholders and CSS color tokens from `UserViewModelBuilder` into dedicated constants classes; also replaced `profile.Name == "Administrator"` comparison with `SystemProfiles.AdministratorId` and literal state strings with `UserStates` constants.
+- **DiagnosticsDefaults / RedisInfoKeys / HangfireStorageKeys**: new constants in SharedKernel; removed `DashboardSeriesDays` private const from `DiagnosticsController`; replaced `"stats"`, `"keyspace_hits"`, `"keyspace_misses"` and `"NextExecution"` literals.
+- **NetworkDefaults.UnknownIpAddress**: replaced `"unknown"` fallback literal in `ApiBaseController.GetClientIpAddress`.
+- **AuthErrorMessages**: added `CannotDeleteBootstrapUser`, `CannotDeleteLastAdministrator`, `UserNotDeleted` and `UserRestoreWindowExpired` (now a `{0}`-days template replacing the hardcoded `"30 dias"` string).
+- **DevDefaults**: internal class in `Lumen.Api.Controllers.Dev` with dev-only test email constants; replaced 5 hardcoded strings in `DevController`.
 
 ## [0.3.0] - 2026-06-15
 
 ### Added (REFACTOR-01 — BaseController hierarchy)
-- `ApiBaseController` (abstract, `ControllerBase`) added to `AegisIdentity.Api.Controllers`:
+- `ApiBaseController` (abstract, `ControllerBase`) added to `Lumen.Api.Controllers`:
   - `RequireCurrentUserId(out Guid userId)` — parses `ClaimTypes.NameIdentifier` as a `Guid`; returns `Unauthorized()` result when the claim is absent or not a valid `Guid`, `null` on success. Used as an early-return guard in action methods that require an authenticated user id.
   - `TryGetCurrentUserId(out Guid userId)` — pure boolean variant for callsites that need to branch without returning directly.
   - `GetClientIpAddress()` — `HttpContext.Connection.RemoteIpAddress?.ToString()` with `"unknown"` fallback; eliminates the inline null-coalescing literal.
   - `GetActorIdentifier()` — `User.Identity?.Name ?? User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty`; used where the actor is passed to audit or domain commands.
   - Promotes `[ApiController]` and `[Produces("application/json")]` to the base class — removed from all 10 concrete API controllers.
-- `BackofficeBaseController` (abstract, `Controller`) added to `AegisIdentity.Backoffice.Controllers`:
+- `BackofficeBaseController` (abstract, `Controller`) added to `Lumen.Backoffice.Controllers`:
   - `TryGetCurrentUserId(out Guid userId)` — same semantics as the API variant; used by `AuthorizationGraphController.CallerHasPermissionAsync`.
 - All 10 API controllers now extend `ApiBaseController`; `AccountController` excluded from Backoffice hierarchy (raw JWT parsing for cookie sign-in has no shared claims pattern).
 - Inline `System.Security.Claims` usages removed from controllers that no longer reference `ClaimTypes` directly.
@@ -36,7 +60,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added (Architecture blindagem — refactor/architecture-blindagem)
 - **IsBootstrap no domínio User**: adicionada propriedade `IsBootstrap` (`private set`, imutável) ao agregado `User` e factory method `User.CreateBootstrap` para criação explícita do usuário-semente. Migration `20260614220101_AddUserIsBootstrapColumn` adiciona a coluna (`bit NOT NULL DEFAULT 0`) e marca o usuário admin seed como bootstrap via `UpdateData`. `ListUsersQueryHandler` e `GetUserDetailQueryHandler` passam a retornar o valor real em vez de `false` hardcoded. 5 novos testes unitários em `UserTests`.
 - **N+1 eliminado em GetAuthorizationGraphQueryHandler**: `BuildProfileNodesAsync` e `BuildUserNodesAsync` substituem os loops N+1 por chamadas batch (`GetActivePermissionProfilesByProfileIdsAsync` e `ListByUserIdsAsync`). Reduz de `O(P + U)` round-trips adicionais para 2 queries fixas. Novos métodos batch adicionados a `IProfileRepository`, `IUserProfileRepository` e implementados em `ProfileRepository`, `UserProfileRepository` com `AsNoTracking`. Testes atualizados para mocks batch; novo cenário multi-entidade adicionado.
-- **Projeto AegisIdentity.ArchitectureTests**: 16 testes de arquitetura automatizados com NetArchTest.Rules (1.3.2) que falham ao build quando regras de Clean Architecture são violadas. Cobre: isolamento do Domain, isolamento do SharedKernel, independência das camadas Application de Infrastructure/Presentation, separação CQRS (Command↔Query), e proibição de Controllers referenciarem tipos de Domain diretamente. Documentado em CLAUDE.md na seção "Constraints de arquitetura (testes automatizados)".
+- **Projeto Lumen.ArchitectureTests**: 16 testes de arquitetura automatizados com NetArchTest.Rules (1.3.2) que falham ao build quando regras de Clean Architecture são violadas. Cobre: isolamento do Domain, isolamento do SharedKernel, independência das camadas Application de Infrastructure/Presentation, separação CQRS (Command↔Query), e proibição de Controllers referenciarem tipos de Domain diretamente. Documentado em CLAUDE.md na seção "Constraints de arquitetura (testes automatizados)".
 
 ### Changed (Architecture alignment — refactor/architecture-alignment)
 - **Permission constants**: Added `PermissionCodes.Profiles.*`, `PermissionCodes.Permissions.*`, `PermissionCodes.UserProfiles.*` and matching `PermissionGroups.*` to `SharedKernel/Constants/Permissions.cs`. Replaced all literal strings in `PermissionsController`, `ProfilesController` and `UserProfilesController` with the new constants.
@@ -188,7 +212,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `/api/diagnostics/health` integration is added in a future card.
 
 ### Added (API-SIGNALR-02)
-- `GraphLivePushHandler` added to `AegisIdentity.Api.Hubs`; implements `INotificationHandler<UserPermissionsChanged>`
+- `GraphLivePushHandler` added to `Lumen.Api.Hubs`; implements `INotificationHandler<UserPermissionsChanged>`
   and pushes a `GraphSnapshot` delta to all connected clients of the affected user via
   `IHubContext<AuthorizationGraphHub, IAuthorizationGraphHubClient>.Clients.User(userId)`.
 - Handler is independent of `UserPermissionsChangedHandler` (cache invalidation) and
@@ -211,7 +235,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   server→client contract at compile time.
 - `IAuthorizationGraphHubClient` interface declares the two server-push methods:
   `GraphUpdated(GraphSnapshot delta)` and `UserPermissionsInvalidated(Guid userId)`.
-- `HubRoutes` and `HubMethods.AuthorizationGraph` constants added to `AegisIdentity.SharedKernel.Constants`
+- `HubRoutes` and `HubMethods.AuthorizationGraph` constants added to `Lumen.SharedKernel.Constants`
   to eliminate route/method name literals across hub, Program.cs, and tests.
 - `AuthorizationGraphHub` requires the `AuthorizationGraph.View` permission via
   `[Authorize(Policy = PermissionCodes.AuthorizationGraph.View)]` and a secondary runtime
@@ -253,7 +277,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   all aligned 1:1 with the API query handler contracts.
 
 ### Added (API-GRAPH-01)
-- `GetAuthorizationGraphQueryHandler` added to `AegisIdentity.ReadModels.Queries`; composes users,
+- `GetAuthorizationGraphQueryHandler` added to `Lumen.ReadModels.Queries`; composes users,
   profiles, permissions, and their relations (UserProfile/PermissionProfile) into a `GraphSnapshot`.
   Returns `users[]` (with `id`, `username`, `email`, `state`, `profiles[]`), `profiles{}` (keyed by
   profile id, with `name`, `isSystem`, `permissions[]`), and `permissions{}` (keyed by permission id,
@@ -275,31 +299,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (previously `View`); all 3 discovery tests continue passing.
 
 ### Added (API-AUDIT-01)
-- `AuditEntry` entity added to `AegisIdentity.Domain.Audit` with fields `id`, `kind`, `actor`,
+- `AuditEntry` entity added to `Lumen.Domain.Audit` with fields `id`, `kind`, `actor`,
   `target`, `message`, `occurredAt`; created via `AuditEntry.Create(kind, actor, target, message)`.
 - `IAuditRepository` (domain port) added with `InsertAsync` and `GetRecentAsync(take)`.
-- `AuditRepository` (infrastructure adapter) implemented in `AegisIdentity.DataAccess` — `GetRecentAsync`
+- `AuditRepository` (infrastructure adapter) implemented in `Lumen.DataAccess` — `GetRecentAsync`
   queries ordered by `OccurredAt DESC`, bounded by `take`.
-- `DbSet<AuditEntry> AuditEntries` added to `AegisIdentityDbContext`; EF configuration
+- `DbSet<AuditEntry> AuditEntries` added to `LumenDbContext`; EF configuration
   (`AuditEntryConfiguration`) maps to `AuditEntries` table with indices on `OccurredAt` and `Kind`.
 - `IAuditRepository` registered as `AuditRepository` (scoped) in `SqlServerServiceExtensions.AddRelationalDataAccess`.
 - EF Core migration `20260608005918_AddAuditEntries` created: `Up` adds `AuditEntries` table +
   two indices; `Down` drops the table.
-- Six domain notification records added to `AegisIdentity.Domain.Audit`: `UserLoggedIn`,
+- Six domain notification records added to `Lumen.Domain.Audit`: `UserLoggedIn`,
   `UserLockedOut`, `ProfilePermissionsSet`, `UserProfileAssigned`, `UserProfileRemoved`,
   `CleanupJobExecuted` — each implements `INotification`.
-- Six dedicated audit `INotificationHandler` implementations added to `AegisIdentity.EventHandlers.Audit`
+- Six dedicated audit `INotificationHandler` implementations added to `Lumen.EventHandlers.Audit`
   (one per notification), each inserting an `AuditEntry` with the appropriate `AuditEventKinds` constant.
   MediatR allows multiple handlers for the same notification — audit handlers are fully decoupled from
   the existing cache-invalidation handler.
-- `AuditEventKinds` constants class added to `AegisIdentity.SharedKernel.Constants` defining
+- `AuditEventKinds` constants class added to `Lumen.SharedKernel.Constants` defining
   `auth.login`, `auth.lockout`, `cache.invalidate`, `profile.permset`, `userprofile.assign`,
   `userprofile.remove`, `job.cleanup`.
 - `PermissionCodes.Audit.Read` (`"Audit.Read"`) and `PermissionGroups.Audit` (`"Audit"`) constants
-  added to `AegisIdentity.SharedKernel.Constants.Permissions` — auto-discovered by
+  added to `Lumen.SharedKernel.Constants.Permissions` — auto-discovered by
   `PermissionDiscoveryHostedService` on startup.
 - `JobSchedules.CleanupJobName` constant (`"cleanup-expired-refresh-tokens"`) added to
-  `AegisIdentity.SharedKernel.Constants.JobSchedules`.
+  `Lumen.SharedKernel.Constants.JobSchedules`.
 - `LoginUserCommandHandler` now injects `IPublisher` and publishes `UserLoggedIn` on successful
   authentication and `UserLockedOut` when the lockout threshold is reached.
 - `SetProfilePermissionsCommandHandler.Command` gains an optional `ActorUsername` field; publishes
@@ -309,8 +333,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `RemoveUserProfileCommandHandler` now resolves user and profile (for their names) and publishes
   `UserProfileRemoved`; constructor gains `IUserRepository` and `IProfileRepository` parameters.
 - `CleanupExpiredRefreshTokensJob` injects `IPublisher` and publishes `CleanupJobExecuted` after
-  each cleanup run; `MediatR` package reference added to `AegisIdentity.Jobs.csproj`.
-- `GetRecentAuditFeedQueryHandler` added to `AegisIdentity.ReadModels.Queries`; accepts `take`
+  each cleanup run; `MediatR` package reference added to `Lumen.Jobs.csproj`.
+- `GetRecentAuditFeedQueryHandler` added to `Lumen.ReadModels.Queries`; accepts `take`
   (clamped to 1–100, default 20) and returns `IReadOnlyList<AuditEntryResult>` ordered desc by
   `OccurredAt`.
 - `GET /api/audit/recent?take=N` endpoint added to `AuditController` — protected by
@@ -340,7 +364,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the permission via `IUserPermissionService` and calls `Context.Abort()` to reject connections
   where the principal lacks the permission (defence-in-depth beyond the JWT policy gate).
 - `PermissionCodes.AuthorizationGraph.View` and `PermissionGroups.Authorization` constants added to
-  `AegisIdentity.SharedKernel.Constants.Permissions` — referenced by both API and Backoffice to
+  `Lumen.SharedKernel.Constants.Permissions` — referenced by both API and Backoffice to
   avoid hard-coded strings and enable find-usages refactoring.
 - Backoffice `AuthorizationGraphController.Index` now injects `IUserPermissionService` and returns
   `Forbid()` for authenticated users who lack `AuthorizationGraph.View`, blocking direct URL access
@@ -357,12 +381,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 2 integration tests added in `AuthorizationGraphHubTests` covering Hub connection rejection
   (without permission) and successful connection (with permission); `IntegrationFixture.BuildJwtForUser`
   exposed as a public method to support Hub connection tests with a custom bearer token.
-- `Microsoft.AspNetCore.SignalR.Client` (v8.0.15) added to `AegisIdentity.IntegrationTests` and
+- `Microsoft.AspNetCore.SignalR.Client` (v8.0.15) added to `Lumen.IntegrationTests` and
   `Directory.Packages.props` to enable Hub connection testing in the integration test suite.
 
 ### Added (API-USERS-02)
 - `GET /api/users/{id:guid}` endpoint — returns full user detail including profiles and lifecycle fields:
-  - `GetUserDetailQueryHandler` added to `AegisIdentity.ReadModels.Queries`; accepts a user GUID
+  - `GetUserDetailQueryHandler` added to `Lumen.ReadModels.Queries`; accepts a user GUID
     and returns a shaped result with `id`, `username`, `email`, `state`, `isBootstrap`, `createdAt`,
     `emailConfirmedAt`, `lastLoginAt`, `lockoutEndAt`, `profiles[]` (with `profileId`, `name`,
     `isSystem`, `permissionCount`), and `resolvedPermissionCount`.
@@ -378,7 +402,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `GetDetail` action added to `UsersController` — protected by `[RequirePermission]` +
     `[Authorize(Policy = PermissionCodes.Users.Get)]` + `[PermissionGroup(PermissionGroups.Users)]`.
   - `PermissionCodes.Users.List` and `PermissionCodes.Users.Get` constants added to
-    `AegisIdentity.SharedKernel.Constants.Permissions`; `PermissionGroups.Users` added alongside.
+    `Lumen.SharedKernel.Constants.Permissions`; `PermissionGroups.Users` added alongside.
     `UsersController` migrated from hard-coded `"Users.List"` and `"Users"` strings to these constants.
   - `FindByIdIgnoringFiltersAsync` added to `IUserRepository` and implemented in `UserRepository`
     to support the soft-delete bypass needed by the detail endpoint.
@@ -390,11 +414,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added (API-USERS-01)
 - `GET /api/users` endpoint — paginates and filters users with full state derivation:
-  - `ListUsersQueryHandler` added to `AegisIdentity.ReadModels.Queries`; accepts `search`,
+  - `ListUsersQueryHandler` added to `Lumen.ReadModels.Queries`; accepts `search`,
     `state` (active/locked/pending/deleted/all), `page`, and `pageSize`.
   - `state` derived from domain fields: `IsDeleted → deleted`, `LockedUntil > now → locked`,
     `EmailConfirmedAt == null → pending`, otherwise `active`.
-  - `UsersController` added to `AegisIdentity.Api.Controllers` — protected by
+  - `UsersController` added to `Lumen.Api.Controllers` — protected by
     `[RequirePermission]` + `[Authorize(Policy = "Users.List")]` + `[PermissionGroup("Users")]`;
     auto-registered in the permission discovery catalogue.
   - `IUserRepository.ListAsync` added with search, soft-delete bypass (`IgnoreQueryFilters`),
@@ -409,14 +433,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     shape, input validation (page, pageSize, state), and soft-delete filter semantics.
 
 ### Changed (INFRA-07)
-- `AegisIdentity.Backoffice` startup configuration aligned with the Api host:
+- `Lumen.Backoffice` startup configuration aligned with the Api host:
   - `BackofficeApiOptions` (`Api:BaseUrl`) introduced as a typed options class bound from the
     `Api` section. Validation (`[Required]`, `[Url]`, `ValidateOnStart`) replaces the two
     manual `?? throw` guards that existed in `Program.cs`.
   - `HttpClient` factories for `AuthApiClient` and `AdminApiClient` now resolve `BaseAddress`
     from `IOptions<BackofficeApiOptions>` instead of reading configuration directly.
   - `appsettings.json` sanitised: empty string defaults replaced with `"REPLACE_ME"` sentinel
-    (consistent with `AegisIdentity.Api/appsettings.json`); inline `_comment` fields added for
+    (consistent with `Lumen.Api/appsettings.json`); inline `_comment` fields added for
     `Api`, `SqlServer`, and `Redis` sections, explicitly noting that Redis is a required
     dependency of the Backoffice for the permission cache.
   - `appsettings.Development.json` updated with guidance on setting the three required secrets
@@ -610,11 +634,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed (INFRA-01..06)
 - **Persistence migrated from MongoDB to SQL Server + EF Core 8** (see
   [ADR-0001](docs/adr/0001-mongodb-to-relational-efcore.md)):
-  - `AegisIdentity.DataAccess`: `MongoDbContext` + Mongo repositories replaced by
-    `AegisIdentityDbContext` (EF Core) + SQL Server repositories.
-  - `AegisIdentity.Migrations` / `AegisIdentity.Migrations.Cli`: Mongo migration runner
+  - `Lumen.DataAccess`: `MongoDbContext` + Mongo repositories replaced by
+    `LumenDbContext` (EF Core) + SQL Server repositories.
+  - `Lumen.Migrations` / `Lumen.Migrations.Cli`: Mongo migration runner
     removed; EF Core migrations take over schema + data management.
-  - `AegisIdentity.Jobs`: `Hangfire.Mongo` replaced by `Hangfire.SqlServer`.
+  - `Lumen.Jobs`: `Hangfire.Mongo` replaced by `Hangfire.SqlServer`.
   - `User.Id`: `string` ObjectId hex replaced by `Guid`.
   - `docker-compose.yml`: `mongo` service replaced by `sqlserver` (SQL Server 2022) and
     `redis` (Redis 7).
@@ -624,7 +648,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Redis distributed cache added for permission resolution (INFRA-06 / AUTH-11).
 
 ### Added (AUTH-02)
-- **`POST /api/auth/login`** endpoint (`src/AegisIdentity.Api/Endpoints/Auth/LoginEndpoint.cs`):
+- **`POST /api/auth/login`** endpoint (`src/Lumen.Api/Endpoints/Auth/LoginEndpoint.cs`):
   - Accepts `{ identifier, password }` where `identifier` is an email address or a username.
     Discriminated by the presence of `@`: if the identifier contains `@`, the lookup is by
     normalised email; otherwise by username.
@@ -634,7 +658,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     The same response is returned for both cases to prevent user enumeration.
   - Returns **403 Forbidden** when the account exists but has not confirmed its email.
   - Returns **423 Locked** when the account is temporarily locked due to repeated failures.
-- **`ILoginUserUseCase`** / **`LoginUserUseCase`** (`src/AegisIdentity.Application/Auth/Login/`):
+- **`ILoginUserUseCase`** / **`LoginUserUseCase`** (`src/Lumen.Application/Auth/Login/`):
   - Resolves the user by email or username depending on the identifier format.
   - Checks lockout **before** password verification — prevents BCrypt work on locked accounts.
   - Calls `IPasswordHasher.Verify` for constant-time comparison.
@@ -646,11 +670,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     `IRefreshTokenRepository.InsertAsync`.
   - `ExpiresIn` in the response is derived from `IJwtService.AccessTokenExpiresIn` — no
     hardcoded constant.
-- **`IJwtService`** interface in Application (`src/AegisIdentity.Application/Security/IJwtService.cs`):
+- **`IJwtService`** interface in Application (`src/Lumen.Application/Security/IJwtService.cs`):
   - `GenerateAccessToken(User)` → signed JWT.
   - `GenerateRefreshTokenValue()` → URL-safe Base64 (32 random bytes).
   - `AccessTokenExpiresIn` → token lifetime in seconds.
-- **`JwtService`** in Infrastructure (`src/AegisIdentity.Infrastructure/Security/JwtService.cs`):
+- **`JwtService`** in Infrastructure (`src/Lumen.Infrastructure/Security/JwtService.cs`):
   - HS256-signed JWT with claims: `sub` (user ID), `email`, `username`, `jti`, `role[]`.
   - Expiry driven by `Jwt:ExpirationMinutes` configuration.
   - Registered as **singleton** in `SecurityServiceExtensions`.
@@ -672,15 +696,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     each call, URL-safe charset.
 
 ### Added (AUTH-01)
-- **`POST /api/auth/register`** endpoint (`src/AegisIdentity.Api/Endpoints/Auth/RegisterEndpoint.cs`):
+- **`POST /api/auth/register`** endpoint (`src/Lumen.Api/Endpoints/Auth/RegisterEndpoint.cs`):
   - Returns **201 Created** with `{ id, email, username }` on success.
   - Returns **400 Bad Request** (ValidationProblem) on FluentValidation failure or weak password.
   - Returns **409 Conflict** with a field-specific message on duplicate email or username.
   - Registered for all environments (not dev-only).
 - **`IPasswordHasher`** / **`BCryptPasswordHasher`**:
-  - `IPasswordHasher` interface in Application (`src/AegisIdentity.Application/Security/IPasswordHasher.cs`): `Hash(plainText)` + `Verify(plainText, hash)`.
-  - `BCryptPasswordHasher` in Infrastructure (`src/AegisIdentity.Infrastructure/Security/BCryptPasswordHasher.cs`): BCrypt work factor **12**. Registered as singleton in DI.
-- **`IRegisterUserUseCase`** / **`RegisterUserUseCase`** (`src/AegisIdentity.Application/Auth/Register/`):
+  - `IPasswordHasher` interface in Application (`src/Lumen.Application/Security/IPasswordHasher.cs`): `Hash(plainText)` + `Verify(plainText, hash)`.
+  - `BCryptPasswordHasher` in Infrastructure (`src/Lumen.Infrastructure/Security/BCryptPasswordHasher.cs`): BCrypt work factor **12**. Registered as singleton in DI.
+- **`IRegisterUserUseCase`** / **`RegisterUserUseCase`** (`src/Lumen.Application/Auth/Register/`):
   - Validates password strength via `IPasswordValidator` before hashing — weak passwords are rejected without touching the database.
   - Hashes the password with `IPasswordHasher` (BCrypt cost 12).
   - Inserts the user via `IUserRepository` (user is created with `IsActive = false`).
@@ -692,25 +716,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`RegisterRequest`** / **`RegisterResponse`** / **`RegisterResult`** DTOs in Application.
 - **`RegisterRequestValidator`** (FluentValidation): email format, username 3–32 chars alphanumeric/underscore/hyphen, password required.
 - **`DuplicateEmailException`** / **`DuplicateUsernameException`** in Domain — thrown by `UserRepository.InsertAsync` when MongoDB returns error code 11000. Index name (`ix_email_unique` / `ix_username_unique`) used to distinguish the two cases.
-- **`IAppSettings`** interface in Application (`src/AegisIdentity.Application/Configuration/`) + `AppSettingsAdapter` in Infrastructure: bridges `AppOptions` (Infrastructure) to use cases without coupling them to `IOptions<T>`.
+- **`IAppSettings`** interface in Application (`src/Lumen.Application/Configuration/`) + `AppSettingsAdapter` in Infrastructure: bridges `AppOptions` (Infrastructure) to use cases without coupling them to `IOptions<T>`.
 - **`AppOptions`** (`App:BaseUrl`) registered in `InfrastructureOptionsExtensions` with `ValidateOnStart`. Added to all `appsettings*.json` files.
 - **`IEmailTemplateRenderer`** interface in Application + `EmailTemplateRendererAdapter` in Infrastructure: decouples use cases from the concrete `EmailTemplateRenderer` Infrastructure type.
 - **`AuthServiceExtensions.AddAuthUseCases()`** registers `IValidator<RegisterRequest>` and `IRegisterUserUseCase` as scoped services.
-- **`Microsoft.Extensions.Logging.Abstractions`** added to `AegisIdentity.Application.csproj` (logging without ASP.NET Core dependency).
+- **`Microsoft.Extensions.Logging.Abstractions`** added to `Lumen.Application.csproj` (logging without ASP.NET Core dependency).
 - **Unit tests** (29 new scenarios):
   - `RegisterRequestValidatorTests` (13): email required/format/length, username required/min/max/pattern, password required, full valid request.
   - `RegisterUserUseCaseTests` (13): weak password returns `WeakPassword`, duplicate email/username returns correct variant, success returns user data, password is hashed, user starts inactive, token is inserted, confirmation email is sent, confirmation URL contains BaseUrl, validator receives email+username context.
   - `BCryptPasswordHasherTests` (8): non-empty output, salt randomisation, BCrypt format, correct verify, wrong-password verify, empty-input guards.
 
 ### Added (EMAIL-01)
-- **`IEmailService`** in Domain (`src/AegisIdentity.Domain/Notifications/IEmailService.cs`):
+- **`IEmailService`** in Domain (`src/Lumen.Domain/Notifications/IEmailService.cs`):
   - Single-method abstraction: `Task SendAsync(EmailMessage, CancellationToken)`.
   - Lives in Domain so future Application handlers (AUTH-08 forgot-password,
     AUTH-09 reset, AUTH-10 confirm-email, USER-05 password-change) can depend on it
     without taking an Infrastructure reference.
 - **`EmailMessage`** record (`To`, `Subject`, `HtmlBody`, `TextBody`) — Domain DTO
   consumed by `IEmailService`.
-- **`MailKitEmailService`** in Infrastructure (`src/AegisIdentity.Infrastructure/Notifications/MailKitEmailService.cs`):
+- **`MailKitEmailService`** in Infrastructure (`src/Lumen.Infrastructure/Notifications/MailKitEmailService.cs`):
   - Builds a `multipart/alternative` MIME message via `BodyBuilder` when both bodies
     are supplied; falls back to single-part `TextPart` when only one is.
   - Implements the EMAIL-01 retry contract: **2 attempts max** with a 500 ms back-off
@@ -720,13 +744,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     cannot bring down user registration / password reset flows. The single exception
     is `OperationCanceledException` originating from a caller-supplied
     `CancellationToken`, which is intentionally re-thrown so deadline races behave correctly.
-- **`ISmtpTransport`** + **`MailKitSmtpTransport`** (`src/AegisIdentity.Infrastructure/Notifications/`):
+- **`ISmtpTransport`** + **`MailKitSmtpTransport`** (`src/Lumen.Infrastructure/Notifications/`):
   - Thin port over `MailKit.Net.Smtp.SmtpClient` introduced as a unit-test seam
     (sending real SMTP from a unit test was rejected — would couple every test run to Mailpit).
   - 10 s `Timeout` on `ConnectAsync` per the EMAIL-01 risk mitigation. Honours
     `SecureSocketOptions.StartTlsWhenAvailable` when `Smtp:UseStartTls=true` —
     one config value works for both Mailpit (no TLS) and real providers (TLS).
-- **`EmailTemplateRenderer`** (`src/AegisIdentity.Infrastructure/Notifications/EmailTemplateRenderer.cs`):
+- **`EmailTemplateRenderer`** (`src/Lumen.Infrastructure/Notifications/EmailTemplateRenderer.cs`):
   - Loads templates as **embedded resources** and substitutes `{{Placeholder}}` tokens.
   - Template content is cached in a static `ConcurrentDictionary` after the first read —
     the embedded payload never changes between calls.
@@ -735,12 +759,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     rendering into the API layer, both for three short transactional emails. Placeholder
     substitution covers the EMAIL-01 acceptance criteria with zero extra dependencies.
     Razor or RazorLight remains an option if email layouts grow complex later.
-- **Templates** under `src/AegisIdentity.Infrastructure/Templates/Email/` (embedded resources):
+- **Templates** under `src/Lumen.Infrastructure/Templates/Email/` (embedded resources):
   - `EmailConfirmation.{html,txt}` — placeholders `UserName`, `ConfirmationUrl`.
   - `PasswordReset.{html,txt}` — placeholders `UserName`, `ResetUrl`.
   - `PasswordChanged.{html,txt}` — placeholders `UserName`, `ChangedAt`.
 - **`AddNotifications()`** DI extension
-  (`src/AegisIdentity.Infrastructure/Notifications/NotificationsServiceExtensions.cs`):
+  (`src/Lumen.Infrastructure/Notifications/NotificationsServiceExtensions.cs`):
   - Registers `EmailTemplateRenderer` as **singleton** (stateless, caches templates),
     `ISmtpTransport` and `IEmailService` as **scoped**. Wired into `Program.cs`.
 - **`/dev/email-test` refactored** to go through `IEmailService`:
@@ -755,16 +779,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     fail-open, timeout fail-open, caller cancellation propagation, multipart MIME shape,
     text-only message shape, and null-message rejection.
   - `FakeSmtpTransport` queue-based fake replaces real SMTP I/O — tests run offline in <2 s.
-  - `InternalsVisibleTo("AegisIdentity.UnitTests")` added to Infrastructure so tests can
+  - `InternalsVisibleTo("Lumen.UnitTests")` added to Infrastructure so tests can
     reach `MailKitEmailService.MaxAttempts` and related test hooks.
 
 ### Added (SEC-04)
-- **`IPasswordValidator`** (`src/AegisIdentity.Application/Security/IPasswordValidator.cs`):
+- **`IPasswordValidator`** (`src/Lumen.Application/Security/IPasswordValidator.cs`):
   - Application-layer contract: `Task<PasswordValidationResult> ValidatePasswordAsync(PasswordValidationContext, CancellationToken)`.
   - Consumed by future AUTH-01 (registration), USER-05 (password change) and AUTH-09 (password reset) handlers.
 - **`PasswordValidationContext`** record (`Password`, `Email`, `Username`) — input.
 - **`PasswordValidationResult`** record (`IsValid`, `Errors`) — output. Aggregates every failed rule's PT-BR message so callers can surface all violations at once.
-- **`PasswordValidator`** (`src/AegisIdentity.Application/Security/PasswordValidator.cs`):
+- **`PasswordValidator`** (`src/Lumen.Application/Security/PasswordValidator.cs`):
   - Implements both `IPasswordValidator` and FluentValidation's
     `AbstractValidator<PasswordValidationContext>`. Callers can pick either contract.
   - Rules (PT-BR error messages, exactly as specified by the card):
@@ -777,13 +801,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Password must not appear in the HIBP database — `"Esta senha aparece em vazamentos públicos conhecidos. Escolha outra."`
   - HIBP check is gated behind a `When(...)` clause that only runs once every
     structural rule passes — a clearly weak password never burns an external HTTP call.
-- **`AddApplicationSecurity()`** DI extension (`src/AegisIdentity.Application/Security/SecurityServiceExtensions.cs`):
+- **`AddApplicationSecurity()`** DI extension (`src/Lumen.Application/Security/SecurityServiceExtensions.cs`):
   - Registers `IPasswordValidator` → `PasswordValidator` as **scoped**. Wired into `Program.cs`.
 - **`Microsoft.Extensions.DependencyInjection.Abstractions` 8.0.2** added to the
   central package versions and referenced by the Application project so it can
   expose `IServiceCollection`-based extension methods without taking a dependency
   on the full DI container or on ASP.NET Core.
-- **Unit tests** (`tests/AegisIdentity.UnitTests/Application/Security/PasswordValidatorTests.cs`) — 48 scenarios:
+- **Unit tests** (`tests/Lumen.UnitTests/Application/Security/PasswordValidatorTests.cs`) — 48 scenarios:
   - Length boundary at 11 vs 12 characters.
   - Missing uppercase / lowercase / digit / special character.
   - Password equal to email and username with case-insensitive theories.
@@ -794,11 +818,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 32-case theory covering every character in the allowed special-character set.
 
 ### Added (SEC-05)
-- **`IPwnedPasswordsClient`** in Domain (`src/AegisIdentity.Domain/Security/IPwnedPasswordsClient.cs`):
+- **`IPwnedPasswordsClient`** in Domain (`src/Lumen.Domain/Security/IPwnedPasswordsClient.cs`):
   - Single-method abstraction: `Task<bool> IsPwnedAsync(string password, CancellationToken)`.
   - Lives in Domain (Dependency Inversion) so `PasswordValidator` in Application
     can depend on it without taking an Infrastructure reference.
-- **`PwnedPasswordsClient`** in Infrastructure (`src/AegisIdentity.Infrastructure/Security/PwnedPasswordsClient.cs`):
+- **`PwnedPasswordsClient`** in Infrastructure (`src/Lumen.Infrastructure/Security/PwnedPasswordsClient.cs`):
   - Queries the public HaveIBeenPwned Pwned Passwords API at
     `https://api.pwnedpasswords.com/range/{prefix}`.
   - **k-anonymity**: sends only the first 5 hex characters of `SHA1(password)`;
@@ -813,7 +837,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     chosen to match the HIBP card requirement: keeps dev loops fast and stays well
     under the 1.5M req/day soft limit. Test inputs that share a prefix hit the API
     only once.
-- **`AddSecurity()`** DI extension (`src/AegisIdentity.Infrastructure/Security/SecurityServiceExtensions.cs`):
+- **`AddSecurity()`** DI extension (`src/Lumen.Infrastructure/Security/SecurityServiceExtensions.cs`):
   - Registers `IPwnedPasswordsClient` → `PwnedPasswordsClient` via
     `AddHttpClient<TClient, TImplementation>` with a typed `HttpClient`:
     `BaseAddress` from `Hibp:ApiBaseUrl`, `Timeout = 2s`, the required headers
@@ -821,7 +845,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Wired into `Program.cs`.
 - **`Microsoft.Extensions.Caching.Memory` 8.0.1** added to the central package versions
   and referenced by the Infrastructure project.
-- **Unit tests** (`tests/AegisIdentity.UnitTests/Infrastructure/Security/PwnedPasswordsClientTests.cs`) — 9 scenarios:
+- **Unit tests** (`tests/Lumen.UnitTests/Infrastructure/Security/PwnedPasswordsClientTests.cs`) — 9 scenarios:
   - Suffix-present with positive count → `true`.
   - Suffix-absent → `false`.
   - Suffix-present with count `0` (HIBP padding entries) → `false`.
@@ -833,14 +857,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Empty password → `ArgumentException`.
   - Outbound request URL shape matches `https://api.pwnedpasswords.com/range/{prefix}`.
   - Backed by a hand-rolled `StubHttpMessageHandler` so the suite never touches the network.
-- **Integration test** (`tests/AegisIdentity.IntegrationTests/Security/PwnedPasswordsClientIntegrationTests.cs`)
+- **Integration test** (`tests/Lumen.IntegrationTests/Security/PwnedPasswordsClientIntegrationTests.cs`)
   marked `[Trait("Category","ExternalApi")]` — calls the real HIBP API for smoke checks
   (`"password"` → `true`, fresh random Guid → `false`). Excluded from default test runs
   to keep CI deterministic; run explicitly with
   `dotnet test --filter "Category=ExternalApi"`.
 
 ### Added (DATA-03)
-- **`RefreshToken` aggregate** (`src/AegisIdentity.Domain/Tokens/RefreshToken.cs`):
+- **`RefreshToken` aggregate** (`src/Lumen.Domain/Tokens/RefreshToken.cs`):
   - Properties: `Id`, `UserId`, `TokenHash` (SHA-256 — never plaintext), `CreatedByIp`,
     `ReplacedByTokenHash`, `CreatedAt`, `ExpiresAt`, `RevokedAt`.
   - Static factory `RefreshToken.Create(userId, tokenHash, expiresAt, createdByIp)` —
@@ -848,11 +872,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Behaviour: `IsExpired()`, `IsRevoked()`, `IsActive()`, `Revoke(replacedByTokenHash?)`.
   - `ReplacedByTokenHash` enables auditable rotation chains (token A → B → C).
   - Zero external dependencies — pure domain model.
-- **`PasswordResetToken` aggregate** (`src/AegisIdentity.Domain/Tokens/PasswordResetToken.cs`):
+- **`PasswordResetToken` aggregate** (`src/Lumen.Domain/Tokens/PasswordResetToken.cs`):
   - Properties: `Id`, `UserId`, `TokenHash`, `CreatedAt`, `ExpiresAt`, `UsedAt`.
   - Factory and behaviour: `Create(userId, tokenHash, expiresAt)`, `IsExpired()`, `IsUsed()`,
     `IsValid()`, `MarkAsUsed()`. Single-use enforced by `UsedAt` presence check.
-- **`EmailConfirmationToken` aggregate** (`src/AegisIdentity.Domain/Tokens/EmailConfirmationToken.cs`):
+- **`EmailConfirmationToken` aggregate** (`src/Lumen.Domain/Tokens/EmailConfirmationToken.cs`):
   - Same structure and behaviour as `PasswordResetToken`, scoped to email confirmation flow.
 - **Repository interfaces** in Domain (Dependency Inversion):
   - `IRefreshTokenRepository`: `FindByTokenHashAsync`, `FindByUserIdAsync`, `InsertAsync`, `UpdateAsync`.
@@ -884,7 +908,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Index existence verification (unique hash, TTL, userId for refresh tokens).
 
 ### Added (DATA-02)
-- **`User` aggregate** (`src/AegisIdentity.Domain/Users/User.cs`):
+- **`User` aggregate** (`src/Lumen.Domain/Users/User.cs`):
   - Domain entity with all required properties: `Id` (string/ObjectId), `Email` (normalised),
     `Username`, `PasswordHash`, `Roles` (default `["user"]`), `IsActive` (default `false`),
     `EmailConfirmedAt`, `LastLoginAt`, `FailedLoginAttempts`, `LockedUntil`,
@@ -895,51 +919,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Brute-force protection behaviour: `RecordFailedLogin(threshold, duration)` and `Unlock()`.
   - `IsLockedOut()` predicate for login gate checks.
   - Zero external dependencies — pure domain model.
-- **`IUserRepository`** (`src/AegisIdentity.Domain/Users/IUserRepository.cs`):
+- **`IUserRepository`** (`src/Lumen.Domain/Users/IUserRepository.cs`):
   - Domain-layer interface (Dependency Inversion): `FindByEmailAsync`, `FindByIdAsync`,
     `FindByUsernameAsync`, `InsertAsync`, `UpdateAsync` — all with `CancellationToken`.
-- **`UserClassMap`** (`src/AegisIdentity.Infrastructure/Persistence/Mappings/UserClassMap.cs`):
+- **`UserClassMap`** (`src/Lumen.Infrastructure/Persistence/Mappings/UserClassMap.cs`):
   - `BsonClassMap.RegisterClassMap<User>` with explicit element names matching camelCase
     convention. `Id` mapped as `ObjectId` on the wire via `StringObjectIdGenerator` +
     `StringSerializer(BsonType.ObjectId)`, keeping the domain model free of MongoDB types.
   - Registered once via double-checked lock, called from `MongoDbContext` constructor.
-- **`CollectionNames`** (`src/AegisIdentity.Infrastructure/Persistence/CollectionNames.cs`):
+- **`CollectionNames`** (`src/Lumen.Infrastructure/Persistence/CollectionNames.cs`):
   - Central constant registry for MongoDB collection names (`users`). Eliminates magic strings.
-- **`MongoIndexInitializer`** (`src/AegisIdentity.Infrastructure/Persistence/Indexes/MongoIndexInitializer.cs`):
+- **`MongoIndexInitializer`** (`src/Lumen.Infrastructure/Persistence/Indexes/MongoIndexInitializer.cs`):
   - `IHostedService` that creates all required indexes on startup before the app accepts requests.
   - Idempotent: named `CreateIndexModel` calls are no-ops when the index already exists.
   - Indexes: `ix_email_unique` (unique), `ix_username_unique` (unique),
     `ix_lockedUntil_sparse` (sparse — keeps index small since most users are not locked).
-- **`UserRepository`** (`src/AegisIdentity.Infrastructure/Persistence/Repositories/UserRepository.cs`):
+- **`UserRepository`** (`src/Lumen.Infrastructure/Persistence/Repositories/UserRepository.cs`):
   - MongoDB implementation of `IUserRepository`. Guards against invalid ObjectId strings in
     `FindByIdAsync` (returns `null` instead of throwing).
 - **`MongoDbContext` updated** to call `UserClassMap.RegisterOnce()` alongside conventions.
 - **`MongoDbServiceExtensions` updated**:
   - Registers `IUserRepository` → `UserRepository` as **scoped**.
   - Registers `MongoIndexInitializer` as a **hosted service**.
-- **Unit tests** (`tests/AegisIdentity.UnitTests/Domain/Users/UserTests.cs`) — 21 scenarios:
+- **Unit tests** (`tests/Lumen.UnitTests/Domain/Users/UserTests.cs`) — 21 scenarios:
   - Factory validation (blank args, email normalisation, default state, timestamp).
   - `NormalizeEmail` theory (3 cases).
   - Lockout behaviour: below threshold, at threshold, `Unlock`, `IsLockedOut` edge cases.
   - Role independence (separate `List<string>` per instance).
-- **Integration tests** (`tests/AegisIdentity.IntegrationTests/Persistence/UserRepositoryIntegrationTests.cs`):
+- **Integration tests** (`tests/Lumen.IntegrationTests/Persistence/UserRepositoryIntegrationTests.cs`):
   - Full CRUD scenarios via Testcontainers `mongo:7` container.
   - Index existence verification for all three indexes.
   - Duplicate-email rejection after unique index creation.
 
 ### Added (DATA-01)
-- **`MongoDbContext`** (`src/AegisIdentity.Infrastructure/Persistence/MongoDbContext.cs`):
+- **`MongoDbContext`** (`src/Lumen.Infrastructure/Persistence/MongoDbContext.cs`):
   - Singleton wrapper over `IMongoDatabase` exposing `GetCollection<T>(name)` and a
     `Database` property for raw-command access.
   - Owns one-time `ConventionPack` registration via a double-checked lock:
     `CamelCaseElementNameConvention`, `IgnoreExtraElementsConvention(true)`,
     `EnumRepresentationConvention(BsonType.String)`.
-- **`MongoDbServiceExtensions`** (`src/AegisIdentity.Infrastructure/Persistence/MongoDbServiceExtensions.cs`):
+- **`MongoDbServiceExtensions`** (`src/Lumen.Infrastructure/Persistence/MongoDbServiceExtensions.cs`):
   - `AddMongoDb(IServiceCollection, IConfiguration)` extension method.
   - Registers `IMongoClient` as **singleton** (driver manages its own connection pool),
     `IMongoDatabase` as **scoped** (cheap factory from the singleton client, aligned with
     unit-of-work boundaries), and `MongoDbContext` as **singleton**.
-- **`MongoDbHealthCheck`** (`src/AegisIdentity.Infrastructure/HealthChecks/MongoDbHealthCheck.cs`):
+- **`MongoDbHealthCheck`** (`src/Lumen.Infrastructure/HealthChecks/MongoDbHealthCheck.cs`):
   - Implements `IHealthCheck`; issues `{ ping: 1 }` against the configured database.
   - Returns `HealthCheckResult.Healthy` on success, `Unhealthy` with the caught exception
     on failure.
@@ -948,7 +972,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     when the ping fails.
   - Requests to `/health` are already downgraded to `Verbose` in `UseSerilogRequestLogging`,
     so health probes do not pollute dashboards.
-- **Integration tests** (`tests/AegisIdentity.IntegrationTests/Persistence/MongoDbContextIntegrationTests.cs`):
+- **Integration tests** (`tests/Lumen.IntegrationTests/Persistence/MongoDbContextIntegrationTests.cs`):
   - Four scenarios using `Testcontainers.MongoDb` (ephemeral `mongo:7` container):
     `GetCollection` handle validation, insert-and-read roundtrip, health check Healthy
     path, health check Unhealthy path.
@@ -970,7 +994,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   if `Smtp:Host` resolves to a loopback address (`localhost`, `127.0.0.1`, `::1`) when
   `ASPNETCORE_ENVIRONMENT=Production`. Prevents silent email loss from a misconfigured deploy.
 - **Dev-only email smoke test endpoint** (`GET /dev/email-test?to=<address>`):
-  - Registered at `src/AegisIdentity.Api/Endpoints/Dev/EmailTestEndpoint.cs`.
+  - Registered at `src/Lumen.Api/Endpoints/Dev/EmailTestEndpoint.cs`.
   - Available **only** when `ASPNETCORE_ENVIRONMENT=Development` — never in Staging or Production.
   - Sends a plain-text message through the configured SMTP relay (Mailpit in dev) and returns
     `200 { "ok": true, "to": "...", "viewer": "http://localhost:8025" }` on success,
@@ -990,7 +1014,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Enrichers: `FromLogContext`, `WithMachineName`, `WithThreadId`.
 - **Development log override** in `appsettings.Development.json`:
   - Console only (no file sink), `Debug` minimum level, human-readable `outputTemplate`.
-- **`CorrelationIdMiddleware`** (`src/AegisIdentity.Api/Middleware/`):
+- **`CorrelationIdMiddleware`** (`src/Lumen.Api/Middleware/`):
   - Reads `X-Correlation-Id` request header; generates a 32-char hex Guid when absent.
   - Writes value to response header and pushes it to Serilog `LogContext` so every log
     entry in the request scope carries `CorrelationId`.
@@ -998,7 +1022,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Health check log filter** in `UseSerilogRequestLogging`: requests to `/health` are
   logged at `Verbose` level (will not appear under default `Information` minimum) to
   avoid dashboard pollution when health-check endpoints are implemented.
-- **`SensitiveDataConvention`** (`src/AegisIdentity.Api/Logging/`):
+- **`SensitiveDataConvention`** (`src/Lumen.Api/Logging/`):
   - Static class documenting which fields (`Password`, `PasswordHash`, `Token`,
     `AccessToken`, `RefreshToken`, `ResetCode`, `Secret`) must never be passed as
     structured log arguments.
@@ -1028,7 +1052,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and SMTP on Mailpit (`localhost:1025`).
 - `appsettings.example.json` versionable template documenting all keys and their expected
   format with `<set via env or user-secrets>` placeholders.
-- `UserSecretsId` already present in `AegisIdentity.Api.csproj` from SETUP-01 bootstrap;
+- `UserSecretsId` already present in `Lumen.Api.csproj` from SETUP-01 bootstrap;
   confirmed operational via `dotnet user-secrets list`.
 - README: table of required environment variables, local setup via `dotnet user-secrets`,
   and production configuration via env vars (Fly.io / Docker formats).
@@ -1064,7 +1088,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   native middleware proves insufficient.
 
 ### Changed
-- Renamed `AegisIdentity.Backoffice` to `AegisIdentity.Api` to align project name
+- Renamed `Lumen.Backoffice` to `Lumen.Api` to align project name
   with Clean Architecture entry-point convention (hosts both Minimal API endpoints
   and Razor Pages backoffice UI).
 - Centralized build settings (`Nullable`, `ImplicitUsings`, `TreatWarningsAsErrors`,

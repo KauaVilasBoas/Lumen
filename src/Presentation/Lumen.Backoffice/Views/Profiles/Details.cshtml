@@ -1,0 +1,136 @@
+@using Lumen.Backoffice.Services
+@using Lumen.Backoffice.ViewModels
+@model ProfileDetailViewModel
+@{
+    ViewData["Title"] = Model.Profile.Name;
+    ViewData["Subtitle"] = "Permission assignment matrix";
+    Layout = "_Layout";
+
+    var allGroups = Model.AllPermissions;
+    var assignedIds = new HashSet<Guid>(Model.Profile.PermissionIds);
+    var canEdit = !Model.Profile.IsSystem && await Html.HasPermissionAsync("Profiles", "SetPermissions");
+    var accent = Model.Profile.Name == "Administrator" ? "#8b6dff" : (Model.Profile.IsSystem ? "#5b6478" : "#4c8dff");
+    var grantCount = Model.Profile.PermissionIds.Count;
+
+}
+
+<div class="content-wrap">
+    <div class="reveal-region mng-detail-wrap">
+        <div class="card mng-detail">
+            <div class="reveal-tag" style="--lc:var(--app);top:-11px;right:12px">
+                <span class="reveal-tag-dot"></span><span class="reveal-tag-label mono">SetProfilePermissions</span>
+                <div class="reveal-tag-pop card">
+                    <div class="reveal-tag-pop-layer mono" style="color:var(--app)"><span class="sq"
+                                                                                          style="background:var(--app)"></span>Application
+                    </div>
+                    <div class="reveal-tag-pop-body">Saving issues <span
+                            class="code">PUT /api/profiles/{id}/permissions</span>. The handler diffs the join rows and
+                        publishes <span class="code">UserPermissionsChanged</span> for every affected user.
+                    </div>
+                </div>
+            </div>
+
+            <div class="mng-detail-head" style="--nc:@accent">
+                <div class="mng-detail-title">
+                    <span class="mng-detail-badge"
+                          style="background:@accent">@await Html.PartialAsync("_Icon", "shieldKey")</span>
+                    <div>
+                        <h2>@Model.Profile.Name</h2>
+                        <p class="muted">@Model.Profile.Description</p>
+                    </div>
+                </div>
+                <div class="mng-detail-meta">
+                    <div class="mdm-stat"><span class="tnum">@grantCount</span><span class="mono">permissions</span>
+                    </div>
+                    <a asp-action="Index" class="btn sm ghost">Back</a>
+                </div>
+            </div>
+
+            @if (TempData["Error"] is string error)
+            {
+                <div class="login-error" style="margin:16px 24px 0">@error</div>
+            }
+
+            @if (Model.Profile.IsSystem)
+            {
+                <div class="mng-syslock mono">
+                    @await Html.PartialAsync("_Icon", "lock")
+                    @(Model.Profile.Name == "Administrator"
+                        ? "Administrator is reconciled with every discovered permission at startup — its grants are read-only."
+                        : "System profile — its permission set is fixed and the profile cannot be soft-deleted.")
+                </div>
+            }
+
+            <form asp-action="SetPermissions" asp-route-id="@Model.Profile.Id" method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="matrix" data-matrix data-readonly="@(canEdit ? "0" : "1")">
+                    @foreach (var group in allGroups)
+                    {
+                        var total = group.Permissions.Count;
+                        var on = group.Permissions.Count(p => assignedIds.Contains(p.Id));
+                        <div class="matrix-group">
+                            <div class="matrix-group-head">
+                                <button type="button"
+                                        class="mgcheck @(on == total && on > 0 ? "on" : on > 0 ? "partial" : "")"
+                                        @(canEdit ? "" : "disabled")>
+                                    @if (on == total && on > 0)
+                                    {
+                                        @await Html.PartialAsync("_Icon", "check")
+                                    }
+                                    else if (on > 0)
+                                    {
+                                        <span class="dash"></span>
+                                    }
+                                </button>
+                                <span class="matrix-group-name mono">@group.GroupName</span>
+                                <span class="matrix-group-count mono">@on/@total</span>
+                                <span class="line"></span>
+                            </div>
+                            <div class="matrix-perms">
+                                @foreach (var perm in group.Permissions)
+                                {
+                                    var isOn = assignedIds.Contains(perm.Id);
+                                    var m = PermissionDisplayHelper.HttpMethod(perm.Code);
+                                    <button type="button"
+                                            class="mperm @(isOn ? "on" : "") @(perm.IsOrphan ? "orphan" : "")"
+                                            @(canEdit ? "" : "disabled")>
+                                        <input type="checkbox" name="selectedPermissionIds" value="@perm.Id"
+                                               @(isOn ? "checked" : "") hidden/>
+                                        <span
+                                            class="mperm-check">@(isOn ? await Html.PartialAsync("_Icon", "check") : null)</span>
+                                        <div class="mperm-main">
+                                            <span class="mperm-code mono">@perm.Code</span>
+                                            <span class="mperm-name">@perm.DisplayName</span>
+                                        </div>
+                                        @if (perm.IsOrphan)
+                                        {
+                                            <span
+                                                class="badge warn">@await Html.PartialAsync("_Icon", "ghost") orphan</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="knode-method mono"
+                                                  style="color:@PermissionDisplayHelper.MethodCssColor(m);border-color:@PermissionDisplayHelper.MethodCssColor(m)">@m</span>
+                                        }
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                @if (canEdit)
+                {
+                    <div class="mng-detail-foot">
+                        <span class="faint mono" style="font-size:11px">Saving invalidates the Redis cache for every affected user</span>
+                        <div class="toolbar">
+                            <a asp-action="Index" class="btn sm ghost">Discard</a>
+                            <button type="submit" class="btn sm primary">Save permissions</button>
+                        </div>
+                    </div>
+                }
+            </form>
+        </div>
+    </div>
+</div>

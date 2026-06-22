@@ -1,0 +1,63 @@
+@using Lumen.Backoffice.Services
+@model IReadOnlyList<Lumen.Backoffice.Services.AdminApiClient.ProfileItem>
+@{
+    ViewData["Title"] = "Profiles";
+    ViewData["Subtitle"] = "Role-like containers · permission assignment";
+    Layout = "_Layout";
+
+    // deterministic accent per profile
+    string Accent(AdminApiClient.ProfileItem p)
+    {
+        if (p.IsSystem) return p.Name == "Administrator" ? "#8b6dff" : "#5b6478";
+        var palette = new[] { "#4c8dff", "#2bd4a0", "#f5a623", "#f25fa6", "#a78bfa" };
+        return palette[Math.Abs(p.Name.GetHashCode()) % palette.Length];
+    }
+}
+
+<div class="content-wrap">
+    <div class="reveal-region">
+        <div class="card" style="overflow:hidden">
+            <div class="reveal-tag" style="--lc:var(--dom);top:-11px;right:12px">
+                <span class="reveal-tag-dot"></span><span class="reveal-tag-label mono">Profiles table</span>
+                <div class="reveal-tag-pop card">
+                    <div class="reveal-tag-pop-layer mono" style="color:var(--dom)"><span class="sq"
+                                                                                          style="background:var(--dom)"></span>Domain
+                    </div>
+                    <div class="reveal-tag-pop-body">Role-like container. System profiles (<span
+                            class="code">IsSystem</span>) cannot be soft-deleted; Administrator is reconciled with every
+                        discovered permission at startup.
+                    </div>
+                </div>
+            </div>
+
+            <div class="mng-list-head">
+                <span class="eyebrow">Profiles · @Model.Count</span>
+                <div asp-require-permission-controller="Profiles" asp-require-permission-action="Create">
+                    <a asp-action="Create" class="btn sm primary">@await Html.PartialAsync("_Icon", "plus") New
+                        profile</a>
+                </div>
+            </div>
+
+            @if (TempData["Error"] is string error)
+            {
+                <div class="login-error" style="margin:14px 20px">@error</div>
+            }
+
+            <div class="mng-list-body" style="padding:10px">
+                @foreach (var p in Model)
+                {
+                    var c = Accent(p);
+                    <a asp-action="Details" asp-route-id="@p.Id" class="prow" style="--nc:@c;text-decoration:none">
+                        <span class="prow-bar"></span>
+                        <div class="prow-main">
+                            <div
+                                class="prow-name">@p.Name @(p.IsSystem ? Html.Raw("<span class=\"badge sys\" style=\"margin-left:7px\">SYSTEM</span>") : null)</div>
+                            <div class="prow-desc">@p.Description</div>
+                        </div>
+                        <div class="prow-count">@await Html.PartialAsync("_Icon", "chevron")</div>
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+</div>

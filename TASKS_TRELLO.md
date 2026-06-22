@@ -1,4 +1,4 @@
-# AegisIdentity — Backlog Trello (.NET 8 Edition)
+# Lumen — Backlog Trello (.NET 8 Edition)
 
 **Projeto:** Sistema de Autenticação de Usuários (Portfólio BoostProgram — Projeto 04, Nível Básico)
 **Board sugerido:** https://trello.com/b/2ZZ0yCf8/portifolio-projects
@@ -83,25 +83,25 @@ EP-06 (Razor Pages), EP-07 (recuperação de senha) e EP-09 (docs) podem ser par
 
 ---
 
-## [SETUP-01] Limpar e estruturar solução .NET 8 do AegisIdentity
+## [SETUP-01] Limpar e estruturar solução .NET 8 do Lumen
 
 - **Lista:** To Do
 - **Labels:** `infra`, `backend`
 - **Prioridade:** Crítica
 - **Estimativa:** P (1-2h)
 - **Branch sugerida:** `chore/setup-solution-structure`
-- **Commit sugerido:** `chore: structure AegisIdentity solution into layered projects`
+- **Commit sugerido:** `chore: structure Lumen solution into layered projects`
 
 **Descrição:**
-A solução `AegisIdentity.sln` hoje tem um único `AegisIdentity.csproj` (`Microsoft.NET.Sdk.Web`, net8.0) com um `Program.cs` praticamente vazio (`MapGet("/", () => "Hello World!")`). Reorganizar em camadas mantendo Minimal APIs como entrypoint, separando contratos, domínio, infraestrutura e testes.
+A solução `Lumen.sln` hoje tem um único `Lumen.csproj` (`Microsoft.NET.Sdk.Web`, net8.0) com um `Program.cs` praticamente vazio (`MapGet("/", () => "Hello World!")`). Reorganizar em camadas mantendo Minimal APIs como entrypoint, separando contratos, domínio, infraestrutura e testes.
 
 **Critérios de Aceite:**
 - [ ] Estrutura de projetos criada na solução:
-  - `src/AegisIdentity.Api` (Web, Minimal APIs, Razor Pages — projeto principal atual renomeado)
-  - `src/AegisIdentity.Domain` (classes de domínio puras, sem dependências externas)
-  - `src/AegisIdentity.Infrastructure` (MongoDB, Email, integrações externas)
-  - `tests/AegisIdentity.UnitTests`
-  - `tests/AegisIdentity.IntegrationTests`
+  - `src/Lumen.Api` (Web, Minimal APIs, Razor Pages — projeto principal atual renomeado)
+  - `src/Lumen.Domain` (classes de domínio puras, sem dependências externas)
+  - `src/Lumen.Infrastructure` (MongoDB, Email, integrações externas)
+  - `tests/Lumen.UnitTests`
+  - `tests/Lumen.IntegrationTests`
 - [ ] `.gitignore` cobre `bin/`, `obj/`, `*.user`, `.idea/`, `.vs/`, `.vscode/`, `appsettings.*.local.json`, `.env`, `secrets.json`
 - [ ] `Directory.Build.props` na raiz com `<Nullable>enable</Nullable>`, `<ImplicitUsings>enable</ImplicitUsings>`, `<TreatWarningsAsErrors>true</TreatWarningsAsErrors>`, `<LangVersion>latest</LangVersion>`
 - [ ] `Directory.Packages.props` com Central Package Management ativado
@@ -111,8 +111,8 @@ A solução `AegisIdentity.sln` hoje tem um único `AegisIdentity.csproj` (`Micr
 
 **Notas Técnicas:**
 - Arquitetura: Clean Architecture leve. Api → Domain (sem dependências). Api + Infrastructure → Domain. Tests → todos.
-- Namespaces seguem o nome do projeto: `AegisIdentity.Api.Endpoints.Auth`, `AegisIdentity.Domain.Users`, etc.
-- O `Program.cs` atual fica em `AegisIdentity.Api/Program.cs`.
+- Namespaces seguem o nome do projeto: `Lumen.Api.Endpoints.Auth`, `Lumen.Domain.Users`, etc.
+- O `Program.cs` atual fica em `Lumen.Api/Program.cs`.
 
 **Dependências:** —
 **Bloqueia:** Todas as demais
@@ -322,7 +322,7 @@ Registrar `IMongoClient` como singleton, expor `IMongoDatabase` via DI, garantir
 - **Commit sugerido:** `feat(domain): add User entity and persistence mapping`
 
 **Descrição:**
-Modelar a classe `User` em `AegisIdentity.Domain.Users`, definir índices da collection `users` e mapeamentos BSON.
+Modelar a classe `User` em `Lumen.Domain.Users`, definir índices da collection `users` e mapeamentos BSON.
 
 **Critérios de Aceite:**
 - [ ] Classe `User` com propriedades:
@@ -337,7 +337,7 @@ Modelar a classe `User` em `AegisIdentity.Domain.Users`, definir índices da col
   - `FailedLoginAttempts` (int)
   - `LockedUntil` (DateTime?)
   - `CreatedAt`, `UpdatedAt` (DateTime)
-- [ ] Mapeamento BSON via `BsonClassMap.RegisterClassMap<User>` em `AegisIdentity.Infrastructure.Persistence.Mappings`
+- [ ] Mapeamento BSON via `BsonClassMap.RegisterClassMap<User>` em `Lumen.Infrastructure.Persistence.Mappings`
 - [ ] Índices criados on-startup via `IHostedService` (`MongoIndexInitializer`):
   - `email` UNIQUE
   - `username` UNIQUE
@@ -941,7 +941,7 @@ Cliente HTTP para consultar a API pública do **HaveIBeenPwned Pwned Passwords**
   - Calcula `SHA1(password)` em uppercase hex
   - Envia GET para `https://api.pwnedpasswords.com/range/{first5chars}`
   - Header `Add-Padding: true` (recomendado pela HIBP para evitar análise de tamanho de resposta)
-  - User-Agent customizado configurado em `Hibp:UserAgent` (ex: `AegisIdentity-Portfolio/1.0`)
+  - User-Agent customizado configurado em `Hibp:UserAgent` (ex: `Lumen-Portfolio/1.0`)
   - Timeout de 2s via `HttpClient.Timeout`
   - Parse da resposta (linhas `SUFIXO:COUNT`), procura o sufixo correspondente
   - Retorna `true` se encontrar (vazada) com count > 0
@@ -1017,12 +1017,12 @@ Middleware global de exceções que retorna `ProblemDetails` (RFC 7807) sem vaza
 - **Commit sugerido:** `feat(web): add Razor Pages layout and base styles`
 
 **Descrição:**
-Habilitar Razor Pages no `AegisIdentity.Api`, criar `_Layout.cshtml`, navbar, footer, CSS mínimo (sem framework pesado — Bootstrap 5 OU CSS puro com variáveis; recomendar **Pico.css** que é open source, sem JS, leve).
+Habilitar Razor Pages no `Lumen.Api`, criar `_Layout.cshtml`, navbar, footer, CSS mínimo (sem framework pesado — Bootstrap 5 OU CSS puro com variáveis; recomendar **Pico.css** que é open source, sem JS, leve).
 
 **Critérios de Aceite:**
 - [ ] `builder.Services.AddRazorPages()` e `app.MapRazorPages()` no `Program.cs`
 - [ ] Pasta `Pages/` com `_ViewStart.cshtml`, `_ViewImports.cshtml`, `Shared/_Layout.cshtml`
-- [ ] Layout com header (logo "AegisIdentity"), nav (Login, Registro, Dashboard se logado), footer
+- [ ] Layout com header (logo "Lumen"), nav (Login, Registro, Dashboard se logado), footer
 - [ ] CSS via `wwwroot/css/site.css` + Pico.css via CDN ou arquivo local
 - [ ] Página `Index.cshtml` (landing simples)
 - [ ] Responsivo (mobile-first)
@@ -1304,8 +1304,8 @@ Endpoint chamado pelo link no email de confirmação. Marca user como ativo.
 Garantir que projetos de teste compilam e rodam, com convenção de nomenclatura e helpers básicos.
 
 **Critérios de Aceite:**
-- [ ] `tests/AegisIdentity.UnitTests/*.csproj` referencia `src/AegisIdentity.Domain` e `src/AegisIdentity.Infrastructure`
-- [ ] `tests/AegisIdentity.IntegrationTests/*.csproj` referencia `src/AegisIdentity.Api` (com `Microsoft.AspNetCore.Mvc.Testing`)
+- [ ] `tests/Lumen.UnitTests/*.csproj` referencia `src/Lumen.Domain` e `src/Lumen.Infrastructure`
+- [ ] `tests/Lumen.IntegrationTests/*.csproj` referencia `src/Lumen.Api` (com `Microsoft.AspNetCore.Mvc.Testing`)
 - [ ] Convenção: `MethodName_Scenario_ExpectedResult` ou `Should_ExpectedResult_When_Scenario`
 - [ ] `dotnet test` executa pelo menos um teste-canário em cada projeto
 - [ ] `coverlet.collector` configurado para gerar cobertura
@@ -1335,7 +1335,7 @@ Cobrir com testes unitários: `JwtTokenService`, `PasswordValidator` (regra a re
 - [ ] `PwnedPasswordsClient`: senha vazada detectada, senha não-vazada passa, timeout retorna false (fail-open)
 - [ ] Lockout: após 5 falhas, conta bloqueia por 15min
 - [ ] Refresh: rotação emite novo, antigo é revogado, reuso de antigo revoga família
-- [ ] Cobertura mínima de 80% nas pastas `AegisIdentity.Domain` e serviços críticos de `AegisIdentity.Infrastructure`
+- [ ] Cobertura mínima de 80% nas pastas `Lumen.Domain` e serviços críticos de `Lumen.Infrastructure`
 
 **Dependências:** TEST-01, SEC-04, SEC-05, AUTH-02, AUTH-04
 **Bloqueia:** Deploy
@@ -1423,7 +1423,7 @@ README final do projeto, suficiente para outro dev clonar e rodar em 10min.
 
 **Critérios de Aceite:**
 - [ ] Seções: Sobre, Features, Stack, Requisitos, Como rodar (dev), Variáveis de ambiente, Endpoints principais (resumo), Como rodar testes, Deploy, Licença
-- [ ] Comandos prontos: `docker compose up -d`, `dotnet user-secrets set "Jwt:Secret" "..."`, `dotnet run --project src/AegisIdentity.Api`
+- [ ] Comandos prontos: `docker compose up -d`, `dotnet user-secrets set "Jwt:Secret" "..."`, `dotnet run --project src/Lumen.Api`
 - [ ] Badges (build status quando tiver CI, license, .NET version)
 - [ ] Screenshots das telas Razor
 

@@ -1,0 +1,29 @@
+@model Lumen.Backoffice.ViewComponents.UserListComponentViewModel
+@{
+    string Badge(string s) => s switch { "active" => "ok", "locked" => "danger", "pending" => "warn", _ => "muted" };
+    string Label(string s) => s switch { "active" => "Active", "locked" => "Locked", "pending" => "Pending email", "deleted" => "Soft-deleted", _ => s };
+}
+
+<div class="mng-list card">
+    <div class="mng-list-head"><span class="eyebrow">Identities · @Model.Users.Count</span></div>
+    <div class="mng-list-body">
+        @if (Model.Users.Count == 0)
+        {
+            <div class="ud-empty mono" style="padding:16px">no users — API unavailable or empty</div>
+        }
+        @foreach (var item in Model.Users)
+        {
+            <a asp-action="Index" asp-route-id="@item.Id"
+               class="urow @(item.Id == Model.SelectedId ? "active" : "") @(item.State == "deleted" ? "is-deleted" : "")"
+               style="text-decoration:none">
+                <div class="avatar"
+                     style="background:@item.AvatarColor;width:32px;height:32px;font-size:13px">@(string.IsNullOrEmpty(item.Username) ? "?" : item.Username.Substring(0, 1).ToUpper())</div>
+                <div class="urow-main">
+                    <div class="urow-name">@item.Username @(item.Bootstrap ? Html.Raw("<span class=\"badge sys\" style=\"margin-left:6px\">BOOTSTRAP</span>") : null)</div>
+                    <div class="urow-mail mono">@item.Email</div>
+                </div>
+                <span class="badge @Badge(item.State)">@Label(item.State)</span>
+            </a>
+        }
+    </div>
+</div>

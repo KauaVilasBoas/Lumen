@@ -7,10 +7,10 @@ misconfiguration crashes the app on boot, never silently in production.
 
 | Variable (env var format) | Section : Key | Description | Example |
 |---|---|---|---|
-| `SqlServer__ConnectionString` | `SqlServer:ConnectionString` | SQL Server connection string | `Server=localhost,1433;Database=AegisIdentity;User Id=sa;Password=...;TrustServerCertificate=True` |
+| `SqlServer__ConnectionString` | `SqlServer:ConnectionString` | SQL Server connection string | `Server=localhost,1433;Database=Lumen;User Id=sa;Password=...;TrustServerCertificate=True` |
 | `Redis__ConnectionString` | `Redis:ConnectionString` | Redis connection string | `localhost:6379` |
-| `Jwt__Issuer` | `Jwt:Issuer` | JWT issuer | `AegisIdentity` |
-| `Jwt__Audience` | `Jwt:Audience` | JWT audience | `AegisIdentity.Clients` |
+| `Jwt__Issuer` | `Jwt:Issuer` | JWT issuer | `Lumen` |
+| `Jwt__Audience` | `Jwt:Audience` | JWT audience | `Lumen.Clients` |
 | `Jwt__Secret` | `Jwt:Secret` | HMAC-SHA256 signing key (min 32 chars) | `<strong-random-key>` |
 | `Jwt__ExpirationMinutes` | `Jwt:ExpirationMinutes` | Access token lifetime, in minutes | `15` |
 | `Jwt__RefreshExpirationDays` | `Jwt:RefreshExpirationDays` | Refresh token lifetime, in days | `7` |
@@ -54,12 +54,12 @@ Error messages name the offending variable but never echo its value.
 
 ## Backoffice — required environment variables
 
-The Backoffice (`src/Presentation/AegisIdentity.Backoffice`) depends on three infrastructure
+The Backoffice (`src/Presentation/Lumen.Backoffice`) depends on three infrastructure
 services, all validated on startup.
 
 | Variable (env var format) | Section : Key | Description | Example |
 |---|---|---|---|
-| `Api__BaseUrl` | `Api:BaseUrl` | Base URL of the AegisIdentity API (no trailing slash) | `https://api.aegisidentity.io` |
+| `Api__BaseUrl` | `Api:BaseUrl` | Base URL of the Lumen API (no trailing slash) | `https://api.aegisidentity.io` |
 | `SqlServer__ConnectionString` | `SqlServer:ConnectionString` | SQL Server connection string — same database as the API | `Server=localhost,1433;...` |
 | `Redis__ConnectionString` | `Redis:ConnectionString` | Redis connection string — required for the permission cache (`IUserPermissionCache`) | `localhost:6379` |
 
@@ -74,19 +74,19 @@ Use `dotnet user-secrets` to store local secrets without committing them:
 
 ```powershell
 # API
-cd src/AegisIdentity.Api
+cd src/Lumen.Api
 
-dotnet user-secrets set "SqlServer:ConnectionString" "Server=localhost,1433;Database=AegisIdentity;User Id=sa;Password=Dev@AegisIdentity2024!;TrustServerCertificate=True"
+dotnet user-secrets set "SqlServer:ConnectionString" "Server=localhost,1433;Database=Lumen;User Id=sa;Password=Dev@Lumen2024!;TrustServerCertificate=True"
 dotnet user-secrets set "Redis:ConnectionString" "localhost:6379"
 dotnet user-secrets set "Jwt:Secret" "<your-random-key-at-least-32-chars>"
 dotnet user-secrets set "Smtp:Host" "localhost"
 dotnet user-secrets set "Smtp:Port" "1025"
-dotnet user-secrets set "Smtp:From" "no-reply@aegisidentity.local"
+dotnet user-secrets set "Smtp:From" "no-reply@lumen.local"
 
 # Backoffice
-cd src/Presentation/AegisIdentity.Backoffice
+cd src/Presentation/Lumen.Backoffice
 
-dotnet user-secrets set "SqlServer:ConnectionString" "Server=localhost,1433;Database=AegisIdentity;User Id=sa;Password=Dev@AegisIdentity2024!;TrustServerCertificate=True"
+dotnet user-secrets set "SqlServer:ConnectionString" "Server=localhost,1433;Database=Lumen;User Id=sa;Password=Dev@Lumen2024!;TrustServerCertificate=True"
 dotnet user-secrets set "Redis:ConnectionString" "localhost:6379"
 dotnet user-secrets set "Api:BaseUrl" "https://localhost:7068"
 ```
@@ -100,7 +100,7 @@ ASP.NET Core maps `Section__Key` to `Section:Key` automatically:
 
 ```bash
 # Railway — set via the service variables panel or CLI
-SqlServer__ConnectionString=Server=<railway-sqlserver-host>;Database=AegisIdentity;User Id=sa;Password=<secret>;TrustServerCertificate=True
+SqlServer__ConnectionString=Server=<railway-sqlserver-host>;Database=Lumen;User Id=sa;Password=<secret>;TrustServerCertificate=True
 Redis__ConnectionString=<railway-redis-host>:6379,password=<secret>
 Jwt__Secret=your-strong-production-key-min-32-chars
 Smtp__Host=smtp-relay.brevo.com
@@ -108,7 +108,7 @@ Smtp__Pass=SG.xxxxxxxxxxxxxxxxxxxxx
 
 # Alternative: Azure SQL Database (serverless/free tier)
 # The EF Core provider is the same — only the connection string changes.
-SqlServer__ConnectionString=Server=<azure-sql>.database.windows.net;Database=AegisIdentity;...
+SqlServer__ConnectionString=Server=<azure-sql>.database.windows.net;Database=Lumen;...
 ```
 
 > The API and Backoffice are deployed as long-running .NET container services on **Railway**.
@@ -116,7 +116,7 @@ SqlServer__ConnectionString=Server=<azure-sql>.database.windows.net;Database=Aeg
 > See [ADR-0001](adr/0001-mongodb-to-relational-efcore.md) for the full rationale.
 
 > **Never** put real secrets in `appsettings.json` or `appsettings.Development.json`.
-> See `src/AegisIdentity.Api/appsettings.example.json` for the full configuration shape.
+> See `src/Lumen.Api/appsettings.example.json` for the full configuration shape.
 
 ## Logging
 
@@ -148,6 +148,6 @@ The following fields must **never** appear as structured log arguments:
 - `ResetCode`, `Secret`
 
 Only safe fields (`Email`, `UserId`, etc.) should be logged. See
-`src/AegisIdentity.Api/Logging/SensitiveDataConvention.cs` for the full list and examples.
+`src/Lumen.Api/Logging/SensitiveDataConvention.cs` for the full list and examples.
 Enforcement is currently by convention and code review; an automated filter is planned
 alongside the security hardening card once the relevant use cases land.

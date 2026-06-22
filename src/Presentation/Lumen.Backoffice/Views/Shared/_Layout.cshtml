@@ -1,0 +1,145 @@
+@using System.Security.Claims
+@{
+    var controller = ViewContext.RouteData.Values["controller"]?.ToString();
+    var action = ViewContext.RouteData.Values["action"]?.ToString();
+
+    bool IsActive(string c, string? a = null) =>
+        string.Equals(controller, c, StringComparison.OrdinalIgnoreCase)
+        && (a == null || string.Equals(action, a, StringComparison.OrdinalIgnoreCase));
+
+    string Cls(bool on) => on ? "navitem active" : "navitem";
+
+    var title = ViewData["Title"]?.ToString() ?? "Overview";
+    var subtitle = ViewData["Subtitle"]?.ToString() ?? "";
+    var authed = User.Identity?.IsAuthenticated == true;
+    var userEmail = User.FindFirstValue(ClaimTypes.Email);
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>@title — Lumen Console</title>
+    <link rel="icon" href="~/favicon.ico" sizes="any"/>
+    <link rel="icon" type="image/png" href="~/favicon-32.png" sizes="32x32"/>
+    <link rel="apple-touch-icon" href="~/apple-touch-icon.png"/>
+    <link rel="stylesheet" href="~/css/lumen-console.css" asp-append-version="true"/>
+</head>
+<body>
+@if (!authed)
+{
+    @* Unauthenticated pages (e.g. Login) render full-bleed, no shell *@
+    @RenderBody()
+}
+else
+{
+    <div class="app">
+        <aside class="sidebar">
+            <a class="sidebar-brand" asp-controller="Home" asp-action="Index">
+                <img class="sidebar-logo" src="~/img/brand/lumen-lockup-compact.png" asp-append-version="true"
+                     alt="Lumen" />
+                <span class="sidebar-brand-sub mono">CONSOLE · v0.9</span>
+            </a>
+
+            <nav class="sidebar-nav">
+                <div class="sidebar-section eyebrow">Workspace</div>
+
+                <a class="@Cls(IsActive("Home", "Index"))" asp-controller="Home" asp-action="Index">
+                    <span class="navitem-ico">@await Html.PartialAsync("_Icon", "grid")</span>
+                    <span class="navitem-label">Overview</span>
+                </a>
+
+                <a class="@Cls(IsActive("AuthorizationGraph"))" asp-controller="AuthorizationGraph" asp-action="Index"
+                   asp-require-permission-controller="AuthorizationGraph" asp-require-permission-action="View">
+                    <span class="navitem-ico">@await Html.PartialAsync("_Icon", "graph")</span>
+                    <span class="navitem-label">Authorization Graph</span>
+                    <span class="navitem-tag mono">LIVE</span>
+                </a>
+
+                <a class="@Cls(IsActive("Profiles"))" asp-controller="Profiles" asp-action="Index">
+                    <span class="navitem-ico">@await Html.PartialAsync("_Icon", "shieldKey")</span>
+                    <span class="navitem-label">Profiles</span>
+                </a>
+
+                <a class="@Cls(IsActive("Permissions"))" asp-controller="Permissions" asp-action="Index">
+                    <span class="navitem-ico">@await Html.PartialAsync("_Icon", "key")</span>
+                    <span class="navitem-label">Permissions</span>
+                </a>
+
+                <a class="@Cls(IsActive("Users"))" asp-controller="Users" asp-action="Index">
+                    <span class="navitem-ico">@await Html.PartialAsync("_Icon", "users")</span>
+                    <span class="navitem-label">Users</span>
+                </a>
+
+                <a class="@Cls(IsActive("Home", "Architecture"))" asp-controller="Home" asp-action="Architecture">
+                    <span class="navitem-ico">@await Html.PartialAsync("_Icon", "layers")</span>
+                    <span class="navitem-label">Architecture</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-foot">
+                <div class="health card">
+                    <div class="health-row"><span class="health-dot" style="background:var(--faint)"></span><span
+                            class="health-label mono">SQL Server</span>
+                    </div>
+                    <div class="health-row"><span class="health-dot" style="background:var(--faint)"></span><span
+                            class="health-label mono">Redis cache</span>
+                    </div>
+                    <div class="health-row"><span class="health-dot" style="background:var(--faint)"></span><span
+                            class="health-label mono">Hangfire</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <div class="main">
+            <header class="topbar">
+                <div class="topbar-titles">
+                    <h1 class="topbar-title">@title</h1>
+                    <span class="topbar-sub">@subtitle</span>
+                </div>
+
+                <div class="topbar-actions">
+                    <div class="search">
+                        @await Html.PartialAsync("_Icon", "search")
+                        <input placeholder="Search identities, profiles, permissions…"/>
+                        <span class="search-kbd mono">⌘K</span>
+                    </div>
+
+                    <button type="button" class="reveal-toggle" data-reveal-toggle
+                            title="Reveal the architecture behind every screen">
+                        <span class="reveal-toggle-ico">@await Html.PartialAsync("_Icon", "layers")</span>
+                        <span class="reveal-toggle-txt">Reveal Architecture</span>
+                        <span class="reveal-toggle-switch"><span class="knob"></span></span>
+                    </button>
+
+                    <div class="topbar-user">
+                        <div class="avatar"
+                             style="background:linear-gradient(135deg,#9a7dff,#6b49f0)">@(User.Identity?.Name?.Substring(0, 1).ToUpper() ?? "A")</div>
+                        <div class="topbar-user-meta">
+                            <div class="topbar-user-name">@User.Identity?.Name</div>
+                            @if (userEmail is not null)
+                            {
+                                <div class="topbar-user-mail mono">@userEmail</div>
+                            }
+                        </div>
+                        <form asp-controller="Account" asp-action="Logout" method="post" class="m-0">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="iconbtn"
+                                    title="Sign out">@await Html.PartialAsync("_Icon", "logout")</button>
+                        </form>
+                    </div>
+                </div>
+            </header>
+
+            <div class="content">
+                @RenderBody()
+            </div>
+        </div>
+    </div>
+}
+
+<script src="~/js/lumen-console.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

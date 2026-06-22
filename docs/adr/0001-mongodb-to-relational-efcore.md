@@ -6,7 +6,7 @@
 
 ## Contexto
 
-O AegisIdentity nasceu com MongoDB como único banco de dados. A escolha inicial priorizou
+O Lumen nasceu com MongoDB como único banco de dados. A escolha inicial priorizou
 velocidade de bootstrap: schema flexível, sem migrations formais e driver simples. Com o
 crescimento do domínio de identidade e a iminente introdução de autorização (RBAC/perfis),
 esse modelo apresenta fricção crescente:
@@ -69,7 +69,7 @@ decisão explícito aqui.
 Descartada completamente. Vercel é plataforma serverless orientada a frontend (SPA,
 Next.js, funções edge). Ela **não executa runtime ASP.NET de longa duração**, não hospeda
 banco SQL Server e não serve containers .NET persistentes. O "frontend" atual do projeto é
-o Backoffice Razor (`AegisIdentity.Backoffice`), que é uma aplicação ASP.NET MVC — exige
+o Backoffice Razor (`Lumen.Backoffice`), que é uma aplicação ASP.NET MVC — exige
 processo .NET em execução contínua, o que é incompatível com o modelo de execução da Vercel.
 O que caberia na Vercel seria, no máximo, um SPA estático separado — que hoje não existe no
 projeto. Portanto: API .NET, Backoffice Razor e banco SQL não têm espaço na Vercel.
@@ -118,7 +118,7 @@ Ambos são declarados em `docker-compose.dev.yml` (criado em INFRA-02).
 ### 3. Produção / deploy
 
 - **Plataforma:** Railway.
-- **API** (`AegisIdentity.Api`) e **Backoffice** (`AegisIdentity.Backoffice`): serviços
+- **API** (`Lumen.Api`) e **Backoffice** (`Lumen.Backoffice`): serviços
   Railway de longa duração (containers .NET).
 - **Banco:** SQL Server gerenciado (Railway SQL Server add-on). Alternativa: Azure SQL
   Database serverless/free tier — mesmo provider EF Core, sem reescrita.
@@ -149,12 +149,12 @@ O `MongoMigrationsHostedService` e toda a infraestrutura de migration Mongo
 
 **Substitutos:**
 
-- **`AegisIdentity.Migrations`**: passa a conter migrations EF Core geradas via
+- **`Lumen.Migrations`**: passa a conter migrations EF Core geradas via
   `dotnet ef migrations add`. O projeto mantém o `DbContext` como único ponto de verdade
   do schema.
 - **Aplicação no startup**: `Database.Migrate()` chamado no startup da `Api` (equivalente
   ao `MongoMigrationsHostedService`). Migrations são aplicadas incrementalmente a cada deploy.
-- **`AegisIdentity.Migrations.Cli`**: ferramenta CLI para gerar e aplicar migrations em
+- **`Lumen.Migrations.Cli`**: ferramenta CLI para gerar e aplicar migrations em
   desenvolvimento (`dotnet ef` wrapper, se mantido) ou removido em favor do `dotnet ef`
   direto.
 
@@ -289,12 +289,12 @@ Toda lógica de domínio que hoje trata `11000` é atualizada para este padrão.
 
 | Projeto | Impacto |
 |---|---|
-| `AegisIdentity.DataAccess` | Substituição completa: MongoDB → EF Core `DbContext` + configurações de entidade |
-| `AegisIdentity.Migrations` | Reescrito: migrations EF Core substituem runner Mongo caseiro |
-| `AegisIdentity.Migrations.Cli` | Reescrito ou removido (avaliado em INFRA-02) |
-| `AegisIdentity.Jobs` | `Hangfire.Mongo` → `Hangfire.SqlServer`; referência a `MongoOptions` removida |
-| `AegisIdentity.IntegrationTests` | Connection string e fixtures migram para SQL Server (Testcontainers ou LocalDB) |
-| `AegisIdentity.Infrastructure` | `MongoOptions` POCO provavelmente removido ou substituído por `SqlOptions` |
-| `AegisIdentity.Api` | Startup: `MongoMigrationsHostedService` → `Database.Migrate()`; `MeController`: `ObjectId.TryParse` → `Guid.TryParse` |
-| `AegisIdentity.Backoffice` | Sem impacto direto na camada de apresentação; impactado indiretamente via serviços |
-| `AegisIdentity.Domain` (User) | `Id`: `string` ObjectId hex → `Guid`; remoção de `GenerateObjectId()` |
+| `Lumen.DataAccess` | Substituição completa: MongoDB → EF Core `DbContext` + configurações de entidade |
+| `Lumen.Migrations` | Reescrito: migrations EF Core substituem runner Mongo caseiro |
+| `Lumen.Migrations.Cli` | Reescrito ou removido (avaliado em INFRA-02) |
+| `Lumen.Jobs` | `Hangfire.Mongo` → `Hangfire.SqlServer`; referência a `MongoOptions` removida |
+| `Lumen.IntegrationTests` | Connection string e fixtures migram para SQL Server (Testcontainers ou LocalDB) |
+| `Lumen.Infrastructure` | `MongoOptions` POCO provavelmente removido ou substituído por `SqlOptions` |
+| `Lumen.Api` | Startup: `MongoMigrationsHostedService` → `Database.Migrate()`; `MeController`: `ObjectId.TryParse` → `Guid.TryParse` |
+| `Lumen.Backoffice` | Sem impacto direto na camada de apresentação; impactado indiretamente via serviços |
+| `Lumen.Domain` (User) | `Id`: `string` ObjectId hex → `Guid`; remoção de `GenerateObjectId()` |
