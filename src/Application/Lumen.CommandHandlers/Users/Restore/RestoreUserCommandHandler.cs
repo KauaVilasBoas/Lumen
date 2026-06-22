@@ -1,11 +1,11 @@
-using AegisIdentity.Domain.Audit;
-using AegisIdentity.Domain.Users;
-using AegisIdentity.SharedKernel.Constants;
-using AegisIdentity.SharedKernel.Exceptions;
+using Lumen.Domain.Audit;
+using Lumen.Domain.Users;
+using Lumen.SharedKernel.Constants;
+using Lumen.SharedKernel.Exceptions;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
-namespace AegisIdentity.CommandHandlers.Users.Restore;
+namespace Lumen.CommandHandlers.Users.Restore;
 
 public sealed class RestoreUserCommandHandler
     : IRequestHandler<RestoreUserCommandHandler.Command>

@@ -1,3 +1,5 @@
+using Lumen.CommandHandlers.Users.Delete;
+using Lumen.CommandHandlers.Users.Restore;
 using Lumen.CommandHandlers.Users.Update;
 using Lumen.ReadModels.Queries;
 using Lumen.SharedKernel.Authorization;

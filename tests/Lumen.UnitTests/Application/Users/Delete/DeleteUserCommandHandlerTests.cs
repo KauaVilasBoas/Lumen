@@ -1,16 +1,16 @@
-using AegisIdentity.CommandHandlers.Users.Delete;
-using AegisIdentity.Domain.Audit;
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.Domain.Tokens;
-using AegisIdentity.Domain.Users;
-using AegisIdentity.SharedKernel.Constants;
-using AegisIdentity.SharedKernel.Exceptions;
+using Lumen.CommandHandlers.Users.Delete;
+using Lumen.Domain.Audit;
+using Lumen.Domain.Authorization;
+using Lumen.Domain.Tokens;
+using Lumen.Domain.Users;
+using Lumen.SharedKernel.Constants;
+using Lumen.SharedKernel.Exceptions;
 using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 
-namespace AegisIdentity.UnitTests.Application.Users.Delete;
+namespace Lumen.UnitTests.Application.Users.Delete;
 
 public sealed class DeleteUserCommandHandlerTests
 {

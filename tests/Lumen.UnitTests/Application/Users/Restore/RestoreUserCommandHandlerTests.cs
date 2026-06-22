@@ -1,13 +1,13 @@
-using AegisIdentity.CommandHandlers.Users.Restore;
-using AegisIdentity.Domain.Audit;
-using AegisIdentity.Domain.Users;
-using AegisIdentity.SharedKernel.Constants;
-using AegisIdentity.SharedKernel.Exceptions;
+using Lumen.CommandHandlers.Users.Restore;
+using Lumen.Domain.Audit;
+using Lumen.Domain.Users;
+using Lumen.SharedKernel.Constants;
+using Lumen.SharedKernel.Exceptions;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 
-namespace AegisIdentity.UnitTests.Application.Users.Restore;
+namespace Lumen.UnitTests.Application.Users.Restore;
 
 public sealed class RestoreUserCommandHandlerTests
 {

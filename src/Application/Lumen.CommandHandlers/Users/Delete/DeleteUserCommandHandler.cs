@@ -1,13 +1,13 @@
-using AegisIdentity.Domain.Audit;
-using AegisIdentity.Domain.Authorization;
-using AegisIdentity.Domain.Tokens;
-using AegisIdentity.Domain.Users;
-using AegisIdentity.SharedKernel.Constants;
-using AegisIdentity.SharedKernel.Exceptions;
+using Lumen.Domain.Audit;
+using Lumen.Domain.Authorization;
+using Lumen.Domain.Tokens;
+using Lumen.Domain.Users;
+using Lumen.SharedKernel.Constants;
+using Lumen.SharedKernel.Exceptions;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
-namespace AegisIdentity.CommandHandlers.Users.Delete;
+namespace Lumen.CommandHandlers.Users.Delete;
 
 public sealed class DeleteUserCommandHandler
     : IRequestHandler<DeleteUserCommandHandler.Command>
