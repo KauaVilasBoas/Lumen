@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Frontend**: `aegis-console.css` → `lumen-console.css`, `aegis-console.js` → `lumen-console.js`; localStorage key `aegis.reveal` → `lumen.reveal`; cookie `Lumen.Backoffice.Auth`.
 - **Email templates**: branding `AegisIdentity` → `Lumen` nos templates HTML/TXT transacionais.
 - **CI**: paths de test no GitHub Actions atualizados para `tests/Lumen.*`.
+- **Fix pós-merge**: a feature de delete/restore de usuário havia sido parcialmente revertida para a estrutura `AegisIdentity` (fora do `Lumen.sln`), quebrando o build do CI. Handlers e testes movidos para `Lumen.CommandHandlers`/`Lumen.UnitTests`, `using` restaurados em `UsersController`, namespace da migration `SeedUsersDeleteRestorePermissions` corrigido e seu `.Designer.cs` ausente recriado, e pastas órfãs `AegisIdentity.*` removidas.
 
 ### Changed (branding — new Lumen logos)
 - **Brand assets**: added the official logo set under `Lumen.Backoffice/wwwroot/img/brand/` — `aegis-mark.png` (icon), `aegis-lockup.png` (full horizontal lockup with tagline), `aegis-lockup-compact.png` (compact wordmark) and `aegis-app-icon.png` (app icon); cropped from the source artwork to remove transparent padding.
