@@ -10,4 +10,6 @@ public static class AuditEventKinds
     public const string UserProfileRemove  = "userprofile.remove";
     public const string JobCleanup       = "job.cleanup";
     public const string UserUpdated      = "user.updated";
+    public const string UserDeleted      = "user.deleted";
+    public const string UserRestored     = "user.restored";
 }

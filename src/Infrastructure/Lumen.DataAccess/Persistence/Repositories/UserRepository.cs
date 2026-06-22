@@ -98,6 +98,13 @@ internal sealed class UserRepository : IUserRepository
         return false;
     }
 
+    public Task<int> CountActiveAdministratorsAsync(Guid administratorProfileId, CancellationToken ct = default)
+        => _dbContext.Users
+                     .AsNoTracking()
+                     .Where(u => _dbContext.UserProfiles
+                         .Any(up => up.UserId == u.Id && up.ProfileId == administratorProfileId))
+                     .CountAsync(ct);
+
     private static bool IsEmailIndex(string errorMessage)
         => errorMessage.Contains("ix_users_email_unique", StringComparison.OrdinalIgnoreCase)
         || errorMessage.Contains("\"email\"", StringComparison.OrdinalIgnoreCase);

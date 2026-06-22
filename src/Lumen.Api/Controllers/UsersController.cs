@@ -79,4 +79,38 @@ public sealed class UsersController : ApiBaseController
         var result = await _mediator.Send(command, ct);
         return Ok(result);
     }
+
+    [HttpDelete("{id:guid}")]
+    [RequirePermission]
+    [Authorize(Policy = PermissionCodes.Users.Delete)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct = default)
+    {
+        await _mediator.Send(new DeleteUserCommandHandler.Command(
+            UserId: id,
+            ActorId: GetActorIdentifier()), ct);
+
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/restore")]
+    [RequirePermission]
+    [Authorize(Policy = PermissionCodes.Users.Restore)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> Restore(Guid id, CancellationToken ct = default)
+    {
+        await _mediator.Send(new RestoreUserCommandHandler.Command(
+            UserId: id,
+            ActorId: GetActorIdentifier()), ct);
+
+        return NoContent();
+    }
 }
