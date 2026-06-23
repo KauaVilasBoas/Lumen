@@ -22,19 +22,24 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(u => u.Username)
                .IsRequired()
-               .HasMaxLength(64);
+               .HasMaxLength(64)
+               .UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder.Property(u => u.PasswordHash)
                .IsRequired()
-               .HasMaxLength(128);
+               .HasMaxLength(128)
+               .UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder.Property(u => u.IsBootstrap);
 
-        builder.Property(u => u.IsActive);
+        builder.Property(u => u.IsActive)
+               .UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        builder.Property(u => u.EmailConfirmedAt);
+        builder.Property(u => u.EmailConfirmedAt)
+               .UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        builder.Property(u => u.LastLoginAt);
+        builder.Property(u => u.LastLoginAt)
+               .UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder.Property(u => u.FailedLoginAttempts)
                .UsePropertyAccessMode(PropertyAccessMode.Field);
@@ -44,7 +49,8 @@ internal sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.Property(u => u.CreatedAt);
 
-        builder.Property(u => u.UpdatedAt);
+        builder.Property(u => u.UpdatedAt)
+               .UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder.Property(u => u.IsDeleted)
                .UsePropertyAccessMode(PropertyAccessMode.Field);
