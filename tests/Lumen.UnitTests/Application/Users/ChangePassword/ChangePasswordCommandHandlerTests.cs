@@ -1,7 +1,6 @@
 using Lumen.CommandHandlers.Users.ChangePassword;
 using Lumen.Domain.Notifications;
 using Lumen.Domain.Security;
-using Lumen.Domain.Tokens;
 using Lumen.Domain.Users;
 using Lumen.SharedKernel.Exceptions;
 using FluentAssertions;
@@ -22,14 +21,9 @@ public sealed class ChangePasswordCommandHandlerTests
     private static readonly Guid UserId = Guid.Parse("10000000-0000-0000-0000-000000000001");
 
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
-
-    private readonly IRefreshTokenRepository _refreshTokenRepository =
-        Substitute.For<IRefreshTokenRepository>();
-
     private readonly IPasswordHasher _passwordHasher = Substitute.For<IPasswordHasher>();
     private readonly IPasswordValidator _passwordValidator = Substitute.For<IPasswordValidator>();
-    private readonly IEmailService _emailService = Substitute.For<IEmailService>();
-    private readonly IEmailTemplateRenderer _templateRenderer = Substitute.For<IEmailTemplateRenderer>();
+    private readonly IUserPasswordService _userPasswordService = Substitute.For<IUserPasswordService>();
 
     public ChangePasswordCommandHandlerTests()
     {
@@ -40,14 +34,6 @@ public sealed class ChangePasswordCommandHandlerTests
         _passwordValidator
             .ValidatePasswordAsync(Arg.Any<PasswordValidationContext>(), Arg.Any<CancellationToken>())
             .Returns(PasswordValidationResult.Success);
-
-        _refreshTokenRepository
-            .FindByUserIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns(Array.Empty<RefreshToken>());
-
-        _templateRenderer
-            .Render(Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, string>>())
-            .Returns(("<html/>", "txt"));
     }
 
     // ── User not found ────────────────────────────────────────────────────
@@ -124,46 +110,27 @@ public sealed class ChangePasswordCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenPasswordValid_RevokesActiveRefreshTokens()
+    public async Task Handle_WhenPasswordValid_RevokesRefreshTokensViaService()
     {
         var user = BuildUser();
         _userRepository.FindByIdAsync(UserId, Arg.Any<CancellationToken>()).Returns(user);
 
-        var activeToken = RefreshToken.Create(user.Id, "hash", DateTime.UtcNow.AddDays(7), "127.0.0.1");
-        _refreshTokenRepository
-            .FindByUserIdAsync(user.Id, Arg.Any<CancellationToken>())
-            .Returns(new[] { activeToken });
-
         await CreateHandler().Handle(ValidCommand(), CancellationToken.None);
 
-        activeToken.IsRevoked().Should().BeTrue();
-        await _refreshTokenRepository.Received(1).UpdateAsync(activeToken, Arg.Any<CancellationToken>());
+        await _userPasswordService.Received(1)
+            .RevokeAllRefreshTokensAsync(user.Id, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Handle_WhenPasswordValid_SendsPasswordChangedEmail()
+    public async Task Handle_WhenPasswordValid_SendsPasswordChangedEmailViaService()
     {
         var user = BuildUser();
         _userRepository.FindByIdAsync(UserId, Arg.Any<CancellationToken>()).Returns(user);
 
         await CreateHandler().Handle(ValidCommand(), CancellationToken.None);
 
-        await _emailService.Received(1).SendAsync(
-            Arg.Is<EmailMessage>(m => m.To == user.Email),
-            Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task Handle_WhenPasswordValid_RendersPasswordChangedTemplate()
-    {
-        var user = BuildUser();
-        _userRepository.FindByIdAsync(UserId, Arg.Any<CancellationToken>()).Returns(user);
-
-        await CreateHandler().Handle(ValidCommand(), CancellationToken.None);
-
-        _templateRenderer.Received(1).Render(
-            "PasswordChanged",
-            Arg.Any<IReadOnlyDictionary<string, string>>());
+        await _userPasswordService.Received(1)
+            .SendPasswordChangedEmailAsync(user, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -196,11 +163,9 @@ public sealed class ChangePasswordCommandHandlerTests
     private ChangePasswordCommandHandler CreateHandler() =>
         new(
             _userRepository,
-            _refreshTokenRepository,
             _passwordHasher,
             _passwordValidator,
-            _emailService,
-            _templateRenderer,
+            _userPasswordService,
             NullLogger<ChangePasswordCommandHandler>.Instance);
 
     private static ChangePasswordCommandHandler.Command ValidCommand() =>

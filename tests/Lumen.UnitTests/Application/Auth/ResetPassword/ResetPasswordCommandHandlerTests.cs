@@ -23,13 +23,9 @@ public sealed class ResetPasswordCommandHandlerTests
 
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
 
-    private readonly IRefreshTokenRepository _refreshTokenRepository =
-        Substitute.For<IRefreshTokenRepository>();
-
     private readonly IPasswordHasher _passwordHasher = Substitute.For<IPasswordHasher>();
     private readonly IPasswordValidator _passwordValidator = Substitute.For<IPasswordValidator>();
-    private readonly IEmailService _emailService = Substitute.For<IEmailService>();
-    private readonly IEmailTemplateRenderer _templateRenderer = Substitute.For<IEmailTemplateRenderer>();
+    private readonly IUserPasswordService _userPasswordService = Substitute.For<IUserPasswordService>();
 
     public ResetPasswordCommandHandlerTests()
     {
@@ -38,14 +34,6 @@ public sealed class ResetPasswordCommandHandlerTests
             .Returns(PasswordValidationResult.Success);
 
         _passwordHasher.Hash(Arg.Any<string>()).Returns(FakePasswordHash);
-
-        _refreshTokenRepository
-            .FindByUserIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
-            .Returns(Array.Empty<RefreshToken>());
-
-        _templateRenderer
-            .Render(Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, string>>())
-            .Returns(("<html/>", "txt"));
     }
 
     // ── Token not found ───────────────────────────────────────────────────
@@ -133,43 +121,25 @@ public sealed class ResetPasswordCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenTokenValid_RevokesActiveRefreshTokens()
-    {
-        var (_, user) = SetupValidTokenAndUser();
-        var activeToken = BuildActiveRefreshToken(user.Id);
-
-        _refreshTokenRepository
-            .FindByUserIdAsync(user.Id, Arg.Any<CancellationToken>())
-            .Returns(new[] { activeToken });
-
-        await CreateHandler().Handle(ValidCommand(), CancellationToken.None);
-
-        activeToken.IsRevoked().Should().BeTrue();
-        await _refreshTokenRepository.Received(1).UpdateAsync(activeToken, Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task Handle_WhenTokenValid_SendsPasswordChangedEmail()
+    public async Task Handle_WhenTokenValid_RevokesActiveRefreshTokensViaService()
     {
         var (_, user) = SetupValidTokenAndUser();
 
         await CreateHandler().Handle(ValidCommand(), CancellationToken.None);
 
-        await _emailService.Received(1).SendAsync(
-            Arg.Is<EmailMessage>(m => m.To == user.Email),
-            Arg.Any<CancellationToken>());
+        await _userPasswordService.Received(1)
+            .RevokeAllRefreshTokensAsync(user.Id, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Handle_WhenTokenValid_RendersPasswordChangedTemplate()
+    public async Task Handle_WhenTokenValid_SendsPasswordChangedEmailViaService()
     {
-        SetupValidTokenAndUser();
+        var (_, user) = SetupValidTokenAndUser();
 
         await CreateHandler().Handle(ValidCommand(), CancellationToken.None);
 
-        _templateRenderer.Received(1).Render(
-            "PasswordChanged",
-            Arg.Any<IReadOnlyDictionary<string, string>>());
+        await _userPasswordService.Received(1)
+            .SendPasswordChangedEmailAsync(user, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -201,11 +171,9 @@ public sealed class ResetPasswordCommandHandlerTests
         new(
             _tokenRepository,
             _userRepository,
-            _refreshTokenRepository,
             _passwordHasher,
             _passwordValidator,
-            _emailService,
-            _templateRenderer,
+            _userPasswordService,
             NullLogger<ResetPasswordCommandHandler>.Instance);
 
     private static ResetPasswordCommandHandler.Command ValidCommand() =>
@@ -219,7 +187,4 @@ public sealed class ResetPasswordCommandHandlerTests
 
     private static User BuildUser() =>
         User.Create(ExistingEmail, ExistingUsername, "$2a$12$oldhash");
-
-    private static RefreshToken BuildActiveRefreshToken(Guid userId) =>
-        RefreshToken.Create(userId, "hash", DateTime.UtcNow.AddDays(7), "127.0.0.1");
 }

@@ -1,12 +1,9 @@
-using System.Security.Cryptography;
 using Lumen.Domain.Configuration;
 using Lumen.Domain.Notifications;
 using Lumen.Domain.Security;
-using Lumen.Domain.Tokens;
 using Lumen.Domain.Users;
 using Lumen.SharedKernel.Constants;
 using Lumen.SharedKernel.Exceptions;
-using Lumen.SharedKernel.Util;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -43,34 +40,23 @@ public sealed class RegisterUserCommandHandler
 
     public sealed record Result(string Id, string Email, string Username);
 
-    private static readonly TimeSpan TokenLifetime = TimeSpan.FromHours(24);
-
     private readonly IUserRepository _userRepository;
-    private readonly IEmailConfirmationTokenRepository _tokenRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IPasswordValidator _passwordValidator;
-    private readonly IEmailService _emailService;
-    private readonly IEmailTemplateRenderer _templateRenderer;
-    private readonly IAppSettings _appSettings;
+    private readonly IEmailConfirmationService _emailConfirmationService;
     private readonly ILogger<RegisterUserCommandHandler> _logger;
 
     public RegisterUserCommandHandler(
         IUserRepository userRepository,
-        IEmailConfirmationTokenRepository tokenRepository,
         IPasswordHasher passwordHasher,
         IPasswordValidator passwordValidator,
-        IEmailService emailService,
-        IEmailTemplateRenderer templateRenderer,
-        IAppSettings appSettings,
+        IEmailConfirmationService emailConfirmationService,
         ILogger<RegisterUserCommandHandler> logger)
     {
         _userRepository = userRepository;
-        _tokenRepository = tokenRepository;
         _passwordHasher = passwordHasher;
         _passwordValidator = passwordValidator;
-        _emailService = emailService;
-        _templateRenderer = templateRenderer;
-        _appSettings = appSettings;
+        _emailConfirmationService = emailConfirmationService;
         _logger = logger;
     }
 
@@ -100,46 +86,8 @@ public sealed class RegisterUserCommandHandler
 
         _logger.LogInformation("User {UserId} registered with email {Email}", user.Id, user.Email);
 
-        await SendConfirmationEmailAsync(user, ct);
+        await _emailConfirmationService.SendConfirmationEmailAsync(user, ct);
 
         return new Result(user.Id.ToString(), user.Email, user.Username);
-    }
-
-    private async Task SendConfirmationEmailAsync(User user, CancellationToken ct)
-    {
-        var rawToken = GenerateRawToken();
-        var tokenHash = Sha256Hasher.ComputeHex(rawToken);
-
-        var confirmationToken = EmailConfirmationToken.Create(
-            userId: user.Id,
-            tokenHash: tokenHash,
-            expiresAt: DateTime.UtcNow.Add(TokenLifetime));
-
-        await _tokenRepository.InsertAsync(confirmationToken, ct);
-
-        var confirmationUrl =
-            $"{_appSettings.BaseUrl}{EmailLinkPaths.ConfirmEmail}?token={Uri.EscapeDataString(rawToken)}";
-
-        var placeholders = new Dictionary<string, string>
-        {
-            [EmailPlaceholderKeys.UserName] = user.Username,
-            [EmailPlaceholderKeys.ConfirmationUrl] = confirmationUrl,
-        };
-
-        var (htmlBody, textBody) = _templateRenderer.Render(EmailTemplateNames.EmailConfirmation, placeholders);
-
-        var message = new EmailMessage(
-            To: user.Email,
-            Subject: EmailSubjects.EmailConfirmation,
-            HtmlBody: htmlBody,
-            TextBody: textBody);
-
-        await _emailService.SendAsync(message, ct);
-    }
-
-    private static string GenerateRawToken()
-    {
-        var bytes = RandomNumberGenerator.GetBytes(TokenSizes.RawTokenBytes);
-        return Base64UrlEncoder.Encode(bytes);
     }
 }

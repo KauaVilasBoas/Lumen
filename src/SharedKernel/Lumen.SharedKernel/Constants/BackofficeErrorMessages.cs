@@ -7,6 +7,8 @@ public static class BackofficeErrorMessages
     public const string AccountLocked        = "Conta temporariamente bloqueada por tentativas excessivas. Tente novamente mais tarde.";
     public const string ApiCommunicationError = "Erro ao comunicar com a Api. Tente novamente.";
 
+    public const string SystemProfileCannotBeDeleted = "Perfis de sistema não podem ser removidos.";
+
     public const string CreateProfileError    = "Erro ao criar perfil.";
     public const string UpdateProfileError    = "Erro ao atualizar perfil.";
     public const string DeleteProfileError    = "Erro ao remover perfil.";

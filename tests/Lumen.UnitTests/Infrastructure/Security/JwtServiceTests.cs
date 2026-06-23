@@ -228,7 +228,7 @@ public sealed class JwtServiceTests
     private static User ActiveUser()
     {
         var user = User.Create("alice@example.com", "alice", "$2a$12$fakehash");
-        user.IsActive = true;
+        user.ConfirmEmail();
         return user;
     }
 

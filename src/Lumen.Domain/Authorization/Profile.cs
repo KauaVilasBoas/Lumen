@@ -1,3 +1,5 @@
+using Lumen.SharedKernel.Constants;
+using Lumen.SharedKernel.Exceptions;
 using Lumen.SharedKernel.Persistence;
 
 namespace Lumen.Domain.Authorization;
@@ -41,7 +43,7 @@ public sealed class Profile : ISoftDeletable
     public void SoftDelete()
     {
         if (IsSystem)
-            throw new InvalidOperationException($"System profile '{Name}' cannot be deleted.");
+            throw new ForbiddenException(BackofficeErrorMessages.SystemProfileCannotBeDeleted);
 
         IsDeleted = true;
         DeletedAt = DateTime.UtcNow;

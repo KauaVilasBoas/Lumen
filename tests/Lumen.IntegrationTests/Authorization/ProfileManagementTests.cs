@@ -2,6 +2,7 @@ using Lumen.DataAccess.Persistence;
 using Lumen.Domain.Authorization;
 using Lumen.IntegrationTests.Infrastructure;
 using Lumen.SharedKernel.Constants;
+using Lumen.SharedKernel.Exceptions;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -90,7 +91,7 @@ public sealed class ProfileManagementTests
     }
 
     [Fact]
-    public async Task SoftDeleteProfile_SystemProfile_ThrowsInvalidOperationException()
+    public async Task SoftDeleteProfile_SystemProfile_ThrowsForbiddenException()
     {
         await using var db = _fixture.CreateDbContext();
 
@@ -101,8 +102,8 @@ public sealed class ProfileManagementTests
 
         var act = () => adminProfile!.SoftDelete();
 
-        act.Should().Throw<InvalidOperationException>()
-            .WithMessage("*cannot be deleted*");
+        act.Should().Throw<ForbiddenException>()
+            .WithMessage(BackofficeErrorMessages.SystemProfileCannotBeDeleted);
     }
 
     [Fact]

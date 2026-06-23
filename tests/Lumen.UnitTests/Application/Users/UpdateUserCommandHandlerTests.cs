@@ -1,6 +1,5 @@
 using Lumen.CommandHandlers.Users.Update;
 using Lumen.Domain.Audit;
-using Lumen.Domain.Configuration;
 using Lumen.Domain.Notifications;
 using Lumen.Domain.Tokens;
 using Lumen.Domain.Users;
@@ -14,17 +13,14 @@ namespace Lumen.UnitTests.Application.Users;
 
 public sealed class UpdateUserCommandHandlerTests
 {
-    private const string ActorId      = "00000000-0000-0000-0000-000000000001";
-    private const string ExistingEmail = "alice@example.com";
+    private const string ActorId         = "00000000-0000-0000-0000-000000000001";
+    private const string ExistingEmail    = "alice@example.com";
     private const string ExistingUsername = "alice";
-    private const string FakeHash     = "$2a$12$fakehash";
-    private const string FakeBaseUrl  = "https://api.example.com";
+    private const string FakeHash        = "$2a$12$fakehash";
 
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly IEmailConfirmationTokenRepository _tokenRepository = Substitute.For<IEmailConfirmationTokenRepository>();
-    private readonly IEmailService _emailService = Substitute.For<IEmailService>();
-    private readonly IEmailTemplateRenderer _templateRenderer = Substitute.For<IEmailTemplateRenderer>();
-    private readonly IAppSettings _appSettings = Substitute.For<IAppSettings>();
+    private readonly IEmailConfirmationService _emailConfirmationService = Substitute.For<IEmailConfirmationService>();
     private readonly IAuditRepository _auditRepository = Substitute.For<IAuditRepository>();
 
     private readonly User _existingUser;
@@ -33,9 +29,6 @@ public sealed class UpdateUserCommandHandlerTests
     {
         _existingUser = User.Create(ExistingEmail, ExistingUsername, FakeHash);
 
-        _appSettings.BaseUrl.Returns(FakeBaseUrl);
-        _templateRenderer.Render(Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, string>>())
-            .Returns(("<html>confirm</html>", "confirm"));
         _userRepository.FindByIdAsync(_existingUser.Id, Arg.Any<CancellationToken>())
             .Returns(_existingUser);
     }
@@ -129,8 +122,8 @@ public sealed class UpdateUserCommandHandlerTests
     {
         await CreateHandler().Handle(ValidUsernameCommand(_existingUser.Id), CancellationToken.None);
 
-        await _emailService.DidNotReceive().SendAsync(Arg.Any<EmailMessage>(), Arg.Any<CancellationToken>());
-        await _tokenRepository.DidNotReceive().InsertAsync(Arg.Any<EmailConfirmationToken>(), Arg.Any<CancellationToken>());
+        await _emailConfirmationService.DidNotReceive()
+            .SendConfirmationEmailAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
     }
 
     // ── email update ──────────────────────────────────────────────────────
@@ -164,7 +157,7 @@ public sealed class UpdateUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenEmailChanges_InsertsConfirmationTokenAndSendsEmail()
+    public async Task Handle_WhenEmailChanges_InvalidatesPreviousTokensAndDelegatesToService()
     {
         var command = new UpdateUserCommandHandler.Command(
             UserId: _existingUser.Id,
@@ -174,44 +167,9 @@ public sealed class UpdateUserCommandHandlerTests
 
         await CreateHandler().Handle(command, CancellationToken.None);
 
-        await _tokenRepository.Received(1).InsertAsync(Arg.Any<EmailConfirmationToken>(), Arg.Any<CancellationToken>());
-        await _emailService.Received(1).SendAsync(Arg.Any<EmailMessage>(), Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task Handle_WhenEmailChanges_SendsEmailToNewAddress()
-    {
-        const string newEmail = "newemail@example.com";
-
-        var command = new UpdateUserCommandHandler.Command(
-            UserId: _existingUser.Id,
-            NewEmail: newEmail,
-            NewUsername: null,
-            ActorId: ActorId);
-
-        await CreateHandler().Handle(command, CancellationToken.None);
-
-        await _emailService.Received(1).SendAsync(
-            Arg.Is<EmailMessage>(m => m.To == User.NormalizeEmail(newEmail)),
-            Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task Handle_WhenEmailChanges_ConfirmationUrlContainsBaseUrl()
-    {
-        var command = new UpdateUserCommandHandler.Command(
-            UserId: _existingUser.Id,
-            NewEmail: "newemail@example.com",
-            NewUsername: null,
-            ActorId: ActorId);
-
-        await CreateHandler().Handle(command, CancellationToken.None);
-
-        _templateRenderer.Received(1).Render(
-            Arg.Any<string>(),
-            Arg.Is<IReadOnlyDictionary<string, string>>(d =>
-                d.ContainsKey("ConfirmationUrl") &&
-                d["ConfirmationUrl"].StartsWith(FakeBaseUrl)));
+        await _tokenRepository.Received(1).InvalidateByUserIdAsync(_existingUser.Id, Arg.Any<CancellationToken>());
+        await _emailConfirmationService.Received(1)
+            .SendConfirmationEmailAsync(_existingUser, Arg.Any<CancellationToken>());
     }
 
     // ── audit entry content ───────────────────────────────────────────────
@@ -270,9 +228,7 @@ public sealed class UpdateUserCommandHandlerTests
         new(
             _userRepository,
             _tokenRepository,
-            _emailService,
-            _templateRenderer,
-            _appSettings,
+            _emailConfirmationService,
             _auditRepository,
             NullLogger<UpdateUserCommandHandler>.Instance);
 
