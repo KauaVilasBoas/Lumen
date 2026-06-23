@@ -1,4 +1,6 @@
 using FluentAssertions;
+using Lumen.SharedKernel.Constants;
+using Lumen.SharedKernel.Exceptions;
 using DomainProfile = Lumen.Domain.Authorization.Profile;
 
 namespace Lumen.UnitTests.Domain.Authorization;
@@ -51,14 +53,14 @@ public sealed class ProfileTests
     }
 
     [Fact]
-    public void SoftDelete_OnSystemProfile_ThrowsInvalidOperationException()
+    public void SoftDelete_OnSystemProfile_ThrowsForbiddenException()
     {
         var profile = DomainProfile.Create("SuperAdmin", "System profile", isSystem: true);
 
         var act = () => profile.SoftDelete();
 
-        act.Should().Throw<InvalidOperationException>()
-           .WithMessage("*SuperAdmin*");
+        act.Should().Throw<ForbiddenException>()
+           .WithMessage(BackofficeErrorMessages.SystemProfileCannotBeDeleted);
     }
 
     [Fact]
@@ -66,7 +68,7 @@ public sealed class ProfileTests
     {
         var profile = DomainProfile.Create("SuperAdmin", "System profile", isSystem: true);
 
-        try { profile.SoftDelete(); } catch (InvalidOperationException) { }
+        try { profile.SoftDelete(); } catch (ForbiddenException) { }
 
         profile.IsDeleted.Should().BeFalse();
         profile.DeletedAt.Should().BeNull();
