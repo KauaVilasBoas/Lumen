@@ -49,9 +49,7 @@ public sealed class ConfirmEmailCommandHandler
         confirmationToken.MarkAsUsed();
         await _tokenRepository.UpdateAsync(confirmationToken, ct);
 
-        user.IsActive = true;
-        user.EmailConfirmedAt = DateTime.UtcNow;
-        user.UpdatedAt = DateTime.UtcNow;
+        user.ConfirmEmail();
         await _userRepository.UpdateAsync(user, ct);
 
         return Unit.Value;
