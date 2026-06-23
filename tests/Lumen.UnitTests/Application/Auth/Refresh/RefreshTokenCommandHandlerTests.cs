@@ -258,7 +258,7 @@ public sealed class RefreshTokenCommandHandlerTests
     private static User ActiveUser()
     {
         var user = User.Create(ValidEmail, ValidUsername, FakePasswordHash);
-        user.IsActive = true;
+        user.ConfirmEmail();
         return user;
     }
 

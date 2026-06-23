@@ -307,8 +307,12 @@ public sealed class GetUserDetailQueryHandlerTests
             username: $"user-{Guid.NewGuid():N}",
             passwordHash: "hashed");
 
-        user.EmailConfirmedAt = emailConfirmedAt;
-        user.LastLoginAt = lastLoginAt;
+        if (emailConfirmedAt.HasValue)
+            typeof(User).GetProperty(nameof(User.EmailConfirmedAt))!.SetValue(user, emailConfirmedAt);
+
+        if (lastLoginAt.HasValue)
+            typeof(User).GetProperty(nameof(User.LastLoginAt))!.SetValue(user, lastLoginAt);
+
         return user;
     }
 

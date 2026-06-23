@@ -1,5 +1,4 @@
 using Lumen.CommandHandlers.Auth.Register;
-using Lumen.Domain.Configuration;
 using Lumen.Domain.Notifications;
 using Lumen.Domain.Security;
 using Lumen.Domain.Tokens;
@@ -18,24 +17,17 @@ public sealed class RegisterUserCommandHandlerTests
     private const string ValidUsername = "alice";
     private const string ValidPassword = "Str0ng!Passw0rd-2026";
     private const string FakeHash = "$2a$12$fakehash";
-    private const string FakeBaseUrl = "https://api.example.com";
 
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
-    private readonly IEmailConfirmationTokenRepository _tokenRepository = Substitute.For<IEmailConfirmationTokenRepository>();
     private readonly IPasswordHasher _passwordHasher = Substitute.For<IPasswordHasher>();
     private readonly IPasswordValidator _passwordValidator = Substitute.For<IPasswordValidator>();
-    private readonly IEmailService _emailService = Substitute.For<IEmailService>();
-    private readonly IEmailTemplateRenderer _templateRenderer = Substitute.For<IEmailTemplateRenderer>();
-    private readonly IAppSettings _appSettings = Substitute.For<IAppSettings>();
+    private readonly IEmailConfirmationService _emailConfirmationService = Substitute.For<IEmailConfirmationService>();
 
     public RegisterUserCommandHandlerTests()
     {
         _passwordHasher.Hash(Arg.Any<string>()).Returns(FakeHash);
         _passwordValidator.ValidatePasswordAsync(Arg.Any<PasswordValidationContext>(), Arg.Any<CancellationToken>())
             .Returns(PasswordValidationResult.Success);
-        _appSettings.BaseUrl.Returns(FakeBaseUrl);
-        _templateRenderer.Render(Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, string>>())
-            .Returns(("<html>confirm</html>", "confirm"));
     }
 
     // ── Password validation ────────────────────────────────────────────────
@@ -124,35 +116,12 @@ public sealed class RegisterUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenCommandIsValid_InsertsEmailConfirmationToken()
+    public async Task Handle_WhenCommandIsValid_DelegatesToEmailConfirmationService()
     {
         await CreateHandler().Handle(ValidCommand(), CancellationToken.None);
 
-        await _tokenRepository.Received(1).InsertAsync(
-            Arg.Any<EmailConfirmationToken>(),
-            Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task Handle_WhenCommandIsValid_SendsConfirmationEmail()
-    {
-        await CreateHandler().Handle(ValidCommand(), CancellationToken.None);
-
-        await _emailService.Received(1).SendAsync(
-            Arg.Is<EmailMessage>(m => m.To == User.NormalizeEmail(ValidEmail)),
-            Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task Handle_WhenCommandIsValid_ConfirmationUrlContainsBaseUrl()
-    {
-        await CreateHandler().Handle(ValidCommand(), CancellationToken.None);
-
-        _templateRenderer.Received(1).Render(
-            "EmailConfirmation",
-            Arg.Is<IReadOnlyDictionary<string, string>>(d =>
-                d.ContainsKey("ConfirmationUrl") &&
-                d["ConfirmationUrl"].StartsWith(FakeBaseUrl)));
+        await _emailConfirmationService.Received(1)
+            .SendConfirmationEmailAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -171,12 +140,9 @@ public sealed class RegisterUserCommandHandlerTests
     private RegisterUserCommandHandler CreateHandler() =>
         new(
             _userRepository,
-            _tokenRepository,
             _passwordHasher,
             _passwordValidator,
-            _emailService,
-            _templateRenderer,
-            _appSettings,
+            _emailConfirmationService,
             NullLogger<RegisterUserCommandHandler>.Instance);
 
     private static RegisterUserCommandHandler.Command ValidCommand() =>

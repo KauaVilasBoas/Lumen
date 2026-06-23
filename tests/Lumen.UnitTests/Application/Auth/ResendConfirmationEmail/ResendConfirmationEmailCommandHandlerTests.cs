@@ -1,5 +1,4 @@
 using Lumen.CommandHandlers.Auth.ResendConfirmationEmail;
-using Lumen.Domain.Configuration;
 using Lumen.Domain.Notifications;
 using Lumen.Domain.Tokens;
 using Lumen.Domain.Users;
@@ -12,20 +11,10 @@ public sealed class ResendConfirmationEmailCommandHandlerTests
 {
     private const string ExistingEmail = "alice@example.com";
     private const string ExistingUsername = "alice";
-    private const string FakeBaseUrl = "https://api.example.com";
 
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly IEmailConfirmationTokenRepository _tokenRepository = Substitute.For<IEmailConfirmationTokenRepository>();
-    private readonly IEmailService _emailService = Substitute.For<IEmailService>();
-    private readonly IEmailTemplateRenderer _templateRenderer = Substitute.For<IEmailTemplateRenderer>();
-    private readonly IAppSettings _appSettings = Substitute.For<IAppSettings>();
-
-    public ResendConfirmationEmailCommandHandlerTests()
-    {
-        _appSettings.BaseUrl.Returns(FakeBaseUrl);
-        _templateRenderer.Render(Arg.Any<string>(), Arg.Any<IReadOnlyDictionary<string, string>>())
-            .Returns(("<html>confirmation</html>", "confirmation"));
-    }
+    private readonly IEmailConfirmationService _emailConfirmationService = Substitute.For<IEmailConfirmationService>();
 
     // ── Email not found — silent no-op (anti-enumeration) ─────────────────
 
@@ -48,7 +37,8 @@ public sealed class ResendConfirmationEmailCommandHandlerTests
 
         await CreateHandler().Handle(new ResendConfirmationEmailCommandHandler.Command("nobody@example.com"), CancellationToken.None);
 
-        await _emailService.DidNotReceive().SendAsync(Arg.Any<EmailMessage>(), Arg.Any<CancellationToken>());
+        await _emailConfirmationService.DidNotReceive()
+            .SendConfirmationEmailAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
     }
 
     // ── Already active user — silent no-op ────────────────────────────────
@@ -56,23 +46,21 @@ public sealed class ResendConfirmationEmailCommandHandlerTests
     [Fact]
     public async Task Handle_WhenUserAlreadyActive_DoesNotSendEmail()
     {
-        var activeUser = BuildUser();
-        activeUser.IsActive = true;
-        activeUser.EmailConfirmedAt = DateTime.UtcNow;
+        var activeUser = BuildConfirmedUser();
 
         _userRepository.FindByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(activeUser);
 
         await CreateHandler().Handle(ValidCommand(), CancellationToken.None);
 
-        await _emailService.DidNotReceive().SendAsync(Arg.Any<EmailMessage>(), Arg.Any<CancellationToken>());
+        await _emailConfirmationService.DidNotReceive()
+            .SendConfirmationEmailAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task Handle_WhenUserAlreadyActive_DoesNotInvalidatePreviousTokens()
     {
-        var activeUser = BuildUser();
-        activeUser.IsActive = true;
+        var activeUser = BuildConfirmedUser();
 
         _userRepository.FindByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(activeUser);
@@ -87,7 +75,7 @@ public sealed class ResendConfirmationEmailCommandHandlerTests
     [Fact]
     public async Task Handle_WhenUserIsPending_InvalidatesPreviousTokens()
     {
-        var user = BuildUser();
+        var user = BuildPendingUser();
         _userRepository.FindByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(user);
 
@@ -97,76 +85,45 @@ public sealed class ResendConfirmationEmailCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenUserIsPending_InsertsNewToken()
+    public async Task Handle_WhenUserIsPending_DelegatesToEmailConfirmationService()
     {
-        var user = BuildUser();
+        var user = BuildPendingUser();
         _userRepository.FindByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(user);
 
         await CreateHandler().Handle(ValidCommand(), CancellationToken.None);
 
-        await _tokenRepository.Received(1).InsertAsync(
-            Arg.Any<EmailConfirmationToken>(),
-            Arg.Any<CancellationToken>());
+        await _emailConfirmationService.Received(1)
+            .SendConfirmationEmailAsync(user, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Handle_WhenUserIsPending_SendsEmailToUser()
+    public async Task Handle_WhenUserIsPending_CompletesWithoutError()
     {
-        var user = BuildUser();
+        var user = BuildPendingUser();
         _userRepository.FindByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(user);
 
-        await CreateHandler().Handle(ValidCommand(), CancellationToken.None);
+        var act = () => CreateHandler().Handle(ValidCommand(), CancellationToken.None);
 
-        await _emailService.Received(1).SendAsync(
-            Arg.Is<EmailMessage>(m => m.To == user.Email),
-            Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task Handle_WhenUserIsPending_RendersEmailConfirmationTemplate()
-    {
-        var user = BuildUser();
-        _userRepository.FindByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(user);
-
-        await CreateHandler().Handle(ValidCommand(), CancellationToken.None);
-
-        _templateRenderer.Received(1).Render(
-            "EmailConfirmation",
-            Arg.Any<IReadOnlyDictionary<string, string>>());
-    }
-
-    [Fact]
-    public async Task Handle_WhenUserIsPending_ConfirmationUrlContainsBaseUrl()
-    {
-        var user = BuildUser();
-        _userRepository.FindByEmailAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(user);
-
-        await CreateHandler().Handle(ValidCommand(), CancellationToken.None);
-
-        _templateRenderer.Received(1).Render(
-            Arg.Any<string>(),
-            Arg.Is<IReadOnlyDictionary<string, string>>(d =>
-                d.ContainsKey("ConfirmationUrl") &&
-                d["ConfirmationUrl"].StartsWith(FakeBaseUrl)));
+        await act.Should().NotThrowAsync();
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
 
     private ResendConfirmationEmailCommandHandler CreateHandler() =>
-        new(
-            _userRepository,
-            _tokenRepository,
-            _emailService,
-            _templateRenderer,
-            _appSettings);
+        new(_userRepository, _tokenRepository, _emailConfirmationService);
 
     private static ResendConfirmationEmailCommandHandler.Command ValidCommand() =>
         new(ExistingEmail);
 
-    private static User BuildUser() =>
+    private static User BuildPendingUser() =>
         User.Create(ExistingEmail, ExistingUsername, "$2a$12$fakehash");
+
+    private static User BuildConfirmedUser()
+    {
+        var user = User.Create(ExistingEmail, ExistingUsername, "$2a$12$fakehash");
+        user.ConfirmEmail();
+        return user;
+    }
 }

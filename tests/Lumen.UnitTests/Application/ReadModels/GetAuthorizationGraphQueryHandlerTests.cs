@@ -347,7 +347,9 @@ public sealed class GetAuthorizationGraphQueryHandlerTests
             username: $"user-{Guid.NewGuid():N}",
             passwordHash: "hashed");
 
-        user.EmailConfirmedAt = emailConfirmedAt;
+        if (emailConfirmedAt.HasValue)
+            typeof(User).GetProperty(nameof(User.EmailConfirmedAt))!.SetValue(user, emailConfirmedAt);
+
         return user;
     }
 

@@ -143,9 +143,15 @@ public sealed class GetCurrentUserQueryHandlerTests
             username: "testuser",
             passwordHash: "hashed-password");
 
-        user.LastLoginAt = lastLoginAt;
-        user.EmailConfirmedAt = emailConfirmedAt;
+        if (lastLoginAt.HasValue)
+            SetPrivate(user, nameof(User.LastLoginAt), lastLoginAt);
+
+        if (emailConfirmedAt.HasValue)
+            SetPrivate(user, nameof(User.EmailConfirmedAt), emailConfirmedAt);
 
         return user;
     }
+
+    private static void SetPrivate(User user, string propertyName, object? value)
+        => typeof(User).GetProperty(propertyName)!.SetValue(user, value);
 }

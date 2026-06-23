@@ -82,7 +82,7 @@ public sealed class UserDetailEndpointTests
             $"detail-target-{Guid.NewGuid():N}@test.com",
             $"detail-target-{Guid.NewGuid():N}",
             "hash");
-        targetUser.EmailConfirmedAt = DateTime.UtcNow.AddDays(-5);
+        targetUser.ConfirmEmail();
         db.Users.Add(targetUser);
         await db.SaveChangesAsync();
 
@@ -116,7 +116,7 @@ public sealed class UserDetailEndpointTests
             $"active-{Guid.NewGuid():N}@test.com",
             $"active-{Guid.NewGuid():N}",
             "hash");
-        targetUser.EmailConfirmedAt = DateTime.UtcNow.AddDays(-1);
+        targetUser.ConfirmEmail();
         db.Users.Add(targetUser);
         await db.SaveChangesAsync();
 
