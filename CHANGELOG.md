@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (REFACTOR — normalização da hierarquia de exceções de domínio)
+- **ConflictException**: removido modificador `sealed` para permitir herança por exceções de domínio específicas; nenhuma mudança de comportamento ou status HTTP.
+- **DuplicateEmailException**: migrada de `Exception` para `ConflictException` — agora faz parte da hierarquia de `BusinessException` (HTTP 409); mensagem mantida via construtor existente.
+- **DuplicateUsernameException**: migrada de `Exception` para `ConflictException` — agora faz parte da hierarquia de `BusinessException` (HTTP 409); mensagem mantida via construtor existente.
+- **Profile.SoftDelete**: substituído `InvalidOperationException` com mensagem hardcoded por `ForbiddenException(BackofficeErrorMessages.SystemProfileCannotBeDeleted)` — alinha com a hierarquia de domínio e elimina literal de string.
+- **BackofficeErrorMessages**: adicionada constante `SystemProfileCannotBeDeleted` com a mensagem de rejeição para exclusão de perfis de sistema.
+- **ProfileTests**: testes `SoftDelete_OnSystemProfile_*` atualizados para assertar `ForbiddenException` com a mensagem correta via constante.
+
 ### Changed (REFACTOR — encapsulamento de mutações no agregado User)
 - **User.ConfirmEmail()**: novo método de domínio que ativa a conta (`IsActive = true`), registra `EmailConfirmedAt` e atualiza `UpdatedAt`; substitui mutação direta no `ConfirmEmailCommandHandler`.
 - **User.RecordLogin()**: novo método de domínio que registra `LastLoginAt` e atualiza `UpdatedAt`; substitui mutação direta no `LoginUserCommandHandler`.
