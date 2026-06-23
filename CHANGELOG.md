@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (REFACTOR — encapsulamento de mutações no agregado User)
+- **User.ConfirmEmail()**: novo método de domínio que ativa a conta (`IsActive = true`), registra `EmailConfirmedAt` e atualiza `UpdatedAt`; substitui mutação direta no `ConfirmEmailCommandHandler`.
+- **User.RecordLogin()**: novo método de domínio que registra `LastLoginAt` e atualiza `UpdatedAt`; substitui mutação direta no `LoginUserCommandHandler`.
+- **User.ChangePassword(hash)**: novo método de domínio que substitui `PasswordHash` e atualiza `UpdatedAt`; adota `ArgumentException.ThrowIfNullOrWhiteSpace`; usado em `ResetPasswordCommandHandler` e `ChangePasswordCommandHandler`.
+- **Setters privados**: `Username`, `PasswordHash`, `IsActive`, `EmailConfirmedAt`, `LastLoginAt` e `UpdatedAt` promovidos de `set` para `private set`; `UserConfiguration` ajustada com `UsePropertyAccessMode(Field)` nos novos campos.
+- **TokenLifetimes**: nova classe de constantes em `SharedKernel` com `EmailConfirmation = TimeSpan.FromHours(24)`; elimina a constante local duplicada dos três handlers de e-mail de confirmação.
+- **IUserPasswordService / UserPasswordService (DS-1)**: Domain Service em `Lumen.Domain.Users` que encapsula `RevokeAllRefreshTokensAsync` e `SendPasswordChangedEmailAsync`; Remove duplicação entre `ResetPasswordCommandHandler` e `ChangePasswordCommandHandler`.
+- **IEmailConfirmationService / EmailConfirmationService (DS-2)**: Domain Service em `Lumen.Domain.Notifications` que encapsula geração de token, persistência, renderização de template e envio do e-mail de confirmação; Remove duplicação entre `RegisterUserCommandHandler`, `ResendConfirmationEmailCommandHandler` e `UpdateUserCommandHandler`.
+- **DomainServiceExtensions**: novo método de extensão em `Lumen.DataAccess.Persistence` que registra ambos os Domain Services como `Scoped`; chamado no `Program.cs` da API.
+- **UpdateUserCommandHandler**: invalida tokens anteriores antes de delegar ao `IEmailConfirmationService` na troca de e-mail.
+- **Testes de domínio**: 12 novos testes em `UserTests` cobrindo `ConfirmEmail`, `RecordLogin` e `ChangePassword`; 11 novos testes em `UserPasswordServiceTests`; 10 novos testes em `EmailConfirmationServiceTests` — total de 25 novos testes.
+- **Testes de handlers**: `ConfirmEmailCommandHandlerTests`, `LoginUserCommandHandlerTests`, `RegisterUserCommandHandlerTests`, `ResendConfirmationEmailCommandHandlerTests`, `ResetPasswordCommandHandlerTests`, `ChangePasswordCommandHandlerTests` e `UpdateUserCommandHandlerTests` atualizados para os novos métodos de domínio e assinaturas de constructors.
+
 ### Changed (RENAME — AegisIdentity → Lumen)
 - **Rename completo**: todos os projetos, namespaces, assets e configurações renomeados de `AegisIdentity` para `Lumen`.
 - **Estrutura de solução**: `AegisIdentity.sln` → `Lumen.sln`; todos os 16 projetos `.csproj` e suas pastas renomeados para `Lumen.*`.
