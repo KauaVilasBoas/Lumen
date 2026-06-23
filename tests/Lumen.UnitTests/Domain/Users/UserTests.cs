@@ -184,4 +184,97 @@ public sealed class UserTests
         bootstrap.IsBootstrap.Should().BeTrue();
     }
 
+    // ── ConfirmEmail ──────────────────────────────────────────────────────
+
+    [Fact]
+    public void ConfirmEmail_SetsIsActiveToTrue()
+    {
+        var user = User.Create("alice@example.com", "alice", "hash");
+
+        user.ConfirmEmail();
+
+        user.IsActive.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ConfirmEmail_SetsEmailConfirmedAt_ToUtcNow()
+    {
+        var user = User.Create("alice@example.com", "alice", "hash");
+        var before = DateTime.UtcNow;
+
+        user.ConfirmEmail();
+
+        user.EmailConfirmedAt.Should().BeOnOrAfter(before).And.BeOnOrBefore(DateTime.UtcNow);
+    }
+
+    [Fact]
+    public void ConfirmEmail_UpdatesUpdatedAt()
+    {
+        var user = User.Create("alice@example.com", "alice", "hash");
+        var before = DateTime.UtcNow;
+
+        user.ConfirmEmail();
+
+        user.UpdatedAt.Should().BeOnOrAfter(before);
+    }
+
+    // ── RecordLogin ───────────────────────────────────────────────────────
+
+    [Fact]
+    public void RecordLogin_SetsLastLoginAt_ToUtcNow()
+    {
+        var user = User.Create("alice@example.com", "alice", "hash");
+        var before = DateTime.UtcNow;
+
+        user.RecordLogin();
+
+        user.LastLoginAt.Should().BeOnOrAfter(before).And.BeOnOrBefore(DateTime.UtcNow);
+    }
+
+    [Fact]
+    public void RecordLogin_UpdatesUpdatedAt()
+    {
+        var user = User.Create("alice@example.com", "alice", "hash");
+        var before = DateTime.UtcNow;
+
+        user.RecordLogin();
+
+        user.UpdatedAt.Should().BeOnOrAfter(before);
+    }
+
+    // ── ChangePassword ────────────────────────────────────────────────────
+
+    [Fact]
+    public void ChangePassword_UpdatesPasswordHash()
+    {
+        var user = User.Create("alice@example.com", "alice", "oldhash");
+
+        user.ChangePassword("newhash");
+
+        user.PasswordHash.Should().Be("newhash");
+    }
+
+    [Fact]
+    public void ChangePassword_UpdatesUpdatedAt()
+    {
+        var user = User.Create("alice@example.com", "alice", "oldhash");
+        var before = DateTime.UtcNow;
+
+        user.ChangePassword("newhash");
+
+        user.UpdatedAt.Should().BeOnOrAfter(before);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void ChangePassword_WithBlankHash_ThrowsArgumentException(string hash)
+    {
+        var user = User.Create("alice@example.com", "alice", "oldhash");
+
+        var act = () => user.ChangePassword(hash);
+
+        act.Should().Throw<ArgumentException>();
+    }
+
 }
