@@ -43,6 +43,7 @@ try
     // ── Infrastructure ────────────────────────────────────────────────────────
     builder.Services.AddInfrastructureOptions(builder.Configuration, builder.Environment.IsProduction());
     builder.Services.AddRelationalDataAccess();
+    builder.Services.AddDomainServices();
     builder.Services.AddRedisCache(builder.Configuration);
     builder.Services.AddSecurity();
     builder.Services.AddHibpClient();
