@@ -1,9 +1,9 @@
 using Lumen.CommandHandlers.Profiles.SetProfilePermissions;
+using Lumen.Domain.Audit;
 using Lumen.Domain.Authorization;
 using Lumen.SharedKernel.Exceptions;
 using FluentAssertions;
 using FluentValidation.TestHelper;
-using MediatR;
 using NSubstitute;
 using DomainProfile = Lumen.Domain.Authorization.Profile;
 
@@ -13,19 +13,16 @@ public sealed class SetProfilePermissionsCommandHandlerTests
 {
     private readonly IProfileRepository _profileRepository;
     private readonly IPermissionRepository _permissionRepository;
-    private readonly IPublisher _publisher;
     private readonly SetProfilePermissionsCommandHandler _sut;
 
     public SetProfilePermissionsCommandHandlerTests()
     {
         _profileRepository = Substitute.For<IProfileRepository>();
         _permissionRepository = Substitute.For<IPermissionRepository>();
-        _publisher = Substitute.For<IPublisher>();
 
         _sut = new SetProfilePermissionsCommandHandler(
             _profileRepository,
-            _permissionRepository,
-            _publisher);
+            _permissionRepository);
     }
 
     [Fact]
@@ -77,8 +74,7 @@ public sealed class SetProfilePermissionsCommandHandlerTests
             .UpdatePermissionProfileAsync(Arg.Any<PermissionProfile>(), Arg.Any<CancellationToken>());
         await _profileRepository.DidNotReceive()
             .InsertPermissionProfilesAsync(Arg.Any<IReadOnlyList<PermissionProfile>>(), Arg.Any<CancellationToken>());
-        await _publisher.DidNotReceive()
-            .Publish(Arg.Any<INotification>(), Arg.Any<CancellationToken>());
+        systemProfile.DomainEvents.Should().BeEmpty();
     }
 
     [Fact]
@@ -141,6 +137,32 @@ public sealed class SetProfilePermissionsCommandHandlerTests
             Arg.Is<IReadOnlyList<PermissionProfile>>(list =>
                 list.Count == 1 && list[0].PermissionId == permIdToAdd),
             Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_WhenNonSystemProfile_RaisesProfilePermissionsSetWithAffectedUsers()
+    {
+        var profile = DomainProfile.Create("Editors", "Editors profile");
+        var userId = Guid.NewGuid();
+
+        _profileRepository.FindByIdAsync(profile.Id, Arg.Any<CancellationToken>())
+            .Returns(profile);
+        _profileRepository.GetActivePermissionProfilesByProfileIdAsync(profile.Id, Arg.Any<CancellationToken>())
+            .Returns(new List<PermissionProfile>());
+        _profileRepository.GetUserIdsByProfileIdAsync(profile.Id, Arg.Any<CancellationToken>())
+            .Returns(new List<Guid> { userId });
+
+        await _sut.Handle(
+            new SetProfilePermissionsCommandHandler.Command(profile.Id, new List<Guid>(), "actor-user"),
+            CancellationToken.None);
+
+        await _profileRepository.Received(1).UpdateAsync(profile, Arg.Any<CancellationToken>());
+
+        profile.DomainEvents.Should().ContainSingle(e => e is ProfilePermissionsSet
+            && ((ProfilePermissionsSet)e).ProfileId == profile.Id
+            && ((ProfilePermissionsSet)e).ProfileName == profile.Name
+            && ((ProfilePermissionsSet)e).ActorUsername == "actor-user"
+            && ((ProfilePermissionsSet)e).AffectedUserIds.SequenceEqual(new[] { userId }));
     }
 
     // ── Validator unit tests ──────────────────────────────────────────────────

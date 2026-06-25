@@ -1,9 +1,9 @@
 using Lumen.CommandHandlers.UserProfiles.AssignUserProfile;
+using Lumen.Domain.Audit;
 using Lumen.Domain.Authorization;
 using Lumen.Domain.Users;
 using Lumen.SharedKernel.Exceptions;
 using FluentAssertions;
-using MediatR;
 using NSubstitute;
 using DomainProfile = Lumen.Domain.Authorization.Profile;
 
@@ -14,7 +14,6 @@ public sealed class AssignUserProfileCommandHandlerTests
     private readonly IUserRepository _userRepository;
     private readonly IProfileRepository _profileRepository;
     private readonly IUserProfileRepository _userProfileRepository;
-    private readonly IPublisher _publisher;
     private readonly AssignUserProfileCommandHandler _sut;
 
     public AssignUserProfileCommandHandlerTests()
@@ -22,13 +21,11 @@ public sealed class AssignUserProfileCommandHandlerTests
         _userRepository = Substitute.For<IUserRepository>();
         _profileRepository = Substitute.For<IProfileRepository>();
         _userProfileRepository = Substitute.For<IUserProfileRepository>();
-        _publisher = Substitute.For<IPublisher>();
 
         _sut = new AssignUserProfileCommandHandler(
             _userRepository,
             _profileRepository,
-            _userProfileRepository,
-            _publisher);
+            _userProfileRepository);
     }
 
     [Fact]
@@ -60,7 +57,7 @@ public sealed class AssignUserProfileCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenAssignmentAlreadyExists_IsIdempotentAndDoesNotInsert()
+    public async Task Handle_WhenAssignmentAlreadyExists_IsIdempotentAndRaisesNoEvents()
     {
         var user = User.Create("test@test.com", "testuser", "hash");
         var profile = DomainProfile.Create("Editors", "Editors profile");
@@ -76,11 +73,11 @@ public sealed class AssignUserProfileCommandHandlerTests
             CancellationToken.None);
 
         await _userProfileRepository.DidNotReceive().InsertAsync(Arg.Any<UserProfile>(), Arg.Any<CancellationToken>());
-        await _publisher.DidNotReceive().Publish(Arg.Any<INotification>(), Arg.Any<CancellationToken>());
+        user.DomainEvents.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task Handle_WhenNewAssignment_InsertsAndPublishesPermissionsChanged()
+    public async Task Handle_WhenNewAssignment_InsertsAndRaisesDomainEvents()
     {
         var user = User.Create("test@test.com", "testuser", "hash");
         var profile = DomainProfile.Create("Editors", "Editors profile");
@@ -98,8 +95,13 @@ public sealed class AssignUserProfileCommandHandlerTests
             Arg.Is<UserProfile>(up => up.UserId == user.Id && up.ProfileId == profile.Id),
             Arg.Any<CancellationToken>());
 
-        await _publisher.Received(1).Publish(
-            Arg.Is<UserPermissionsChanged>(e => e.UserId == user.Id),
-            Arg.Any<CancellationToken>());
+        user.DomainEvents.Should().ContainSingle(e => e is UserPermissionsChanged
+            && ((UserPermissionsChanged)e).UserId == user.Id);
+
+        user.DomainEvents.Should().ContainSingle(e => e is UserProfileAssigned
+            && ((UserProfileAssigned)e).UserId == user.Id
+            && ((UserProfileAssigned)e).Username == user.Username
+            && ((UserProfileAssigned)e).ProfileId == profile.Id
+            && ((UserProfileAssigned)e).ProfileName == profile.Name);
     }
 }

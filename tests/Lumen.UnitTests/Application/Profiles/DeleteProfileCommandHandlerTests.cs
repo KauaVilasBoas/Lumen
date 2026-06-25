@@ -2,7 +2,6 @@ using Lumen.CommandHandlers.Profiles.DeleteProfile;
 using Lumen.Domain.Authorization;
 using Lumen.SharedKernel.Exceptions;
 using FluentAssertions;
-using MediatR;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using DomainProfile = Lumen.Domain.Authorization.Profile;
@@ -13,19 +12,16 @@ public sealed class DeleteProfileCommandHandlerTests
 {
     private readonly IProfileRepository _profileRepository;
     private readonly IUserProfileRepository _userProfileRepository;
-    private readonly IPublisher _publisher;
     private readonly DeleteProfileCommandHandler _sut;
 
     public DeleteProfileCommandHandlerTests()
     {
         _profileRepository = Substitute.For<IProfileRepository>();
         _userProfileRepository = Substitute.For<IUserProfileRepository>();
-        _publisher = Substitute.For<IPublisher>();
 
         _sut = new DeleteProfileCommandHandler(
             _profileRepository,
-            _userProfileRepository,
-            _publisher);
+            _userProfileRepository);
     }
 
     // ── Guard: not found ─────────────────────────────────────────────────────
@@ -86,7 +82,7 @@ public sealed class DeleteProfileCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenSystemProfile_DoesNotPublishCacheInvalidation()
+    public async Task Handle_WhenSystemProfile_RaisesNoDomainEvents()
     {
         var systemProfile = DomainProfile.Create("Admin", "System profile", isSystem: true);
 
@@ -101,8 +97,7 @@ public sealed class DeleteProfileCommandHandlerTests
         }
         catch (ForbiddenException) { }
 
-        await _publisher.DidNotReceive()
-            .Publish(Arg.Any<UserPermissionsChanged>(), Arg.Any<CancellationToken>());
+        systemProfile.DomainEvents.Should().BeEmpty();
     }
 
     // ── Atomic cascade ───────────────────────────────────────────────────────
@@ -160,7 +155,7 @@ public sealed class DeleteProfileCommandHandlerTests
     // ── Rollback / no partial state ──────────────────────────────────────────
 
     [Fact]
-    public async Task Handle_WhenCascadeDeleteThrows_DoesNotPublishCacheInvalidation()
+    public async Task Handle_WhenCascadeDeleteThrows_PropagatesException()
     {
         var profile = DomainProfile.Create("Finance", "Finance profile");
         var userId = Guid.NewGuid();
@@ -186,17 +181,15 @@ public sealed class DeleteProfileCommandHandlerTests
             new DeleteProfileCommandHandler.Command(profile.Id),
             CancellationToken.None);
 
+        // Domain events are dispatched only by LumenDbContext after the commit
+        // succeeds; a failed cascade therefore never reaches the cache cascade.
         await act.Should().ThrowAsync<InvalidOperationException>();
-
-        // Cache invalidation must NOT fire when the transaction failed.
-        await _publisher.DidNotReceive()
-            .Publish(Arg.Any<UserPermissionsChanged>(), Arg.Any<CancellationToken>());
     }
 
-    // ── Cache invalidation ───────────────────────────────────────────────────
+    // ── Domain event: ProfileDeleted ─────────────────────────────────────────
 
     [Fact]
-    public async Task Handle_WithAffectedUsers_PublishesPermissionsChangedForEach()
+    public async Task Handle_WithAffectedUsers_RaisesProfileDeletedWithAllAffectedUsers()
     {
         var profile = DomainProfile.Create("Editors", "Editors profile");
         var userId1 = Guid.NewGuid();
@@ -213,16 +206,13 @@ public sealed class DeleteProfileCommandHandlerTests
 
         await _sut.Handle(new DeleteProfileCommandHandler.Command(profile.Id), CancellationToken.None);
 
-        await _publisher.Received(1).Publish(
-            Arg.Is<UserPermissionsChanged>(e => e.UserId == userId1),
-            Arg.Any<CancellationToken>());
-        await _publisher.Received(1).Publish(
-            Arg.Is<UserPermissionsChanged>(e => e.UserId == userId2),
-            Arg.Any<CancellationToken>());
+        profile.DomainEvents.Should().ContainSingle(e => e is ProfileDeleted
+            && ((ProfileDeleted)e).ProfileId == profile.Id
+            && ((ProfileDeleted)e).AffectedUserIds.SequenceEqual(new[] { userId1, userId2 }));
     }
 
     [Fact]
-    public async Task Handle_WithNoAffectedUsers_DoesNotPublishAnyEvent()
+    public async Task Handle_WithNoAffectedUsers_RaisesProfileDeletedWithEmptyAffectedUsers()
     {
         var profile = DomainProfile.Create("Empty", "Profile with no users");
 
@@ -237,7 +227,7 @@ public sealed class DeleteProfileCommandHandlerTests
 
         await _sut.Handle(new DeleteProfileCommandHandler.Command(profile.Id), CancellationToken.None);
 
-        await _publisher.DidNotReceive()
-            .Publish(Arg.Any<UserPermissionsChanged>(), Arg.Any<CancellationToken>());
+        profile.DomainEvents.Should().ContainSingle(e => e is ProfileDeleted
+            && ((ProfileDeleted)e).AffectedUserIds.Count == 0);
     }
 }

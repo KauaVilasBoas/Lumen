@@ -83,7 +83,7 @@ public sealed class AuditEventHandlerTests
             NullLogger<ProfilePermissionsSetAuditHandler>.Instance);
 
         await handler.Handle(
-            new ProfilePermissionsSet(Guid.NewGuid(), "Admins", "carol"),
+            new ProfilePermissionsSet(Guid.NewGuid(), "Admins", "carol", new List<Guid>()),
             CancellationToken.None);
 
         await _auditRepository.Received(1).InsertAsync(

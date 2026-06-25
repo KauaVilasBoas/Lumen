@@ -6,7 +6,6 @@ using Lumen.Domain.Users;
 using Lumen.SharedKernel.Constants;
 using Lumen.SharedKernel.Exceptions;
 using FluentAssertions;
-using MediatR;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 
@@ -21,7 +20,6 @@ public sealed class DeleteUserCommandHandlerTests
     private readonly IUserProfileRepository _userProfileRepository = Substitute.For<IUserProfileRepository>();
     private readonly IRefreshTokenRepository _refreshTokenRepository = Substitute.For<IRefreshTokenRepository>();
     private readonly IAuditRepository _auditRepository = Substitute.For<IAuditRepository>();
-    private readonly IPublisher _publisher = Substitute.For<IPublisher>();
 
     private readonly User _activeUser;
 
@@ -201,19 +199,18 @@ public sealed class DeleteUserCommandHandlerTests
     // ── permission cache invalidation ─────────────────────────────────────────
 
     [Fact]
-    public async Task Handle_WhenValid_PublishesUserPermissionsChanged()
+    public async Task Handle_WhenValid_RaisesUserPermissionsChanged()
     {
         await CreateHandler().Handle(
             new DeleteUserCommandHandler.Command(_activeUser.Id, ActorId),
             CancellationToken.None);
 
-        await _publisher.Received(1).Publish(
-            Arg.Is<UserPermissionsChanged>(e => e.UserId == _activeUser.Id),
-            Arg.Any<CancellationToken>());
+        _activeUser.DomainEvents.Should().ContainSingle(e => e is UserPermissionsChanged
+            && ((UserPermissionsChanged)e).UserId == _activeUser.Id);
     }
 
     [Fact]
-    public async Task Handle_WhenGuardFails_DoesNotPublishCacheInvalidation()
+    public async Task Handle_WhenGuardFails_RaisesNoDomainEvents()
     {
         var bootstrapUser = User.CreateBootstrap("admin@example.com", "admin", FakeHash);
         _userRepository.FindByIdAsync(bootstrapUser.Id, Arg.Any<CancellationToken>())
@@ -222,7 +219,7 @@ public sealed class DeleteUserCommandHandlerTests
         try { await CreateHandler().Handle(new DeleteUserCommandHandler.Command(bootstrapUser.Id, ActorId), CancellationToken.None); }
         catch (ForbiddenException) { }
 
-        await _publisher.DidNotReceive().Publish(Arg.Any<UserPermissionsChanged>(), Arg.Any<CancellationToken>());
+        bootstrapUser.DomainEvents.Should().BeEmpty();
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -233,6 +230,5 @@ public sealed class DeleteUserCommandHandlerTests
             _userProfileRepository,
             _refreshTokenRepository,
             _auditRepository,
-            _publisher,
             NullLogger<DeleteUserCommandHandler>.Instance);
 }
