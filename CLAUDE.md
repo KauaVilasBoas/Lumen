@@ -59,6 +59,12 @@ tests/
 - **Dentro de um CommandHandler só é permitido usar Repositories** (escrita via EF Core). Um CommandHandler **nunca** chama um QueryHandler nem acessa a camada de leitura (Dapper).
 - Validação via `AbstractValidator<Command>` no mesmo arquivo, aplicada pelo `ValidationBehavior` do MediatR.
 
+### Domain Events (DDD)
+- **Quem levanta o evento é o aggregate root, não o handler.** Agregados herdam de `AggregateRoot` (`Lumen.Domain.Common`) e chamam `RaiseDomainEvent(...)` dentro dos seus métodos de domínio. CommandHandlers **não** injetam `IPublisher` nem publicam eventos diretamente — apenas orquestram os agregados.
+- **O dispatch é transacional.** `LumenDbContext.SaveChangesAsync` publica os eventos das entidades rastreadas via `IPublisher` **somente após o commit ter sucesso** (e somente quando não há transação explícita ambiente). Isso garante que o evento nunca dispare se a escrita no banco falhar. Para o evento ser despachado, o agregado precisa estar rastreado pelo `DbContext` no momento do `SaveChanges`.
+- **Um domain event só carrega o que o agregado é dono.** Se o evento precisa de dados de outro agregado (ex.: `Username` + `ProfileName` em `UserProfileAssigned`), modele a operação no root que possui esses dados — `User.AssignProfile(profile)` (o `User` é dono do `Username` e recebe o `Profile`). Mapeie `builder.Ignore(x => x.DomainEvents)` na configuração EF de cada agregado.
+- **Cascade cross-agregado vira EventHandler.** Quando uma mudança afeta um *conjunto* de outros agregados descoberto via query (ex.: excluir um `Profile` invalida o cache de N usuários), o root levanta um evento próprio carregando os IDs afetados (`ProfileDeleted(AffectedUserIds)`) e um `INotificationHandler` em `Lumen.EventHandlers` faz o fan-out — nunca o `Profile` levantando eventos sobre `User`s estranhos.
+
 ### CQRS — Query (leitura)
 - **Query e QueryHandler vivem no MESMO arquivo `.cs`** (mesmo padrão do Command).
 - **O QueryHandler usa EF Core para leitura**, preferindo `AsNoTracking`. (Decisão de 2026-06-14: Dapper foi descartado; toda a persistência usa EF Core.) Pode acessar o `DbContext`/repositórios de leitura; corrija N+1 com projeção/joins/`Include`.

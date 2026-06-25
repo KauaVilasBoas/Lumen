@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (REFACTOR — domain events em aggregate roots)
+- **AggregateRoot**: nova classe base em `Lumen.Domain.Common` que coleta domain events (`RaiseDomainEvent`/`DomainEvents`/`ClearDomainEvents`); `User` e `Profile` passam a herdar dela.
+- **Dispatch transacional**: `LumenDbContext.SaveChangesAsync` sobrescrito para publicar os domain events das entidades rastreadas via `IPublisher` **somente após** o commit ter sucesso (e somente quando não há transação explícita ambiente). `IPublisher` injetado como parâmetro opcional do construtor — construções diretas (design-time factory, IntegrationFixture) mantêm o dispatch desligado.
+- **User**: `AssignProfile(profile)` e `RemoveProfile(assignment, profile)` encapsulam a (des)associação de perfil e levantam `UserPermissionsChanged` + `UserProfileAssigned`/`UserProfileRemoved`; `SoftDelete()` levanta `UserPermissionsChanged`; `RecordLogin()` levanta `UserLoggedIn`; `RecordFailedLogin()` levanta `UserLockedOut` ao cruzar o threshold de lockout.
+- **Profile**: `Delete(affectedUserIds)` faz o soft-delete e levanta `ProfileDeleted`; `RecordPermissionsSet(actor, affectedUserIds)` levanta `ProfilePermissionsSet`.
+- **ProfileDeleted**: novo domain event em `Lumen.Domain.Authorization` carregando os `AffectedUserIds`. **ProfilePermissionsSet**: ampliado com `AffectedUserIds` para conduzir o cascade de invalidação de cache.
+- **Cascade cross-agregado**: `ProfileDeletedCacheInvalidationHandler` e `ProfilePermissionsSetCacheInvalidationHandler` (em `Lumen.EventHandlers`) reagem aos eventos do agregado `Profile` e republicam `UserPermissionsChanged` por usuário afetado, preservando os dois consumidores existentes (invalidação de cache Redis + trilha de auditoria).
+- **Command handlers**: `AssignUserProfile`, `RemoveUserProfile`, `DeleteUser`, `Login`, `DeleteProfile` e `SetProfilePermissions` deixam de injetar `IPublisher` e de publicar eventos diretamente — passam a apenas orquestrar os agregados, que levantam seus próprios eventos.
+- **ProfileRepository.DeleteWithCascadeAsync**: removida a transação explícita redundante (o método executa um único `SaveChangesAsync`, já atômico no EF Core), permitindo que o dispatch dos domain events ocorra de fato após o commit.
+- **Testes**: handlers atualizados para assertar nos domain events do agregado em vez de mocks de `IPublisher`; novos testes de domínio (`UserDomainEventsTests`, `ProfileDomainEventsTests`) e de cascade (`ProfileCacheInvalidationHandlerTests`).
+
 ### Changed (REFACTOR — normalização da hierarquia de exceções de domínio)
 - **ConflictException**: removido modificador `sealed` para permitir herança por exceções de domínio específicas; nenhuma mudança de comportamento ou status HTTP.
 - **DuplicateEmailException**: migrada de `Exception` para `ConflictException` — agora faz parte da hierarquia de `BusinessException` (HTTP 409); mensagem mantida via construtor existente.
