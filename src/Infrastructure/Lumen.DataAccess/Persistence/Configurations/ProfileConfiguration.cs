@@ -9,6 +9,8 @@ internal sealed class ProfileConfiguration : IEntityTypeConfiguration<Domain.Aut
     {
         builder.ToTable("Profiles");
 
+        builder.Ignore(p => p.DomainEvents);
+
         builder.HasKey(p => p.Id);
 
         builder.Property(p => p.Id)

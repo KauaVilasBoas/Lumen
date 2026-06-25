@@ -1,8 +1,11 @@
+using Lumen.Domain.Audit;
+using Lumen.Domain.Authorization;
+using Lumen.Domain.Common;
 using Lumen.SharedKernel.Persistence;
 
 namespace Lumen.Domain.Users;
 
-public sealed class User : ISoftDeletable
+public sealed class User : AggregateRoot, ISoftDeletable
 {
     public Guid Id { get; init; } = Guid.NewGuid();
 
@@ -63,10 +66,35 @@ public sealed class User : ISoftDeletable
         UpdatedAt = DateTime.UtcNow;
     }
 
+    public UserProfile AssignProfile(Profile profile)
+    {
+        ArgumentNullException.ThrowIfNull(profile);
+
+        var assignment = UserProfile.Create(Id, profile.Id);
+
+        RaiseDomainEvent(new UserPermissionsChanged(Id));
+        RaiseDomainEvent(new UserProfileAssigned(Id, Username, profile.Id, profile.Name));
+
+        return assignment;
+    }
+
+    public void RemoveProfile(UserProfile assignment, Profile profile)
+    {
+        ArgumentNullException.ThrowIfNull(assignment);
+        ArgumentNullException.ThrowIfNull(profile);
+
+        assignment.SoftDelete();
+
+        RaiseDomainEvent(new UserPermissionsChanged(Id));
+        RaiseDomainEvent(new UserProfileRemoved(Id, Username, profile.Id, profile.Name));
+    }
+
     public void RecordLogin()
     {
         LastLoginAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
+
+        RaiseDomainEvent(new UserLoggedIn(Id, Username));
     }
 
     public void ChangePassword(string newPasswordHash)
@@ -83,7 +111,10 @@ public sealed class User : ISoftDeletable
         UpdatedAt = DateTime.UtcNow;
 
         if (FailedLoginAttempts >= lockoutThreshold)
+        {
             LockedUntil = DateTime.UtcNow.Add(lockoutDuration);
+            RaiseDomainEvent(new UserLockedOut(Id, Username));
+        }
     }
 
     public void Unlock()
@@ -116,6 +147,8 @@ public sealed class User : ISoftDeletable
     {
         IsDeleted = true;
         DeletedAt = DateTime.UtcNow;
+
+        RaiseDomainEvent(new UserPermissionsChanged(Id));
     }
 
     public void Restore()

@@ -1,4 +1,3 @@
-using Lumen.Domain.Audit;
 using Lumen.Domain.Authorization;
 using Lumen.SharedKernel.Constants;
 using Lumen.SharedKernel.Exceptions;
@@ -29,16 +28,13 @@ public sealed class SetProfilePermissionsCommandHandler
 
     private readonly IProfileRepository _profileRepository;
     private readonly IPermissionRepository _permissionRepository;
-    private readonly IPublisher _publisher;
 
     public SetProfilePermissionsCommandHandler(
         IProfileRepository profileRepository,
-        IPermissionRepository permissionRepository,
-        IPublisher publisher)
+        IPermissionRepository permissionRepository)
     {
         _profileRepository = profileRepository;
         _permissionRepository = permissionRepository;
-        _publisher = publisher;
     }
 
     public async Task Handle(Command cmd, CancellationToken ct)
@@ -87,9 +83,8 @@ public sealed class SetProfilePermissionsCommandHandler
         }
 
         var affectedUserIds = await _profileRepository.GetUserIdsByProfileIdAsync(cmd.ProfileId, ct);
-        foreach (var userId in affectedUserIds)
-            await _publisher.Publish(new UserPermissionsChanged(userId), ct);
 
-        await _publisher.Publish(new ProfilePermissionsSet(cmd.ProfileId, profile.Name, cmd.ActorUsername ?? SystemActorNames.SystemActor), ct);
+        profile.RecordPermissionsSet(cmd.ActorUsername ?? SystemActorNames.SystemActor, affectedUserIds);
+        await _profileRepository.UpdateAsync(profile, ct);
     }
 }

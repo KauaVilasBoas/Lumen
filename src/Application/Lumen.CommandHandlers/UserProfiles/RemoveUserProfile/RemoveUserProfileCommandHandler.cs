@@ -1,4 +1,3 @@
-using Lumen.Domain.Audit;
 using Lumen.Domain.Authorization;
 using Lumen.Domain.Users;
 using Lumen.SharedKernel.Exceptions;
@@ -27,18 +26,15 @@ public sealed class RemoveUserProfileCommandHandler
     private readonly IUserRepository _userRepository;
     private readonly IProfileRepository _profileRepository;
     private readonly IUserProfileRepository _userProfileRepository;
-    private readonly IPublisher _publisher;
 
     public RemoveUserProfileCommandHandler(
         IUserRepository userRepository,
         IProfileRepository profileRepository,
-        IUserProfileRepository userProfileRepository,
-        IPublisher publisher)
+        IUserProfileRepository userProfileRepository)
     {
         _userRepository = userRepository;
         _profileRepository = profileRepository;
         _userProfileRepository = userProfileRepository;
-        _publisher = publisher;
     }
 
     public async Task Handle(Command cmd, CancellationToken ct)
@@ -52,11 +48,8 @@ public sealed class RemoveUserProfileCommandHandler
         var userProfile = await _userProfileRepository.FindActiveAsync(cmd.UserId, cmd.ProfileId, ct)
             ?? throw new NotFoundException($"Active assignment of user '{cmd.UserId}' to profile '{cmd.ProfileId}' not found.");
 
-        userProfile.SoftDelete();
+        user.RemoveProfile(userProfile, profile);
 
         await _userProfileRepository.UpdateAsync(userProfile, ct);
-
-        await _publisher.Publish(new UserPermissionsChanged(cmd.UserId), ct);
-        await _publisher.Publish(new UserProfileRemoved(cmd.UserId, user.Username, cmd.ProfileId, profile.Name), ct);
     }
 }

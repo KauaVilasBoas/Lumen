@@ -1,4 +1,3 @@
-using Lumen.Domain.Audit;
 using Lumen.Domain.Authorization;
 using Lumen.Domain.Users;
 using Lumen.SharedKernel.Exceptions;
@@ -27,18 +26,15 @@ public sealed class AssignUserProfileCommandHandler
     private readonly IUserRepository _userRepository;
     private readonly IProfileRepository _profileRepository;
     private readonly IUserProfileRepository _userProfileRepository;
-    private readonly IPublisher _publisher;
 
     public AssignUserProfileCommandHandler(
         IUserRepository userRepository,
         IProfileRepository profileRepository,
-        IUserProfileRepository userProfileRepository,
-        IPublisher publisher)
+        IUserProfileRepository userProfileRepository)
     {
         _userRepository = userRepository;
         _profileRepository = profileRepository;
         _userProfileRepository = userProfileRepository;
-        _publisher = publisher;
     }
 
     public async Task Handle(Command cmd, CancellationToken ct)
@@ -54,10 +50,7 @@ public sealed class AssignUserProfileCommandHandler
         if (existing is not null)
             return;
 
-        var userProfile = UserProfile.Create(cmd.UserId, cmd.ProfileId);
-        await _userProfileRepository.InsertAsync(userProfile, ct);
-
-        await _publisher.Publish(new UserPermissionsChanged(cmd.UserId), ct);
-        await _publisher.Publish(new UserProfileAssigned(cmd.UserId, user.Username, cmd.ProfileId, profile.Name), ct);
+        var assignment = user.AssignProfile(profile);
+        await _userProfileRepository.InsertAsync(assignment, ct);
     }
 }

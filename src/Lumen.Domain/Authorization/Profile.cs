@@ -1,10 +1,12 @@
+using Lumen.Domain.Audit;
+using Lumen.Domain.Common;
 using Lumen.SharedKernel.Constants;
 using Lumen.SharedKernel.Exceptions;
 using Lumen.SharedKernel.Persistence;
 
 namespace Lumen.Domain.Authorization;
 
-public sealed class Profile : ISoftDeletable
+public sealed class Profile : AggregateRoot, ISoftDeletable
 {
     public Guid Id { get; init; } = Guid.NewGuid();
 
@@ -47,5 +49,16 @@ public sealed class Profile : ISoftDeletable
 
         IsDeleted = true;
         DeletedAt = DateTime.UtcNow;
+    }
+
+    public void Delete(IReadOnlyList<Guid> affectedUserIds)
+    {
+        SoftDelete();
+        RaiseDomainEvent(new ProfileDeleted(Id, affectedUserIds));
+    }
+
+    public void RecordPermissionsSet(string actorUsername, IReadOnlyList<Guid> affectedUserIds)
+    {
+        RaiseDomainEvent(new ProfilePermissionsSet(Id, Name, actorUsername, affectedUserIds));
     }
 }

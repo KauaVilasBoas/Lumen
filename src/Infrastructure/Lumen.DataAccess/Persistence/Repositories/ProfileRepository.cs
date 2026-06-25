@@ -198,21 +198,10 @@ internal sealed class ProfileRepository : IProfileRepository
         IReadOnlyList<UserProfile> userProfiles,
         CancellationToken ct = default)
     {
-        await using var transaction = await _dbContext.Database.BeginTransactionAsync(ct);
+        _dbContext.PermissionProfiles.UpdateRange(permissionProfiles);
+        _dbContext.UserProfiles.UpdateRange(userProfiles);
+        _dbContext.Profiles.Update(profile);
 
-        try
-        {
-            _dbContext.PermissionProfiles.UpdateRange(permissionProfiles);
-            _dbContext.UserProfiles.UpdateRange(userProfiles);
-            _dbContext.Profiles.Update(profile);
-
-            await _dbContext.SaveChangesAsync(ct);
-            await transaction.CommitAsync(ct);
-        }
-        catch
-        {
-            await transaction.RollbackAsync(ct);
-            throw;
-        }
+        await _dbContext.SaveChangesAsync(ct);
     }
 }

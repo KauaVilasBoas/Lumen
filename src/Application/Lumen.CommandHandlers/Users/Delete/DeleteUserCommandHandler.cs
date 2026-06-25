@@ -18,7 +18,6 @@ public sealed class DeleteUserCommandHandler
     private readonly IUserProfileRepository _userProfileRepository;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IAuditRepository _auditRepository;
-    private readonly IPublisher _publisher;
     private readonly ILogger<DeleteUserCommandHandler> _logger;
 
     public DeleteUserCommandHandler(
@@ -26,14 +25,12 @@ public sealed class DeleteUserCommandHandler
         IUserProfileRepository userProfileRepository,
         IRefreshTokenRepository refreshTokenRepository,
         IAuditRepository auditRepository,
-        IPublisher publisher,
         ILogger<DeleteUserCommandHandler> logger)
     {
         _userRepository = userRepository;
         _userProfileRepository = userProfileRepository;
         _refreshTokenRepository = refreshTokenRepository;
         _auditRepository = auditRepository;
-        _publisher = publisher;
         _logger = logger;
     }
 
@@ -63,7 +60,6 @@ public sealed class DeleteUserCommandHandler
             message: $"User '{user.Username}' ({user.Email}) soft-deleted.");
 
         await _auditRepository.InsertAsync(auditEntry, ct);
-        await _publisher.Publish(new UserPermissionsChanged(user.Id), ct);
     }
 
     private async Task GuardLastAdministratorAsync(Guid userId, CancellationToken ct)

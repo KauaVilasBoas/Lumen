@@ -1,9 +1,11 @@
 using System.Linq.Expressions;
 using Lumen.Domain.Audit;
 using Lumen.Domain.Authorization;
+using Lumen.Domain.Common;
 using Lumen.Domain.Tokens;
 using Lumen.Domain.Users;
 using Lumen.SharedKernel.Persistence;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
@@ -11,9 +13,12 @@ namespace Lumen.DataAccess.Persistence;
 
 public sealed class LumenDbContext : DbContext
 {
-    public LumenDbContext(DbContextOptions<LumenDbContext> options)
+    private readonly IPublisher? _publisher;
+
+    public LumenDbContext(DbContextOptions<LumenDbContext> options, IPublisher? publisher = null)
         : base(options)
     {
+        _publisher = publisher;
     }
 
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
@@ -36,10 +41,42 @@ public sealed class LumenDbContext : DbContext
 
     public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
 
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        var affectedRows = await base.SaveChangesAsync(cancellationToken);
+
+        if (Database.CurrentTransaction is null)
+            await DispatchDomainEventsAsync(cancellationToken);
+
+        return affectedRows;
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(LumenDbContext).Assembly);
         ApplySoftDeleteFilters(modelBuilder);
+    }
+
+    private async Task DispatchDomainEventsAsync(CancellationToken cancellationToken)
+    {
+        if (_publisher is null)
+            return;
+
+        var aggregates = ChangeTracker
+            .Entries<AggregateRoot>()
+            .Where(entry => entry.Entity.DomainEvents.Count > 0)
+            .Select(entry => entry.Entity)
+            .ToList();
+
+        var domainEvents = aggregates
+            .SelectMany(aggregate => aggregate.DomainEvents)
+            .ToList();
+
+        foreach (var aggregate in aggregates)
+            aggregate.ClearDomainEvents();
+
+        foreach (var domainEvent in domainEvents)
+            await _publisher.Publish(domainEvent, cancellationToken);
     }
 
     private static void ApplySoftDeleteFilters(ModelBuilder modelBuilder)
