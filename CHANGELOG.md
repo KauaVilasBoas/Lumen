@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (E1 — Audit: módulo piloto do monolito modular)
+- **Lumen.Modules.Audit.Contracts** (novo projeto em `src/Modules/Audit/Lumen.Modules.Audit.Contracts`): assembly público com 7 integration events que o módulo Audit consome — `UserLoggedInEvent`, `UserLockedOutEvent`, `UserProfileAssignedEvent`, `UserProfileRemovedEvent`, `ProfilePermissionsSetEvent`, `UserPermissionsChangedEvent` e `CleanupJobExecutedEvent`; herdam de `IntegrationEvent` da `Lumen.Modularity`.
+- **Lumen.Modules.Audit** (novo projeto em `src/Modules/Audit/Lumen.Modules.Audit`): vertical autocontida com domínio próprio (`AuditEntry` — internal), `AuditDbContext` mapeado no schema `audit.*`, `AuditRepository` interno, 7 `IIntegrationEventHandler<T>` e `AuditModule` anotado com `[Module]` para auto-discovery.
+- **Lumen.Modules.Audit.Migrations** (novo projeto em `src/Modules/Audit/Lumen.Modules.Audit.Migrations`): migration `InitialAuditSchema` que cria `audit.AuditEntries` (schema separado do LumenDbContext), `AuditDbContextFactory` para design-time e `AuditMigrationsHostedService` que aplica migrations do módulo na inicialização.
+- **DatabaseSchemas** (nova constante em `SharedKernel`): `DatabaseSchemas.Audit = "audit"` — elimina literal do schema nas configurações EF Core.
+- **Lumen.Modules.Audit.Tests** (novo projeto em `tests/Lumen.Modules.Audit.Tests`): 6 testes de domínio cobrindo `AuditEntry.Create` (campos, validação, unicidade de Id).
+
+### Changed (E1 — ponte de transição INotification → IEventBus)
+- **Bridge handlers** em `Lumen.EventHandlers.Audit`: os 7 `INotificationHandler<T>` de Audit foram convertidos de gravação direta em `IAuditRepository` para redirecionamento ao `IEventBus` — publicam o integration event correspondente para que o `Lumen.Modules.Audit` consuma e grave em `audit.*`.
+- **Lumen.Api Program.cs**: adicionado `AddModules`, `AddEventBus` (com o assembly do módulo Audit) e `MapModules`; `AddAuditMigrationsHostedService` registrado logo após as migrations centrais.
+- **Lumen.EventHandlers.csproj**: adicionadas referências a `Lumen.Modularity` e `Lumen.Modules.Audit.Contracts`.
+- **Lumen.Api.csproj**: adicionadas referências a `Lumen.Modules.Audit` e `Lumen.Modules.Audit.Migrations`.
+- **AuditEventHandlerTests**: atualizados para assertar que os bridges publicam o integration event correto no `IEventBus` (via NSubstitute), removendo verificação direta em `IAuditRepository`.
+
 ### Added (E0 — Lumen.Modularity: lib reutilizável de modularidade)
 - **Lumen.Modularity** (novo projeto em `src/BuildingBlocks/Lumen.Modularity`): building block de modularidade que viabiliza monolito modular plug-and-play; adicionado à `Lumen.sln` sob a pasta de solução `BuildingBlocks`.
 - **IModule**: interface de contrato de módulo com `RegisterServices(IServiceCollection, IConfiguration)` e `MapEndpoints(IEndpointRouteBuilder)`.
