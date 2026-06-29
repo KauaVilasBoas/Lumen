@@ -16,6 +16,9 @@ using Lumen.Integration.Security;
 using Lumen.Jobs.Configuration;
 using Lumen.Jobs.Scheduling;
 using Lumen.Migrations;
+using Lumen.Modularity;
+using Lumen.Modules.Audit;
+using Lumen.Modules.Audit.Migrations;
 using Lumen.SharedKernel.Constants;
 using FluentValidation;
 using MediatR;
@@ -49,12 +52,17 @@ try
     builder.Services.AddHibpClient();
     builder.Services.AddNotifications();
 
+    // ── Modules (auto-discovery via [Module] annotation) ─────────────────────
+    builder.Services.AddModules(builder.Configuration, typeof(AuditModule).Assembly);
+    builder.Services.AddEventBus(typeof(AuditModule).Assembly);
+
     // ── EF Core migrations applied on startup ────────────────────────────────
     // EfMigrationsHostedService runs Database.Migrate() before Hangfire starts
     // processing jobs, guaranteeing the schema is current before any job reads it.
     // PermissionDiscoveryHostedService is registered immediately after so that
     // IHostedService execution order guarantees migrations run before discovery.
     builder.Services.AddEfMigrationsHostedService();
+    builder.Services.AddAuditMigrationsHostedService();
     builder.Services.AddPermissionDiscovery();
     builder.Services.AddPermissionEnforcement();
 
@@ -149,6 +157,7 @@ try
 
     app.MapControllers();
     app.MapHub<AuthorizationGraphHub>(HubRoutes.AuthorizationGraph);
+    app.MapModules();
 
     app.Run();
 }

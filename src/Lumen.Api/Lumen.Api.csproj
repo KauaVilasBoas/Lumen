@@ -13,6 +13,8 @@
     <ProjectReference Include="..\Infrastructure\Lumen.Integration\Lumen.Integration.csproj" />
     <ProjectReference Include="..\Jobs\Lumen.Jobs\Lumen.Jobs.csproj" />
     <ProjectReference Include="..\Migrations\Lumen.Migrations\Lumen.Migrations.csproj" />
+    <ProjectReference Include="..\Modules\Audit\Lumen.Modules.Audit\Lumen.Modules.Audit.csproj" />
+    <ProjectReference Include="..\Modules\Audit\Lumen.Modules.Audit.Migrations\Lumen.Modules.Audit.Migrations.csproj" />
   </ItemGroup>
 
   <ItemGroup>
