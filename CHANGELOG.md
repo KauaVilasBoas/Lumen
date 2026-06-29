@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (E3 — Composition root e limpeza: migração completa para monolito modular)
+- **GetRecentAuditFeedQueryHandler** (novo em `Lumen.Modules.Audit`): handler MediatR com `GetRecentAuditFeedQuery` e `AuditEntryResult` públicos — elimina dependência do `AuditController` no `Lumen.ReadModels` legado; `AuditModule` agora registra MediatR e FluentValidation.
+- **IPermissionSyncService / PermissionSyncService** (novos em `Lumen.Modules.Identity`): encapsula sincronização de permissões descobertas (`SyncDiscoveredAsync`) e reconciliação do perfil Administrator (`ReconcileAdministratorAsync`); elimina acesso direto aos repositórios legados do `Lumen.Api.Authorization`.
+- **ITokenCleanupService / TokenCleanupService** (novos em `Lumen.Modules.Identity`): serviço público para limpeza de refresh tokens expirados, usado pelo job Hangfire sem depender de interfaces `internal` do módulo.
+- **IdentityAuthServiceCollectionExtensions** (novo em `Lumen.Modules.Identity`): `AddIdentityJwtBearerAuthentication(signalRHubPath)` configura JWT Bearer usando `IdentityJwtOptions` — elimina dependência do Api no legado `JwtOptions` + `AddSecurity()`.
+- **DeleteExpiredAsync** adicionado ao `IRefreshTokenRepository` e implementado no `RefreshTokenRepository` do módulo Identity.
+- **Permission.Update/MarkAsOrphan/ClearOrphan** adicionados à entidade `Permission` do módulo Identity.
+- **Lumen.Infrastructure** reduzido: apenas `SqlServerOptions` + `InfrastructureOptionsExtensions` (`AddSqlServerOptions`) permanecem; Security, `AppSettingsAdapter`, `JwtOptions`, `SmtpOptions`, etc. foram removidos (gerenciados internamente pelo módulo Identity).
+
+### Changed (E3 — Composition root)
+- **Todos os controllers da Lumen.Api** migrados para usar Commands/Queries/Results do módulo Identity (`LoginCommand`, `RegisterCommand`, `LoginResult`, `GetCurrentUserQuery`, `ListUsersQuery`, etc.) em vez dos handlers legados. O `AuditController` usa `GetRecentAuditFeedQuery` do módulo Audit.
+- **`GraphLivePushHandler`** reimplementado como `IIntegrationEventHandler<UserPermissionsChangedEvent>` registrado no host Api via `AddEventBus(typeof(Program).Assembly)` — publica delta do grafo via SignalR usando `GetAuthorizationGraphQuery`.
+- **`AuthorizationGraphHub`** usa `IUserPermissionService` dos contratos do Identity.
+- **`PermissionSyncService` e `AdministratorPermissionReconciliationService`** no Api se tornaram wrappers finos que delegam ao `IPermissionSyncService` do módulo Identity.
+- **`PermissionDiscoveryScanner`** sem dependência de `Permission.BuildCode()` — usa interpolação inline.
+- **`CleanupExpiredRefreshTokensJob`** usa `ITokenCleanupService` e `IEventBus` em vez de `IRefreshTokenRepository` legado e `IPublisher` MediatR; publica `CleanupJobExecutedEvent` diretamente.
+- **`Lumen.Api.Program.cs`**: `AddSqlServerOptions` (Hangfire), `AddIdentityJwtBearerAuthentication`, `AddModules`, `AddEventBus` (incluindo assembly do host para `GraphLivePushHandler`). Remove: `AddRelationalDataAccess`, `AddSecurity`, `AddNotifications`, `AddHibpClient`, `AddInfrastructureOptions`, `AddDomainServices`, `EfMigrationsHostedService` (schema dbo).
+- **`Lumen.Backoffice.Program.cs`**: usa `AddModules(IdentityModule)` para obter `IUserPermissionService` via Redis cache do módulo. Remove: `AddRelationalDataAccess`, `AddRedisCache` legados.
+- **Backoffice**: `AuthorizationGraphController`, `RequirePermissionTagHelper`, `HasPermissionHtmlHelperExtensions`, `AuthorizationGraphProxyMiddleware` agora usam `IUserPermissionService` do `Lumen.Modules.Identity.Contracts`.
+- **Commands/Queries/Results** do módulo Identity: extraídos dos handlers `internal` para records `public` de nível de namespace (ex.: `LoginCommand`, `LoginResult`, `RegisterCommand`, `GetCurrentUserQuery`, `GetCurrentUserResult`, etc.) — mantém encapsulamento dos handlers mas expõe os contratos de request/response para os hosts.
+- **`IdentitySmtpOptions`**, **`EmailMessage`**, **`IEmailService`**, **`IEmailTemplateRenderer`** tornados públicos no módulo Identity para acesso do `DevController`.
+
+### Removed (E3 — projetos de camada legados)
+- **`src/Application/Lumen.CommandHandlers`** — removido; 20+ handlers migrados para `Lumen.Modules.Identity`.
+- **`src/Application/Lumen.ReadModels`** — removido; 9 query handlers migrados para módulos (Identity e Audit).
+- **`src/Application/Lumen.EventHandlers`** — removido; bridges MediatR obsoletos (módulos publicam direto no `IEventBus`).
+- **`src/Lumen.Domain`** — removido; domínio migrado inteiramente para `src/Modules/Identity/Lumen.Modules.Identity`.
+- **`tests/Lumen.ArchitectureTests`** reescrito para regras de fronteira de módulo (7 regras, sem referências às camadas legadas).
+- **~60 arquivos de `tests/Lumen.UnitTests`** removidos (testavam handlers/entidades legadas); cobertura equivalente existe em `Lumen.Modules.Identity.Tests`.
+- **`Lumen.IntegrationTests` removida da solution temporariamente** (exige reescrita para usar `IdentityDbContext` em vez de `LumenDbContext` — pendente E4).
+
 ### Added (E2 — Identity: vertical autocontida do monolito modular)
 - **Lumen.Modules.Identity.Contracts** (novo projeto em `src/Modules/Identity/Lumen.Modules.Identity.Contracts`): assembly público com 6 integration events publicados pelo módulo Identity — `UserLoggedInEvent`, `UserLockedOutEvent`, `ProfilePermissionsSetEvent`, `UserProfileAssignedEvent`, `UserProfileRemovedEvent`, `UserPermissionsChangedEvent`; interface pública `IUserPermissionService` exposta para os hosts.
 - **Lumen.Modules.Identity** (novo projeto em `src/Modules/Identity/Lumen.Modules.Identity`): vertical autocontida com domínio próprio (`Users`, `Tokens`, `Authorization`, `Security`, `Notifications`, `Configuration` — todos internal), `IdentityDbContext` mapeado no schema `identity.*`, repositórios, command handlers (Auth, Users, Profiles, UserProfiles), query handlers, behaviors, infrastructure (JWT, BCrypt, HIBP, MailKit, Redis cache) e `IdentityModule [Module]`. Handlers publicam diretamente no `IEventBus` via Identity.Contracts — elimina a ponte MediatR para operações do novo módulo.
