@@ -75,6 +75,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lumen.Modules.Identity.Cont
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lumen.Modules.Identity", "src\Modules\Identity\Lumen.Modules.Identity\Lumen.Modules.Identity.csproj", "{88B7E3B7-474C-42C2-9B4D-A75A166FB069}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lumen.Modules.Identity.Migrations", "src\Modules\Identity\Lumen.Modules.Identity.Migrations\Lumen.Modules.Identity.Migrations.csproj", "{F419873A-6365-42D4-B4BB-481CADB2BC06}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -180,6 +182,10 @@ Global
 		{88B7E3B7-474C-42C2-9B4D-A75A166FB069}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{88B7E3B7-474C-42C2-9B4D-A75A166FB069}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{88B7E3B7-474C-42C2-9B4D-A75A166FB069}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F419873A-6365-42D4-B4BB-481CADB2BC06}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F419873A-6365-42D4-B4BB-481CADB2BC06}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F419873A-6365-42D4-B4BB-481CADB2BC06}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F419873A-6365-42D4-B4BB-481CADB2BC06}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{E505FB60-593A-4BA5-8875-4BEB23837533} = {E4DA74F3-0A23-4E4C-B12E-7E8F963433BF}
@@ -208,5 +214,6 @@ Global
 		{D5E67B6F-F2C9-4F7E-A89C-F290357C99D9} = {83367077-8D86-4261-A3B1-3759FCA0B6D0}
 		{C9EDF815-07FF-4E8E-A63D-251039880CE2} = {D5E67B6F-F2C9-4F7E-A89C-F290357C99D9}
 		{88B7E3B7-474C-42C2-9B4D-A75A166FB069} = {D5E67B6F-F2C9-4F7E-A89C-F290357C99D9}
+		{F419873A-6365-42D4-B4BB-481CADB2BC06} = {D5E67B6F-F2C9-4F7E-A89C-F290357C99D9}
 	EndGlobalSection
 EndGlobal
