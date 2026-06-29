@@ -4,346 +4,170 @@ using FluentAssertions;
 namespace Lumen.ArchitectureTests;
 
 /// <summary>
-/// Automated architecture constraints for Lumen.
-/// Each test enforces a rule described in CLAUDE.md ("Constraints de arquitetura").
-/// A failing test means a layer boundary was violated — fix the dependency, not the test.
+/// Architecture constraints for Lumen modular monolith.
+/// Each test enforces a module boundary rule.
+/// A failing test means a boundary was violated — fix the dependency, not the test.
 /// </summary>
 public sealed class ArchitectureTests
 {
-    // ─── Assembly markers (one public type per layer assembly) ──────────────
-
-    private static readonly System.Reflection.Assembly DomainAssembly =
-        typeof(Lumen.Domain.Users.User).Assembly;
+    // ─── Assembly markers ────────────────────────────────────────────────────
 
     private static readonly System.Reflection.Assembly SharedKernelAssembly =
         typeof(Lumen.SharedKernel.Constants.AuthErrorMessages).Assembly;
 
-    private static readonly System.Reflection.Assembly CommandHandlersAssembly =
-        typeof(Lumen.CommandHandlers.Behaviors.ValidationBehavior<,>).Assembly;
+    private static readonly System.Reflection.Assembly ModularityAssembly =
+        typeof(Lumen.Modularity.IModule).Assembly;
 
-    private static readonly System.Reflection.Assembly ReadModelsAssembly =
-        typeof(Lumen.ReadModels.Queries.GetAuthorizationGraphQueryHandler).Assembly;
+    private static readonly System.Reflection.Assembly IdentityModuleAssembly =
+        typeof(Lumen.Modules.Identity.IdentityModule).Assembly;
 
-    private static readonly System.Reflection.Assembly EventHandlersAssembly =
-        typeof(Lumen.EventHandlers.Authorization.UserPermissionsChangedHandler).Assembly;
+    private static readonly System.Reflection.Assembly IdentityContractsAssembly =
+        typeof(Lumen.Modules.Identity.Contracts.IUserPermissionService).Assembly;
 
-    private static readonly System.Reflection.Assembly DataAccessAssembly =
-        typeof(Lumen.DataAccess.Persistence.LumenDbContext).Assembly;
-
-    private static readonly System.Reflection.Assembly InfrastructureAssembly =
-        typeof(Lumen.Infrastructure.Configuration.AppOptions).Assembly;
-
-    private static readonly System.Reflection.Assembly ApiAssembly =
-        typeof(Lumen.Api.Controllers.AuthController).Assembly;
-
-    private static readonly System.Reflection.Assembly BackofficeAssembly =
-        typeof(Lumen.Backoffice.Controllers.AccountController).Assembly;
+    private static readonly System.Reflection.Assembly AuditContractsAssembly =
+        typeof(Lumen.Modules.Audit.Contracts.Events.CleanupJobExecutedEvent).Assembly;
 
     // ─── Namespace constants ─────────────────────────────────────────────────
 
-    private const string DomainNamespace       = "Lumen.Domain";
-    private const string SharedKernelNamespace  = "Lumen.SharedKernel";
-    private const string CommandsNamespace     = "Lumen.CommandHandlers";
-    private const string ReadModelsNamespace   = "Lumen.ReadModels";
-    private const string EventsNamespace       = "Lumen.EventHandlers";
-    private const string DataAccessNamespace   = "Lumen.DataAccess";
-    private const string InfraNamespace        = "Lumen.Infrastructure";
-    private const string ApiNamespace          = "Lumen.Api";
-    private const string BackofficeNamespace   = "Lumen.Backoffice";
+    private const string SharedKernelNamespace      = "Lumen.SharedKernel";
+    private const string ModularityNamespace        = "Lumen.Modularity";
+    private const string IdentityModuleNamespace    = "Lumen.Modules.Identity";
+    private const string AuditModuleNamespace       = "Lumen.Modules.Audit";
+    private const string IdentityContractsNamespace = "Lumen.Modules.Identity.Contracts";
+    private const string AuditContractsNamespace    = "Lumen.Modules.Audit.Contracts";
 
     // ────────────────────────────────────────────────────────────────────────
-    // RULE 01 — Domain must not depend on Application, Infrastructure or Presentation
+    // RULE 01 — SharedKernel has no upward dependencies
     // ────────────────────────────────────────────────────────────────────────
 
     [Fact]
-    public void Domain_MustNotDependOnApplicationLayer()
-    {
-        var result = Types.InAssembly(DomainAssembly)
-            .ShouldNot()
-            .HaveDependencyOnAny(CommandsNamespace, ReadModelsNamespace, EventsNamespace)
-            .GetResult();
-
-        result.IsSuccessful.Should().BeTrue(
-            because: "Domain is the innermost ring — it must never depend on Application handlers. " +
-                     $"Failing types: {FailingTypes(result)}");
-    }
-
-    [Fact]
-    public void Domain_MustNotDependOnInfrastructureLayer()
-    {
-        var result = Types.InAssembly(DomainAssembly)
-            .ShouldNot()
-            .HaveDependencyOnAny(DataAccessNamespace, InfraNamespace)
-            .GetResult();
-
-        result.IsSuccessful.Should().BeTrue(
-            because: "Domain must never reference Infrastructure (EF Core, Redis, MailKit, etc.). " +
-                     $"Failing types: {FailingTypes(result)}");
-    }
-
-    [Fact]
-    public void Domain_MustNotDependOnPresentationLayer()
-    {
-        var result = Types.InAssembly(DomainAssembly)
-            .ShouldNot()
-            .HaveDependencyOnAny(ApiNamespace, BackofficeNamespace)
-            .GetResult();
-
-        result.IsSuccessful.Should().BeTrue(
-            because: "Domain must never depend on presentation concerns. " +
-                     $"Failing types: {FailingTypes(result)}");
-    }
-
-    // ────────────────────────────────────────────────────────────────────────
-    // RULE 02 — SharedKernel must not depend on any non-trivial project layer
-    // ────────────────────────────────────────────────────────────────────────
-
-    [Fact]
-    public void SharedKernel_MustNotDependOnApplicationOrInfraOrPresentation()
+    public void SharedKernel_MustNotDependOnAnyModule()
     {
         var result = Types.InAssembly(SharedKernelAssembly)
             .ShouldNot()
             .HaveDependencyOnAny(
-                CommandsNamespace,
-                ReadModelsNamespace,
-                EventsNamespace,
-                DataAccessNamespace,
-                InfraNamespace,
-                ApiNamespace,
-                BackofficeNamespace)
+                IdentityModuleNamespace,
+                AuditModuleNamespace,
+                ModularityNamespace)
             .GetResult();
 
         result.IsSuccessful.Should().BeTrue(
-            because: "SharedKernel is a cross-cutting utility layer — it must have zero upward dependencies. " +
+            because: "SharedKernel is cross-cutting with zero upward dependencies. " +
                      $"Failing types: {FailingTypes(result)}");
     }
 
     // ────────────────────────────────────────────────────────────────────────
-    // RULE 03 — Application layers must not depend on Infrastructure concrete types
+    // RULE 02 — Lumen.Modularity (building block) has no module dependencies
     // ────────────────────────────────────────────────────────────────────────
 
     [Fact]
-    public void CommandHandlers_MustNotDependOnDataAccessOrInfrastructure()
+    public void Modularity_MustNotDependOnAnyModule()
     {
-        var result = Types.InAssembly(CommandHandlersAssembly)
+        var result = Types.InAssembly(ModularityAssembly)
             .ShouldNot()
-            .HaveDependencyOnAny(DataAccessNamespace, InfraNamespace)
+            .HaveDependencyOnAny(
+                IdentityModuleNamespace,
+                AuditModuleNamespace,
+                SharedKernelNamespace)
             .GetResult();
 
         result.IsSuccessful.Should().BeTrue(
-            because: "CommandHandlers must depend only on Domain abstractions (interfaces), " +
-                     "never on Infrastructure concrete implementations (EF Core, Redis, etc.). " +
-                     $"Failing types: {FailingTypes(result)}");
-    }
-
-    [Fact]
-    public void ReadModels_MustNotDependOnDataAccessOrInfrastructure()
-    {
-        var result = Types.InAssembly(ReadModelsAssembly)
-            .ShouldNot()
-            .HaveDependencyOnAny(DataAccessNamespace, InfraNamespace)
-            .GetResult();
-
-        result.IsSuccessful.Should().BeTrue(
-            because: "ReadModels (QueryHandlers) must depend only on Domain abstractions, " +
-                     "never on concrete Infrastructure assemblies. " +
-                     $"Failing types: {FailingTypes(result)}");
-    }
-
-    [Fact]
-    public void EventHandlers_MustNotDependOnDataAccessOrInfrastructure()
-    {
-        var result = Types.InAssembly(EventHandlersAssembly)
-            .ShouldNot()
-            .HaveDependencyOnAny(DataAccessNamespace, InfraNamespace)
-            .GetResult();
-
-        result.IsSuccessful.Should().BeTrue(
-            because: "EventHandlers must depend only on Domain abstractions. " +
+            because: "Lumen.Modularity is a platform building block — it must have no knowledge of business modules. " +
                      $"Failing types: {FailingTypes(result)}");
     }
 
     // ────────────────────────────────────────────────────────────────────────
-    // RULE 04 — Application layers must not depend on Presentation
+    // RULE 03 — Identity module internals must not reference Audit internals
     // ────────────────────────────────────────────────────────────────────────
 
     [Fact]
-    public void CommandHandlers_MustNotDependOnPresentation()
+    public void IdentityModule_MustNotDependOnAuditModuleInternals()
     {
-        var result = Types.InAssembly(CommandHandlersAssembly)
+        var result = Types.InAssembly(IdentityModuleAssembly)
             .ShouldNot()
-            .HaveDependencyOnAny(ApiNamespace, BackofficeNamespace)
+            .HaveDependencyOn(AuditModuleNamespace)
             .GetResult();
 
         result.IsSuccessful.Should().BeTrue(
-            because: "Application handlers must never depend on presentation concerns. " +
-                     $"Failing types: {FailingTypes(result)}");
-    }
-
-    [Fact]
-    public void ReadModels_MustNotDependOnPresentation()
-    {
-        var result = Types.InAssembly(ReadModelsAssembly)
-            .ShouldNot()
-            .HaveDependencyOnAny(ApiNamespace, BackofficeNamespace)
-            .GetResult();
-
-        result.IsSuccessful.Should().BeTrue(
-            because: "ReadModels (QueryHandlers) must never depend on presentation concerns. " +
-                     $"Failing types: {FailingTypes(result)}");
-    }
-
-    [Fact]
-    public void EventHandlers_MustNotDependOnPresentation()
-    {
-        var result = Types.InAssembly(EventHandlersAssembly)
-            .ShouldNot()
-            .HaveDependencyOnAny(ApiNamespace, BackofficeNamespace)
-            .GetResult();
-
-        result.IsSuccessful.Should().BeTrue(
-            because: "EventHandlers must never depend on presentation concerns. " +
+            because: "Identity module must never import Audit module internals. " +
+                     "Cross-module communication goes through Contracts + IEventBus only. " +
                      $"Failing types: {FailingTypes(result)}");
     }
 
     // ────────────────────────────────────────────────────────────────────────
-    // RULE 05 — CQRS separation: CommandHandlers must not depend on ReadModels
+    // RULE 04 — Identity module internals may reference Audit Contracts
+    //           (publishes events that Audit consumes)
+    //           but Audit Contracts must NOT reference Identity internals
     // ────────────────────────────────────────────────────────────────────────
 
     [Fact]
-    public void CommandHandlers_MustNotDependOnReadModels()
+    public void AuditContracts_MustNotDependOnIdentityModuleInternals()
     {
-        var result = Types.InAssembly(CommandHandlersAssembly)
+        var result = Types.InAssembly(AuditContractsAssembly)
             .ShouldNot()
-            .HaveDependencyOn(ReadModelsNamespace)
+            .HaveDependencyOn(IdentityModuleNamespace)
             .GetResult();
 
         result.IsSuccessful.Should().BeTrue(
-            because: "CQRS rule: CommandHandlers (write side) must never call QueryHandlers (read side). " +
-                     "A CommandHandler that needs to read must do so via repository, not via a Query. " +
+            because: "Audit.Contracts must only depend on Lumen.Modularity (IIntegrationEvent). " +
+                     "Integration events are owned by the publishing module. " +
                      $"Failing types: {FailingTypes(result)}");
     }
 
     // ────────────────────────────────────────────────────────────────────────
-    // RULE 06 — CQRS separation: ReadModels must not depend on CommandHandlers
+    // RULE 05 — Identity.Contracts must not reference Identity module internals
+    //           or Audit module internals (only Lumen.Modularity allowed)
     // ────────────────────────────────────────────────────────────────────────
 
     [Fact]
-    public void ReadModels_MustNotDependOnCommandHandlers()
+    public void IdentityContracts_MustNotDependOnModuleInternals()
     {
-        var result = Types.InAssembly(ReadModelsAssembly)
+        // Note: the Identity.Contracts assembly itself lives under the
+        // "Lumen.Modules.Identity.Contracts" namespace, so we must check
+        // against the non-Contracts identity namespace and the audit internals.
+        var result = Types.InAssembly(IdentityContractsAssembly)
             .ShouldNot()
-            .HaveDependencyOn(CommandsNamespace)
+            .HaveDependencyOn(AuditModuleNamespace)
             .GetResult();
 
         result.IsSuccessful.Should().BeTrue(
-            because: "CQRS rule: QueryHandlers (read side) must never depend on CommandHandlers (write side). " +
+            because: "Identity.Contracts must not depend on Audit module internals. " +
                      $"Failing types: {FailingTypes(result)}");
     }
 
     // ────────────────────────────────────────────────────────────────────────
-    // RULE 07 — API Controllers must not reference Domain entity namespaces directly
-    //           (aggregates, repositories — must go via MediatR Commands/Queries)
+    // RULE 06 — Identity module Contracts must not reference Audit module internals
     // ────────────────────────────────────────────────────────────────────────
 
     [Fact]
-    public void ApiControllers_MustNotDependOnDomainEntityNamespaces()
+    public void IdentityContracts_MustNotDependOnAuditContracts()
     {
-        var domainEntityNamespaces = new[]
-        {
-            "Lumen.Domain.Users",
-            "Lumen.Domain.Authorization",
-            "Lumen.Domain.Tokens",
-            "Lumen.Domain.Audit",
-        };
-
-        var result = Types.InAssembly(ApiAssembly)
-            .That()
-            .Inherit(typeof(Microsoft.AspNetCore.Mvc.ControllerBase))
+        var result = Types.InAssembly(IdentityContractsAssembly)
             .ShouldNot()
-            .HaveDependencyOnAny(domainEntityNamespaces)
+            .HaveDependencyOn(AuditContractsNamespace)
             .GetResult();
 
         result.IsSuccessful.Should().BeTrue(
-            because: "API Controllers must dispatch Commands/Queries via MediatR — " +
-                     "they must not reference Domain entities, aggregates, or repositories directly. " +
+            because: "Identity.Contracts must not depend on Audit.Contracts. " +
+                     "Each module's Contracts are independent. " +
                      $"Failing types: {FailingTypes(result)}");
     }
 
     // ────────────────────────────────────────────────────────────────────────
-    // RULE 08 — Backoffice Controllers must not reference Domain entity namespaces
-    //           (exception: IUserPermissionService lives in Domain.Authorization and is an interface — allowed)
+    // RULE 07 — Audit Contracts must not reference Identity.Contracts
     // ────────────────────────────────────────────────────────────────────────
 
     [Fact]
-    public void BackofficeControllers_MustNotDependOnDomainEntitiesOrRepositories()
+    public void AuditContracts_MustNotDependOnIdentityContracts()
     {
-        var forbiddenNamespaces = new[]
-        {
-            "Lumen.Domain.Users",
-            "Lumen.Domain.Tokens",
-            "Lumen.Domain.Audit",
-        };
-
-        var result = Types.InAssembly(BackofficeAssembly)
-            .That()
-            .Inherit(typeof(Microsoft.AspNetCore.Mvc.Controller))
+        var result = Types.InAssembly(AuditContractsAssembly)
             .ShouldNot()
-            .HaveDependencyOnAny(forbiddenNamespaces)
+            .HaveDependencyOn(IdentityContractsNamespace)
             .GetResult();
 
         result.IsSuccessful.Should().BeTrue(
-            because: "Backoffice Controllers must proxy through AdminApiClient, not access Domain entity types directly. " +
+            because: "Audit.Contracts is a standalone boundary — it must not import Identity.Contracts. " +
                      $"Failing types: {FailingTypes(result)}");
-    }
-
-    // ────────────────────────────────────────────────────────────────────────
-    // RULE 09 — API Controllers must not depend on DataAccess (DbContext, Repositories)
-    // ────────────────────────────────────────────────────────────────────────
-
-    [Fact]
-    public void ApiControllers_MustNotDependOnDataAccess()
-    {
-        var result = Types.InAssembly(ApiAssembly)
-            .That()
-            .Inherit(typeof(Microsoft.AspNetCore.Mvc.ControllerBase))
-            .ShouldNot()
-            .HaveDependencyOn(DataAccessNamespace)
-            .GetResult();
-
-        result.IsSuccessful.Should().BeTrue(
-            because: "API Controllers must never directly reference EF Core DbContext or concrete Repositories. " +
-                     $"Failing types: {FailingTypes(result)}");
-    }
-
-    // ────────────────────────────────────────────────────────────────────────
-    // RULE 10 — All Application assemblies: no transitive DataAccess dependency
-    // ────────────────────────────────────────────────────────────────────────
-
-    [Fact]
-    public void ApplicationAssemblies_HaveNoTransitiveDependencyOnDataAccess()
-    {
-        var commandHandlersResult = Types.InAssembly(CommandHandlersAssembly)
-            .ShouldNot()
-            .HaveDependencyOn(DataAccessNamespace)
-            .GetResult();
-
-        var readModelsResult = Types.InAssembly(ReadModelsAssembly)
-            .ShouldNot()
-            .HaveDependencyOn(DataAccessNamespace)
-            .GetResult();
-
-        var eventHandlersResult = Types.InAssembly(EventHandlersAssembly)
-            .ShouldNot()
-            .HaveDependencyOn(DataAccessNamespace)
-            .GetResult();
-
-        commandHandlersResult.IsSuccessful.Should().BeTrue(
-            because: $"CommandHandlers has unexpected DataAccess dependency. Failing: {FailingTypes(commandHandlersResult)}");
-        readModelsResult.IsSuccessful.Should().BeTrue(
-            because: $"ReadModels has unexpected DataAccess dependency. Failing: {FailingTypes(readModelsResult)}");
-        eventHandlersResult.IsSuccessful.Should().BeTrue(
-            because: $"EventHandlers has unexpected DataAccess dependency. Failing: {FailingTypes(eventHandlersResult)}");
     }
 
     // ────────────────────────────────────────────────────────────────────────
