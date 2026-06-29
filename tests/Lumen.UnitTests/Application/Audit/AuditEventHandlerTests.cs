@@ -3,6 +3,7 @@ using Lumen.Domain.Authorization;
 using Lumen.EventHandlers.Audit;
 using Lumen.Modularity;
 using Lumen.Modules.Audit.Contracts.Events;
+using Lumen.Modules.Identity.Contracts.Events;
 using FluentAssertions;
 using NSubstitute;
 

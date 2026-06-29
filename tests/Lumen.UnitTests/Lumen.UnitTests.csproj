@@ -32,6 +32,7 @@
     <ProjectReference Include="..\..\src\Application\Lumen.EventHandlers\Lumen.EventHandlers.csproj" />
     <ProjectReference Include="..\..\src\BuildingBlocks\Lumen.Modularity\Lumen.Modularity.csproj" />
     <ProjectReference Include="..\..\src\Modules\Audit\Lumen.Modules.Audit.Contracts\Lumen.Modules.Audit.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Identity\Lumen.Modules.Identity.Contracts\Lumen.Modules.Identity.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

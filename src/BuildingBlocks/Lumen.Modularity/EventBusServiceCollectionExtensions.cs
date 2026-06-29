@@ -22,7 +22,7 @@ public static class EventBusServiceCollectionExtensions
         var handlerInterfaceType = typeof(IIntegrationEventHandler<>);
 
         var handlerRegistrations = assemblies
-            .SelectMany(assembly => assembly.GetExportedTypes())
+            .SelectMany(assembly => assembly.GetTypes())
             .Where(type => type is { IsAbstract: false, IsInterface: false })
             .SelectMany(type => type
                 .GetInterfaces()

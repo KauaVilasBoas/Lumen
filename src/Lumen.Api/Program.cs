@@ -19,6 +19,8 @@ using Lumen.Migrations;
 using Lumen.Modularity;
 using Lumen.Modules.Audit;
 using Lumen.Modules.Audit.Migrations;
+using Lumen.Modules.Identity;
+using Lumen.Modules.Identity.Migrations;
 using Lumen.SharedKernel.Constants;
 using FluentValidation;
 using MediatR;
@@ -53,8 +55,12 @@ try
     builder.Services.AddNotifications();
 
     // ── Modules (auto-discovery via [Module] annotation) ─────────────────────
-    builder.Services.AddModules(builder.Configuration, typeof(AuditModule).Assembly);
-    builder.Services.AddEventBus(typeof(AuditModule).Assembly);
+    builder.Services.AddModules(builder.Configuration,
+        typeof(AuditModule).Assembly,
+        typeof(IdentityModule).Assembly);
+    builder.Services.AddEventBus(
+        typeof(AuditModule).Assembly,
+        typeof(IdentityModule).Assembly);
 
     // ── EF Core migrations applied on startup ────────────────────────────────
     // EfMigrationsHostedService runs Database.Migrate() before Hangfire starts
@@ -63,6 +69,7 @@ try
     // IHostedService execution order guarantees migrations run before discovery.
     builder.Services.AddEfMigrationsHostedService();
     builder.Services.AddAuditMigrationsHostedService();
+    builder.Services.AddIdentityMigrationsHostedService();
     builder.Services.AddPermissionDiscovery();
     builder.Services.AddPermissionEnforcement();
 
