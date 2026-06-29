@@ -1,22 +1,22 @@
 ﻿<Project>
-
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
-
   <!-- ─── Persistence ───────────────────────────────────────────────── -->
   <ItemGroup>
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.15" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.15" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration.Abstractions" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Options" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="8.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Options.DataAnnotations" Version="8.0.0" />
   </ItemGroup>
-
   <!-- ─── Security / Auth ──────────────────────────────────────────── -->
   <ItemGroup>
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.15" />
     <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.9.0" />
     <PackageVersion Include="BCrypt.Net-Next" Version="4.0.3" />
   </ItemGroup>
-
   <!-- ─── Mediator / CQRS ─────────────────────────────────────────── -->
   <ItemGroup>
     <!--
@@ -26,43 +26,36 @@
     -->
     <PackageVersion Include="MediatR" Version="12.4.1" />
   </ItemGroup>
-
   <!-- ─── Validation ───────────────────────────────────────────────── -->
   <ItemGroup>
     <PackageVersion Include="FluentValidation" Version="11.11.0" />
     <PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.0" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
   </ItemGroup>
-
   <!-- ─── Dependency Injection / Logging (Abstractions only — for Application service-collection extensions) ─── -->
   <ItemGroup>
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.3" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
   </ItemGroup>
-
   <!-- ─── Generic Host (full) — used by the Migrations CLI tool ──────── -->
   <ItemGroup>
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
   </ItemGroup>
-
   <!-- ─── Configuration ────────────────────────────────────────────── -->
   <ItemGroup>
     <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="8.0.0" />
   </ItemGroup>
-
   <!-- ─── Messaging / Email ────────────────────────────────────────── -->
   <ItemGroup>
     <!-- MailKit ships MimeKit as a transitive dependency — no separate entry needed. -->
     <PackageVersion Include="MailKit" Version="4.16.0" />
   </ItemGroup>
-
   <!-- ─── API / Documentation ──────────────────────────────────────── -->
   <ItemGroup>
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="8.1.1" />
   </ItemGroup>
-
   <!-- ─── Observability / Logging ──────────────────────────────────── -->
   <ItemGroup>
     <PackageVersion Include="Serilog.AspNetCore" Version="9.0.0" />
@@ -72,7 +65,6 @@
     <PackageVersion Include="Serilog.Enrichers.Environment" Version="3.0.1" />
     <PackageVersion Include="Serilog.Enrichers.Thread" Version="4.0.0" />
   </ItemGroup>
-
   <!-- ─── HTTP / Integrations ──────────────────────────────────────── -->
   <ItemGroup>
     <!--
@@ -84,7 +76,6 @@
     <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="8.0.1" />
     <PackageVersion Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="8.0.15" />
   </ItemGroup>
-
   <!--
     Rate Limiting — DECISION:
     The native Microsoft.AspNetCore.RateLimiting middleware (introduced in .NET 7 /
@@ -95,13 +86,11 @@
     external dependencies.  Revisit in SEC-01 if the native middleware proves
     insufficient.
   -->
-
   <!-- ─── Background Jobs ─────────────────────────────────────────── -->
   <ItemGroup>
     <PackageVersion Include="Hangfire.AspNetCore" Version="1.8.14" />
     <PackageVersion Include="Hangfire.SqlServer" Version="1.8.14" />
   </ItemGroup>
-
   <!-- ─── Testing ──────────────────────────────────────────────────── -->
   <ItemGroup>
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
@@ -117,5 +106,4 @@
     <!-- Architecture tests — enforces layer dependency rules via reflection -->
     <PackageVersion Include="NetArchTest.Rules" Version="1.3.2" />
   </ItemGroup>
-
 </Project>

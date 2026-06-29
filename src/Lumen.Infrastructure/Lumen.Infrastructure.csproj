@@ -1,23 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\Lumen.Domain\Lumen.Domain.csproj" />
     <ProjectReference Include="..\SharedKernel\Lumen.SharedKernel\Lumen.SharedKernel.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Expose internal configuration types to the test project. -->
-    <InternalsVisibleTo Include="Lumen.UnitTests" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="BCrypt.Net-Next" />
-    <PackageReference Include="FluentValidation" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
-    <PackageReference Include="Serilog.AspNetCore" />
-    <PackageReference Include="Serilog.Sinks.Console" />
-    <PackageReference Include="Serilog.Sinks.File" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+    <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" />
   </ItemGroup>
 
 </Project>

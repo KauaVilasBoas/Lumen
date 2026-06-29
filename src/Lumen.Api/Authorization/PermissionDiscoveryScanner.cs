@@ -1,4 +1,3 @@
-using Lumen.Domain.Authorization;
 using Lumen.SharedKernel.Authorization;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
@@ -47,7 +46,7 @@ public sealed class PermissionDiscoveryScanner
             else if (controllerAttribute?.Code is not null)
                 code = controllerAttribute.Code;
             else
-                code = Permission.BuildCode(normalizedController, normalizedAction);
+                code = $"{normalizedController}.{normalizedAction}";
 
             var groupAttribute = controllerDescriptor.ControllerTypeInfo
                 .GetCustomAttributes(typeof(PermissionGroupAttribute), inherit: true)
