@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (E2 — Identity: vertical autocontida do monolito modular)
+- **Lumen.Modules.Identity.Contracts** (novo projeto em `src/Modules/Identity/Lumen.Modules.Identity.Contracts`): assembly público com 6 integration events publicados pelo módulo Identity — `UserLoggedInEvent`, `UserLockedOutEvent`, `ProfilePermissionsSetEvent`, `UserProfileAssignedEvent`, `UserProfileRemovedEvent`, `UserPermissionsChangedEvent`; interface pública `IUserPermissionService` exposta para os hosts.
+- **Lumen.Modules.Identity** (novo projeto em `src/Modules/Identity/Lumen.Modules.Identity`): vertical autocontida com domínio próprio (`Users`, `Tokens`, `Authorization`, `Security`, `Notifications`, `Configuration` — todos internal), `IdentityDbContext` mapeado no schema `identity.*`, repositórios, command handlers (Auth, Users, Profiles, UserProfiles), query handlers, behaviors, infrastructure (JWT, BCrypt, HIBP, MailKit, Redis cache) e `IdentityModule [Module]`. Handlers publicam diretamente no `IEventBus` via Identity.Contracts — elimina a ponte MediatR para operações do novo módulo.
+- **Lumen.Modules.Identity.Migrations** (novo projeto em `src/Modules/Identity/Lumen.Modules.Identity.Migrations`): migration `InitialIdentitySchema` que cria 9 tabelas no schema `identity.*` (Users, RefreshTokens, PasswordResetTokens, EmailConfirmationTokens, GroupPermissions, Permissions, Profiles, PermissionProfiles, UserProfiles), migration `SeedIdentityBootstrapData` com 7 grupos, 19 permissões curadas, perfis Administrator e User, usuário bootstrap e atribuição de perfil; `IdentityMigrationsHostedService` aplica migrations na inicialização.
+- **DatabaseSchemas.Identity** (nova constante em `SharedKernel`): `DatabaseSchemas.Identity = "identity"` — elimina literal do schema nas configurações EF Core do módulo.
+- **Lumen.Modules.Identity.Tests** (novo projeto em `tests/Lumen.Modules.Identity.Tests`): 18 testes cobrindo `LoginCommandHandler`, `DeleteUserCommandHandler`, `AssignUserProfileCommandHandler`, `SetProfilePermissionsCommandHandler`, `UserPermissionsChangedCacheHandler` e validadores.
+- **FluentValidation.DependencyInjectionExtensions**: adicionado ao `Directory.Packages.props` para futuros projetos que precisem do método `AddValidatorsFromAssembly`.
+
+### Changed (E2 — migração dos Integration Events do Audit para o Identity)
+- **Lumen.Modules.Audit.Contracts**: 6 events removidos (`UserLoggedInEvent`, `UserLockedOutEvent`, `ProfilePermissionsSetEvent`, `UserProfileAssignedEvent`, `UserProfileRemovedEvent`, `UserPermissionsChangedEvent`) — agora pertencem a `Lumen.Modules.Identity.Contracts` por regra: "o evento mora no módulo que o publica". `CleanupJobExecutedEvent` permanece no Audit.
+- **Lumen.Modules.Audit**: adicionada dependência de `Lumen.Modules.Identity.Contracts`; 6 event handlers do Audit atualizados para importar tipos do Identity.Contracts.
+- **Lumen.EventHandlers.Audit (bridges MediatR)**: bridges atualizados para importar e publicar eventos de `Lumen.Modules.Identity.Contracts.Events` em vez de `Lumen.Modules.Audit.Contracts.Events`; mantidos em coexistência com o módulo para suporte ao código legado.
+- **EventBusServiceCollectionExtensions**: `GetExportedTypes()` substituído por `GetTypes()` para descobrir `IIntegrationEventHandler<T>` com modificador `internal` nos módulos.
+- **Lumen.Api Program.cs**: `AddModules` e `AddEventBus` passam ambos os assemblies (Audit e Identity); `AddIdentityMigrationsHostedService` adicionado.
+- **Lumen.Api.csproj**: referências aos projetos `Lumen.Modules.Identity` e `Lumen.Modules.Identity.Migrations` adicionadas.
+- **UnitTests**: `Lumen.Modules.Identity.Contracts` adicionado como referência; `AuditEventHandlerTests` atualizado com using correto.
+
 ### Added (E1 — Audit: módulo piloto do monolito modular)
 - **Lumen.Modules.Audit.Contracts** (novo projeto em `src/Modules/Audit/Lumen.Modules.Audit.Contracts`): assembly público com 7 integration events que o módulo Audit consome — `UserLoggedInEvent`, `UserLockedOutEvent`, `UserProfileAssignedEvent`, `UserProfileRemovedEvent`, `ProfilePermissionsSetEvent`, `UserPermissionsChangedEvent` e `CleanupJobExecutedEvent`; herdam de `IntegrationEvent` da `Lumen.Modularity`.
 - **Lumen.Modules.Audit** (novo projeto em `src/Modules/Audit/Lumen.Modules.Audit`): vertical autocontida com domínio próprio (`AuditEntry` — internal), `AuditDbContext` mapeado no schema `audit.*`, `AuditRepository` interno, 7 `IIntegrationEventHandler<T>` e `AuditModule` anotado com `[Module]` para auto-discovery.
