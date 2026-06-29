@@ -30,6 +30,8 @@
     <ProjectReference Include="..\..\src\Infrastructure\Lumen.DataAccess\Lumen.DataAccess.csproj" />
     <ProjectReference Include="..\..\src\Presentation\Lumen.Backoffice\Lumen.Backoffice.csproj" />
     <ProjectReference Include="..\..\src\Application\Lumen.EventHandlers\Lumen.EventHandlers.csproj" />
+    <ProjectReference Include="..\..\src\BuildingBlocks\Lumen.Modularity\Lumen.Modularity.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Audit\Lumen.Modules.Audit.Contracts\Lumen.Modules.Audit.Contracts.csproj" />
   </ItemGroup>
 
 </Project>
