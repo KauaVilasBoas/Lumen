@@ -31,6 +31,7 @@
   <ItemGroup>
     <PackageVersion Include="FluentValidation" Version="11.11.0" />
     <PackageVersion Include="FluentValidation.AspNetCore" Version="11.3.0" />
+    <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
   </ItemGroup>
 
   <!-- ─── Dependency Injection / Logging (Abstractions only — for Application service-collection extensions) ─── -->
