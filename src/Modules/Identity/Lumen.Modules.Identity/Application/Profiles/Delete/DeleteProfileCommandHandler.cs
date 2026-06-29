@@ -6,11 +6,11 @@ using MediatR;
 
 namespace Lumen.Modules.Identity.Application.Profiles.Delete;
 
-internal sealed class DeleteProfileCommandHandler
-    : IRequestHandler<DeleteProfileCommandHandler.Command>
-{
-    public sealed record Command(Guid Id) : IRequest;
+public sealed record DeleteProfileCommand(Guid Id) : IRequest;
 
+internal sealed class DeleteProfileCommandHandler
+    : IRequestHandler<DeleteProfileCommand>
+{
     private readonly IProfileRepository _profileRepository;
     private readonly IUserProfileRepository _userProfileRepository;
     private readonly IEventBus _eventBus;
@@ -25,7 +25,7 @@ internal sealed class DeleteProfileCommandHandler
         _eventBus = eventBus;
     }
 
-    public async Task Handle(Command cmd, CancellationToken ct)
+    public async Task Handle(DeleteProfileCommand cmd, CancellationToken ct)
     {
         var profile = await _profileRepository.FindByIdAsync(cmd.Id, ct)
             ?? throw new NotFoundException($"Profile '{cmd.Id}' not found.");

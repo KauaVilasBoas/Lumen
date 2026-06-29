@@ -1,7 +1,6 @@
-using Lumen.Api.Controllers;
-using Lumen.Domain.Notifications;
-using Lumen.Infrastructure.Configuration;
-using Lumen.Integration.Notifications;
+using Lumen.Modules.Identity.Domain.Notifications;
+using Lumen.Modules.Identity.Infrastructure.Configuration;
+using Lumen.SharedKernel.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -14,14 +13,14 @@ namespace Lumen.Api.Controllers.Dev;
 public sealed class DevController : ApiBaseController
 {
     private readonly IEmailService _emailService;
-    private readonly EmailTemplateRenderer _renderer;
-    private readonly IOptions<SmtpOptions> _smtpOptions;
+    private readonly IEmailTemplateRenderer _renderer;
+    private readonly IOptions<IdentitySmtpOptions> _smtpOptions;
     private readonly IWebHostEnvironment _env;
 
     public DevController(
         IEmailService emailService,
-        EmailTemplateRenderer renderer,
-        IOptions<SmtpOptions> smtpOptions,
+        IEmailTemplateRenderer renderer,
+        IOptions<IdentitySmtpOptions> smtpOptions,
         IWebHostEnvironment env)
     {
         _emailService = emailService;
@@ -45,11 +44,11 @@ public sealed class DevController : ApiBaseController
 
         var placeholders = new Dictionary<string, string>
         {
-            ["UserName"]        = DevDefaults.TestEmailRecipientDisplayName,
-            ["ConfirmationUrl"] = DevDefaults.TestEmailConfirmationUrl,
+            [EmailPlaceholderKeys.UserName]        = DevDefaults.TestEmailRecipientDisplayName,
+            [EmailPlaceholderKeys.ConfirmationUrl] = DevDefaults.TestEmailConfirmationUrl,
         };
 
-        var (html, text) = _renderer.Render(EmailTemplate.EmailConfirmation, placeholders);
+        var (html, text) = _renderer.Render(EmailTemplateNames.EmailConfirmation, placeholders);
 
         var message = new EmailMessage(
             To: to,

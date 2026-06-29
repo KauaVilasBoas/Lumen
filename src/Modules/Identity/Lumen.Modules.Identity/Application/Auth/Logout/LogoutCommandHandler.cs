@@ -7,11 +7,11 @@ using Microsoft.Extensions.Logging;
 
 namespace Lumen.Modules.Identity.Application.Auth.Logout;
 
-internal sealed class LogoutCommandHandler
-    : IRequestHandler<LogoutCommandHandler.Command, Unit>
-{
-    public sealed record Command(string? RefreshToken, Guid UserId, string ClientIp) : IRequest<Unit>;
+public sealed record LogoutCommand(string? RefreshToken, Guid UserId, string ClientIp) : IRequest<Unit>;
 
+internal sealed class LogoutCommandHandler
+    : IRequestHandler<LogoutCommand, Unit>
+{
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly ILogger<LogoutCommandHandler> _logger;
 
@@ -23,7 +23,7 @@ internal sealed class LogoutCommandHandler
         _logger = logger;
     }
 
-    public async Task<Unit> Handle(Command cmd, CancellationToken ct)
+    public async Task<Unit> Handle(LogoutCommand cmd, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(cmd.RefreshToken))
             return Unit.Value;

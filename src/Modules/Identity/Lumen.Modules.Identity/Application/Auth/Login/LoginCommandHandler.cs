@@ -13,12 +13,14 @@ using Microsoft.Extensions.Logging;
 
 namespace Lumen.Modules.Identity.Application.Auth.Login;
 
-internal sealed class LoginCommandHandler
-    : IRequestHandler<LoginCommandHandler.Command, LoginCommandHandler.Result>
-{
-    public sealed record Command(string Identifier, string Password, string ClientIp) : IRequest<Result>;
+public sealed record LoginCommand(string Identifier, string Password, string ClientIp) : IRequest<LoginResult>;
 
-    public sealed class Validator : AbstractValidator<Command>
+public sealed record LoginResult(string AccessToken, string RefreshToken, int ExpiresIn, string TokenType = TokenTypes.Bearer);
+
+internal sealed class LoginCommandHandler
+    : IRequestHandler<LoginCommand, LoginResult>
+{
+    public sealed class Validator : AbstractValidator<LoginCommand>
     {
         public Validator()
         {
@@ -29,8 +31,6 @@ internal sealed class LoginCommandHandler
                 .NotEmpty().WithMessage("O campo senha é obrigatório.");
         }
     }
-
-    public sealed record Result(string AccessToken, string RefreshToken, int ExpiresIn, string TokenType = TokenTypes.Bearer);
 
     private readonly IUserRepository _userRepository;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
@@ -58,7 +58,7 @@ internal sealed class LoginCommandHandler
         _logger = logger;
     }
 
-    public async Task<Result> Handle(Command cmd, CancellationToken ct)
+    public async Task<LoginResult> Handle(LoginCommand cmd, CancellationToken ct)
     {
         var user = await ResolveUserAsync(cmd.Identifier, ct);
 
@@ -120,7 +120,7 @@ internal sealed class LoginCommandHandler
 
         await _eventBus.PublishAsync(new UserLoggedInEvent(user.Id, user.Username), ct);
 
-        return new Result(
+        return new LoginResult(
             accessToken,
             refreshTokenValue,
             _jwtService.AccessTokenExpiresIn);

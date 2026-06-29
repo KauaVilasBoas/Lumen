@@ -4,22 +4,22 @@ using MediatR;
 
 namespace Lumen.Modules.Identity.Application.Queries;
 
+public sealed record GetCurrentUserQuery(Guid UserId) : IRequest<GetCurrentUserResult?>;
+
+public sealed record GetCurrentUserProfileSummary(Guid Id, string Name);
+
+public sealed record GetCurrentUserResult(
+    string Id,
+    string Email,
+    string Username,
+    DateTime CreatedAt,
+    DateTime? LastLoginAt,
+    DateTime? EmailConfirmedAt,
+    IReadOnlyList<GetCurrentUserProfileSummary> Profiles);
+
 internal sealed class GetCurrentUserQueryHandler
-    : IRequestHandler<GetCurrentUserQueryHandler.Query, GetCurrentUserQueryHandler.Result?>
+    : IRequestHandler<GetCurrentUserQuery, GetCurrentUserResult?>
 {
-    public sealed record Query(Guid UserId) : IRequest<Result?>;
-
-    public sealed record ProfileSummary(Guid Id, string Name);
-
-    public sealed record Result(
-        string Id,
-        string Email,
-        string Username,
-        DateTime CreatedAt,
-        DateTime? LastLoginAt,
-        DateTime? EmailConfirmedAt,
-        IReadOnlyList<ProfileSummary> Profiles);
-
     private readonly IUserRepository _userRepository;
     private readonly IProfileRepository _profileRepository;
 
@@ -31,7 +31,7 @@ internal sealed class GetCurrentUserQueryHandler
         _profileRepository = profileRepository;
     }
 
-    public async Task<Result?> Handle(Query query, CancellationToken ct)
+    public async Task<GetCurrentUserResult?> Handle(GetCurrentUserQuery query, CancellationToken ct)
     {
         var user = await _userRepository.FindByIdAsync(query.UserId, ct);
 
@@ -41,10 +41,10 @@ internal sealed class GetCurrentUserQueryHandler
         var profiles = await _profileRepository.GetProfilesByUserIdAsync(query.UserId, ct);
 
         var profileSummaries = profiles
-            .Select(p => new ProfileSummary(p.Id, p.Name))
+            .Select(p => new GetCurrentUserProfileSummary(p.Id, p.Name))
             .ToList();
 
-        return new Result(
+        return new GetCurrentUserResult(
             Id: user.Id.ToString(),
             Email: user.Email,
             Username: user.Username,

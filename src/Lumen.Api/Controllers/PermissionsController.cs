@@ -1,4 +1,4 @@
-using Lumen.ReadModels.Queries;
+using Lumen.Modules.Identity.Application.Queries;
 using Lumen.SharedKernel.Authorization;
 using Lumen.SharedKernel.Constants;
 using MediatR;
@@ -21,12 +21,12 @@ public sealed class PermissionsController : ApiBaseController
     [HttpGet]
     [RequirePermission]
     [Authorize(Policy = PermissionCodes.Permissions.List)]
-    [ProducesResponseType(typeof(IReadOnlyList<ListPermissionsQueryHandler.GroupResult>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IReadOnlyList<ListPermissionsGroupResult>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> List(CancellationToken ct)
     {
-        var result = await _mediator.Send(new ListPermissionsQueryHandler.Query(), ct);
+        var result = await _mediator.Send(new ListPermissionsQuery(), ct);
         return Ok(result);
     }
 }

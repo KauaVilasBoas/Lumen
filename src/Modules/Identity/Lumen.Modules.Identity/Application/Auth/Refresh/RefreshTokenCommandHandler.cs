@@ -11,12 +11,14 @@ using Microsoft.Extensions.Logging;
 
 namespace Lumen.Modules.Identity.Application.Auth.Refresh;
 
-internal sealed class RefreshTokenCommandHandler
-    : IRequestHandler<RefreshTokenCommandHandler.Command, RefreshTokenCommandHandler.Result>
-{
-    public sealed record Command(string RefreshToken, string ClientIp) : IRequest<Result>;
+public sealed record RefreshTokenCommand(string RefreshToken, string ClientIp) : IRequest<RefreshTokenResult>;
 
-    public sealed class Validator : AbstractValidator<Command>
+public sealed record RefreshTokenResult(string AccessToken, string RefreshToken, int ExpiresIn, string TokenType = TokenTypes.Bearer);
+
+internal sealed class RefreshTokenCommandHandler
+    : IRequestHandler<RefreshTokenCommand, RefreshTokenResult>
+{
+    public sealed class Validator : AbstractValidator<RefreshTokenCommand>
     {
         public Validator()
         {
@@ -24,8 +26,6 @@ internal sealed class RefreshTokenCommandHandler
                 .NotEmpty().WithMessage("O campo refresh token é obrigatório.");
         }
     }
-
-    public sealed record Result(string AccessToken, string RefreshToken, int ExpiresIn, string TokenType = TokenTypes.Bearer);
 
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IUserRepository _userRepository;
@@ -47,7 +47,7 @@ internal sealed class RefreshTokenCommandHandler
         _logger = logger;
     }
 
-    public async Task<Result> Handle(Command cmd, CancellationToken ct)
+    public async Task<RefreshTokenResult> Handle(RefreshTokenCommand cmd, CancellationToken ct)
     {
         var incomingHash = Sha256Hasher.ComputeHex(cmd.RefreshToken);
 
@@ -103,7 +103,7 @@ internal sealed class RefreshTokenCommandHandler
         }
     }
 
-    private async Task<Result> RotateTokenAsync(RefreshToken current, User user, string clientIp, CancellationToken ct)
+    private async Task<RefreshTokenResult> RotateTokenAsync(RefreshToken current, User user, string clientIp, CancellationToken ct)
     {
         var newTokenValue = _jwtService.GenerateRefreshTokenValue();
         var newTokenHash = Sha256Hasher.ComputeHex(newTokenValue);
@@ -121,6 +121,6 @@ internal sealed class RefreshTokenCommandHandler
 
         var accessToken = _jwtService.GenerateAccessToken(user);
 
-        return new Result(accessToken, newTokenValue, _jwtService.AccessTokenExpiresIn);
+        return new RefreshTokenResult(accessToken, newTokenValue, _jwtService.AccessTokenExpiresIn);
     }
 }

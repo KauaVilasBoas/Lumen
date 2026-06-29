@@ -27,7 +27,7 @@ public sealed class SetProfilePermissionsCommandHandlerTests
 
         var handler = CreateHandler();
         var act = async () => await handler.Handle(
-            new SetProfilePermissionsCommandHandler.Command(profileId, []),
+            new SetProfilePermissionsCommand(profileId, []),
             CancellationToken.None);
 
         await act.Should().ThrowAsync<ForbiddenException>();
@@ -40,7 +40,7 @@ public sealed class SetProfilePermissionsCommandHandlerTests
 
         var handler = CreateHandler();
         var act = async () => await handler.Handle(
-            new SetProfilePermissionsCommandHandler.Command(Guid.NewGuid(), []),
+            new SetProfilePermissionsCommand(Guid.NewGuid(), []),
             CancellationToken.None);
 
         await act.Should().ThrowAsync<NotFoundException>();
@@ -61,7 +61,7 @@ public sealed class SetProfilePermissionsCommandHandlerTests
 
         var handler = CreateHandler();
         await handler.Handle(
-            new SetProfilePermissionsCommandHandler.Command(profileId, [permId], "actor"),
+            new SetProfilePermissionsCommand(profileId, [permId], "actor"),
             CancellationToken.None);
 
         await _eventBus.Received(1).PublishAsync(

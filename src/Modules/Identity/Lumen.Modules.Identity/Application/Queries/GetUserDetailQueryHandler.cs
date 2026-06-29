@@ -5,30 +5,30 @@ using MediatR;
 
 namespace Lumen.Modules.Identity.Application.Queries;
 
+public sealed record GetUserDetailQuery(Guid UserId) : IRequest<GetUserDetailResult>;
+
+public sealed record GetUserDetailProfileSummary(
+    Guid ProfileId,
+    string Name,
+    bool IsSystem,
+    int PermissionCount);
+
+public sealed record GetUserDetailResult(
+    Guid Id,
+    string Username,
+    string Email,
+    string State,
+    bool IsBootstrap,
+    DateTime CreatedAt,
+    DateTime? EmailConfirmedAt,
+    DateTime? LastLoginAt,
+    DateTime? LockoutEndAt,
+    IReadOnlyList<GetUserDetailProfileSummary> Profiles,
+    int ResolvedPermissionCount);
+
 internal sealed class GetUserDetailQueryHandler
-    : IRequestHandler<GetUserDetailQueryHandler.Query, GetUserDetailQueryHandler.Result>
+    : IRequestHandler<GetUserDetailQuery, GetUserDetailResult>
 {
-    public sealed record Query(Guid UserId) : IRequest<Result>;
-
-    public sealed record ProfileSummary(
-        Guid ProfileId,
-        string Name,
-        bool IsSystem,
-        int PermissionCount);
-
-    public sealed record Result(
-        Guid Id,
-        string Username,
-        string Email,
-        string State,
-        bool IsBootstrap,
-        DateTime CreatedAt,
-        DateTime? EmailConfirmedAt,
-        DateTime? LastLoginAt,
-        DateTime? LockoutEndAt,
-        IReadOnlyList<ProfileSummary> Profiles,
-        int ResolvedPermissionCount);
-
     private readonly IUserRepository _userRepository;
     private readonly IProfileRepository _profileRepository;
 
@@ -40,7 +40,7 @@ internal sealed class GetUserDetailQueryHandler
         _profileRepository = profileRepository;
     }
 
-    public async Task<Result> Handle(Query query, CancellationToken ct)
+    public async Task<GetUserDetailResult> Handle(GetUserDetailQuery query, CancellationToken ct)
     {
         var user = await _userRepository.FindByIdIgnoringFiltersAsync(query.UserId, ct)
             ?? throw new NotFoundException($"User '{query.UserId}' was not found.");
@@ -50,7 +50,7 @@ internal sealed class GetUserDetailQueryHandler
 
         var profileSummaries = await BuildProfileSummariesAsync(profiles, ct);
 
-        return new Result(
+        return new GetUserDetailResult(
             Id: user.Id,
             Username: user.Username,
             Email: user.Email,
@@ -64,7 +64,7 @@ internal sealed class GetUserDetailQueryHandler
             ResolvedPermissionCount: permissionCodes.Count);
     }
 
-    private async Task<IReadOnlyList<ProfileSummary>> BuildProfileSummariesAsync(
+    private async Task<IReadOnlyList<GetUserDetailProfileSummary>> BuildProfileSummariesAsync(
         IReadOnlyList<Profile> profiles,
         CancellationToken ct)
     {
@@ -75,7 +75,7 @@ internal sealed class GetUserDetailQueryHandler
         var permissionCountsByProfile = await _profileRepository.GetPermissionCountsByProfileIdsAsync(profileIds, ct);
 
         return profiles
-            .Select(p => new ProfileSummary(
+            .Select(p => new GetUserDetailProfileSummary(
                 ProfileId: p.Id,
                 Name: p.Name,
                 IsSystem: p.IsSystem,

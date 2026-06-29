@@ -40,7 +40,7 @@ internal sealed class IdentityAppOptions
     public int RefreshTokenExpirationDays { get; init; } = 7;
 }
 
-internal sealed class IdentitySmtpOptions
+public sealed class IdentitySmtpOptions
 {
     public const string SectionName = "Smtp";
 

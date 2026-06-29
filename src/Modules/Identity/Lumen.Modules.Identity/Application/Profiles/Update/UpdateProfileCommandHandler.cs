@@ -5,12 +5,12 @@ using MediatR;
 
 namespace Lumen.Modules.Identity.Application.Profiles.Update;
 
-internal sealed class UpdateProfileCommandHandler
-    : IRequestHandler<UpdateProfileCommandHandler.Command>
-{
-    public sealed record Command(Guid Id, string Name, string Description) : IRequest;
+public sealed record UpdateProfileCommand(Guid Id, string Name, string Description) : IRequest;
 
-    public sealed class Validator : AbstractValidator<Command>
+internal sealed class UpdateProfileCommandHandler
+    : IRequestHandler<UpdateProfileCommand>
+{
+    public sealed class Validator : AbstractValidator<UpdateProfileCommand>
     {
         public Validator()
         {
@@ -34,7 +34,7 @@ internal sealed class UpdateProfileCommandHandler
         _profileRepository = profileRepository;
     }
 
-    public async Task Handle(Command cmd, CancellationToken ct)
+    public async Task Handle(UpdateProfileCommand cmd, CancellationToken ct)
     {
         var profile = await _profileRepository.FindByIdAsync(cmd.Id, ct)
             ?? throw new NotFoundException($"Profile '{cmd.Id}' not found.");

@@ -10,12 +10,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Lumen.Modules.Identity.Application.Users.ChangePassword;
 
-internal sealed class ChangePasswordCommandHandler
-    : IRequestHandler<ChangePasswordCommandHandler.Command, Unit>
-{
-    public sealed record Command(Guid UserId, string CurrentPassword, string NewPassword) : IRequest<Unit>;
+public sealed record ChangePasswordCommand(Guid UserId, string CurrentPassword, string NewPassword) : IRequest<Unit>;
 
-    public sealed class Validator : AbstractValidator<Command>
+internal sealed class ChangePasswordCommandHandler
+    : IRequestHandler<ChangePasswordCommand, Unit>
+{
+    public sealed class Validator : AbstractValidator<ChangePasswordCommand>
     {
         public Validator()
         {
@@ -53,7 +53,7 @@ internal sealed class ChangePasswordCommandHandler
         _logger = logger;
     }
 
-    public async Task<Unit> Handle(Command cmd, CancellationToken ct)
+    public async Task<Unit> Handle(ChangePasswordCommand cmd, CancellationToken ct)
     {
         var user = await _userRepository.FindByIdAsync(cmd.UserId, ct)
             ?? throw new NotFoundException(AuthErrorMessages.UserNotFound);

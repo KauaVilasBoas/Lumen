@@ -46,7 +46,7 @@ public sealed class LoginCommandHandlerTests
         _appSettings.LockoutDuration.Returns(TimeSpan.FromMinutes(15));
 
         var handler = CreateHandler();
-        var result = await handler.Handle(new LoginCommandHandler.Command("alice", "correct", "127.0.0.1"), CancellationToken.None);
+        var result = await handler.Handle(new LoginCommand("alice", "correct", "127.0.0.1"), CancellationToken.None);
 
         result.AccessToken.Should().Be("access_token");
         result.RefreshToken.Should().Be("refresh_value");
@@ -64,7 +64,7 @@ public sealed class LoginCommandHandlerTests
         _passwordHasher.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(false);
 
         var handler = CreateHandler();
-        var act = async () => await handler.Handle(new LoginCommandHandler.Command("unknown", "pass", "ip"), CancellationToken.None);
+        var act = async () => await handler.Handle(new LoginCommand("unknown", "pass", "ip"), CancellationToken.None);
 
         await act.Should().ThrowAsync<UnauthorizedException>();
     }
@@ -76,7 +76,7 @@ public sealed class LoginCommandHandlerTests
         _userRepository.FindByUsernameAsync("alice", Arg.Any<CancellationToken>()).Returns(user);
 
         var handler = CreateHandler();
-        var act = async () => await handler.Handle(new LoginCommandHandler.Command("alice", "pass", "ip"), CancellationToken.None);
+        var act = async () => await handler.Handle(new LoginCommand("alice", "pass", "ip"), CancellationToken.None);
 
         await act.Should().ThrowAsync<AccountLockedException>();
     }
@@ -93,7 +93,7 @@ public sealed class LoginCommandHandlerTests
         var handler = CreateHandler();
 
         await Assert.ThrowsAsync<UnauthorizedException>(
-            () => handler.Handle(new LoginCommandHandler.Command("alice", "wrong", "ip"), CancellationToken.None));
+            () => handler.Handle(new LoginCommand("alice", "wrong", "ip"), CancellationToken.None));
 
         await _eventBus.Received(1).PublishAsync(
             Arg.Is<UserLockedOutEvent>(e => e.UserId == user.Id),
@@ -108,7 +108,7 @@ public sealed class LoginCommandHandlerTests
         _passwordHasher.Verify("correct", user.PasswordHash).Returns(true);
 
         var handler = CreateHandler();
-        var act = async () => await handler.Handle(new LoginCommandHandler.Command("alice", "correct", "ip"), CancellationToken.None);
+        var act = async () => await handler.Handle(new LoginCommand("alice", "correct", "ip"), CancellationToken.None);
 
         await act.Should().ThrowAsync<ForbiddenException>();
     }

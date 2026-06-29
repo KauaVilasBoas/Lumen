@@ -1,10 +1,10 @@
-using Lumen.ReadModels.Queries;
+using Lumen.Modules.Identity.Application.Queries;
 
 namespace Lumen.Api.Hubs;
 
 public interface IAuthorizationGraphHubClient
 {
-    Task GraphUpdated(GetAuthorizationGraphQueryHandler.GraphSnapshot delta);
+    Task GraphUpdated(AuthorizationGraphSnapshot delta);
 
     Task UserPermissionsInvalidated(Guid userId);
 }

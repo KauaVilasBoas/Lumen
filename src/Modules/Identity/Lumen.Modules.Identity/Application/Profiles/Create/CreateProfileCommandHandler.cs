@@ -5,12 +5,14 @@ using MediatR;
 
 namespace Lumen.Modules.Identity.Application.Profiles.Create;
 
-internal sealed class CreateProfileCommandHandler
-    : IRequestHandler<CreateProfileCommandHandler.Command, CreateProfileCommandHandler.Result>
-{
-    public sealed record Command(string Name, string Description) : IRequest<Result>;
+public sealed record CreateProfileCommand(string Name, string Description) : IRequest<CreateProfileResult>;
 
-    public sealed class Validator : AbstractValidator<Command>
+public sealed record CreateProfileResult(Guid Id, string Name, string Description);
+
+internal sealed class CreateProfileCommandHandler
+    : IRequestHandler<CreateProfileCommand, CreateProfileResult>
+{
+    public sealed class Validator : AbstractValidator<CreateProfileCommand>
     {
         public Validator()
         {
@@ -24,8 +26,6 @@ internal sealed class CreateProfileCommandHandler
         }
     }
 
-    public sealed record Result(Guid Id, string Name, string Description);
-
     private readonly IProfileRepository _profileRepository;
 
     public CreateProfileCommandHandler(IProfileRepository profileRepository)
@@ -33,7 +33,7 @@ internal sealed class CreateProfileCommandHandler
         _profileRepository = profileRepository;
     }
 
-    public async Task<Result> Handle(Command cmd, CancellationToken ct)
+    public async Task<CreateProfileResult> Handle(CreateProfileCommand cmd, CancellationToken ct)
     {
         var nameAlreadyUsed = await _profileRepository.ActiveNameExistsAsync(cmd.Name, excludeId: null, ct);
 
@@ -44,6 +44,6 @@ internal sealed class CreateProfileCommandHandler
 
         await _profileRepository.InsertAsync(profile, ct);
 
-        return new Result(profile.Id, profile.Name, profile.Description);
+        return new CreateProfileResult(profile.Id, profile.Name, profile.Description);
     }
 }

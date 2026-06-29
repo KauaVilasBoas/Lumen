@@ -34,7 +34,7 @@ public sealed class DeleteUserCommandHandlerTests
         _refreshTokenRepository.FindByUserIdAsync(userId, Arg.Any<CancellationToken>()).Returns([]);
 
         var handler = CreateHandler();
-        await handler.Handle(new DeleteUserCommandHandler.Command(userId, "admin"), CancellationToken.None);
+        await handler.Handle(new DeleteUserCommand(userId, "admin"), CancellationToken.None);
 
         await _userRepository.Received(1).UpdateAsync(Arg.Is<User>(u => u.IsDeleted), Arg.Any<CancellationToken>());
         await _eventBus.Received(1).PublishAsync(
@@ -51,7 +51,7 @@ public sealed class DeleteUserCommandHandlerTests
         _userRepository.FindByIdAsync(userId, Arg.Any<CancellationToken>()).Returns(user);
 
         var handler = CreateHandler();
-        var act = async () => await handler.Handle(new DeleteUserCommandHandler.Command(userId, "actor"), CancellationToken.None);
+        var act = async () => await handler.Handle(new DeleteUserCommand(userId, "actor"), CancellationToken.None);
 
         await act.Should().ThrowAsync<ForbiddenException>();
     }
@@ -62,7 +62,7 @@ public sealed class DeleteUserCommandHandlerTests
         _userRepository.FindByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((User?)null);
 
         var handler = CreateHandler();
-        var act = async () => await handler.Handle(new DeleteUserCommandHandler.Command(Guid.NewGuid(), "actor"), CancellationToken.None);
+        var act = async () => await handler.Handle(new DeleteUserCommand(Guid.NewGuid(), "actor"), CancellationToken.None);
 
         await act.Should().ThrowAsync<NotFoundException>();
     }

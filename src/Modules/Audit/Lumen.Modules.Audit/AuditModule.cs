@@ -1,6 +1,8 @@
 using Lumen.Modularity;
+using Lumen.Modules.Audit.Application;
 using Lumen.Modules.Audit.Persistence;
 using Lumen.SharedKernel.Constants;
+using MediatR;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -19,6 +21,9 @@ public sealed class AuditModule : IModule
                 sql => sql.MigrationsAssembly(AuditMigrationsAssembly.Name)));
 
         services.AddScoped<AuditRepository>();
+
+        services.AddMediatR(cfg =>
+            cfg.RegisterServicesFromAssemblyContaining<GetRecentAuditFeedQueryHandler>());
     }
 
     public void MapEndpoints(IEndpointRouteBuilder endpoints)

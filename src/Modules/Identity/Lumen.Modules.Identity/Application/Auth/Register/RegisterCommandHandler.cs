@@ -9,12 +9,14 @@ using Microsoft.Extensions.Logging;
 
 namespace Lumen.Modules.Identity.Application.Auth.Register;
 
-internal sealed class RegisterCommandHandler
-    : IRequestHandler<RegisterCommandHandler.Command, RegisterCommandHandler.Result>
-{
-    public sealed record Command(string Email, string Username, string Password) : IRequest<Result>;
+public sealed record RegisterCommand(string Email, string Username, string Password) : IRequest<RegisterResult>;
 
-    public sealed class Validator : AbstractValidator<Command>
+public sealed record RegisterResult(string Id, string Email, string Username);
+
+internal sealed class RegisterCommandHandler
+    : IRequestHandler<RegisterCommand, RegisterResult>
+{
+    public sealed class Validator : AbstractValidator<RegisterCommand>
     {
         public Validator()
         {
@@ -37,8 +39,6 @@ internal sealed class RegisterCommandHandler
         }
     }
 
-    public sealed record Result(string Id, string Email, string Username);
-
     private readonly IUserRepository _userRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IPasswordValidator _passwordValidator;
@@ -59,7 +59,7 @@ internal sealed class RegisterCommandHandler
         _logger = logger;
     }
 
-    public async Task<Result> Handle(Command cmd, CancellationToken ct)
+    public async Task<RegisterResult> Handle(RegisterCommand cmd, CancellationToken ct)
     {
         var passwordValidation = await _passwordValidator.ValidatePasswordAsync(
             new(cmd.Password, cmd.Email, cmd.Username), ct);
@@ -87,6 +87,6 @@ internal sealed class RegisterCommandHandler
 
         await _emailConfirmationService.SendConfirmationEmailAsync(user, ct);
 
-        return new Result(user.Id.ToString(), user.Email, user.Username);
+        return new RegisterResult(user.Id.ToString(), user.Email, user.Username);
     }
 }

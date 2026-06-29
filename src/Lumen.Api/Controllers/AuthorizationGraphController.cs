@@ -1,4 +1,4 @@
-using Lumen.ReadModels.Queries;
+using Lumen.Modules.Identity.Application.Queries;
 using Lumen.SharedKernel.Authorization;
 using Lumen.SharedKernel.Constants;
 using MediatR;
@@ -21,12 +21,12 @@ public sealed class AuthorizationGraphController : ApiBaseController
     [HttpGet]
     [RequirePermission]
     [Authorize(Policy = PermissionCodes.AuthorizationGraph.View)]
-    [ProducesResponseType(typeof(GetAuthorizationGraphQueryHandler.GraphSnapshot), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(AuthorizationGraphSnapshot), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> View(CancellationToken ct = default)
     {
-        var snapshot = await _mediator.Send(new GetAuthorizationGraphQueryHandler.Query(), ct);
+        var snapshot = await _mediator.Send(new GetAuthorizationGraphQuery(), ct);
         return Ok(snapshot);
     }
 }

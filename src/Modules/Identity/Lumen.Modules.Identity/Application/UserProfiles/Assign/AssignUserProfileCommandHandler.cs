@@ -8,12 +8,12 @@ using MediatR;
 
 namespace Lumen.Modules.Identity.Application.UserProfiles.Assign;
 
-internal sealed class AssignUserProfileCommandHandler
-    : IRequestHandler<AssignUserProfileCommandHandler.Command>
-{
-    public sealed record Command(Guid UserId, Guid ProfileId) : IRequest;
+public sealed record AssignUserProfileCommand(Guid UserId, Guid ProfileId) : IRequest;
 
-    public sealed class Validator : AbstractValidator<Command>
+internal sealed class AssignUserProfileCommandHandler
+    : IRequestHandler<AssignUserProfileCommand>
+{
+    public sealed class Validator : AbstractValidator<AssignUserProfileCommand>
     {
         public Validator()
         {
@@ -42,7 +42,7 @@ internal sealed class AssignUserProfileCommandHandler
         _eventBus = eventBus;
     }
 
-    public async Task Handle(Command cmd, CancellationToken ct)
+    public async Task Handle(AssignUserProfileCommand cmd, CancellationToken ct)
     {
         var user = await _userRepository.FindByIdAsync(cmd.UserId, ct)
             ?? throw new NotFoundException($"User '{cmd.UserId}' not found.");

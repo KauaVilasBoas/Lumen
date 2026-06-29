@@ -10,11 +10,11 @@ using Microsoft.Extensions.Logging;
 
 namespace Lumen.Modules.Identity.Application.Users.Delete;
 
-internal sealed class DeleteUserCommandHandler
-    : IRequestHandler<DeleteUserCommandHandler.Command>
-{
-    public sealed record Command(Guid UserId, string ActorId) : IRequest;
+public sealed record DeleteUserCommand(Guid UserId, string ActorId) : IRequest;
 
+internal sealed class DeleteUserCommandHandler
+    : IRequestHandler<DeleteUserCommand>
+{
     private readonly IUserRepository _userRepository;
     private readonly IUserProfileRepository _userProfileRepository;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
@@ -35,7 +35,7 @@ internal sealed class DeleteUserCommandHandler
         _logger = logger;
     }
 
-    public async Task Handle(Command cmd, CancellationToken ct)
+    public async Task Handle(DeleteUserCommand cmd, CancellationToken ct)
     {
         var user = await _userRepository.FindByIdAsync(cmd.UserId, ct)
             ?? throw new NotFoundException(AuthErrorMessages.UserNotFound);

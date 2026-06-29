@@ -1,6 +1,6 @@
 namespace Lumen.Modules.Identity.Domain.Notifications;
 
-internal sealed record EmailMessage(
+public sealed record EmailMessage(
     string To,
     string Subject,
     string HtmlBody,

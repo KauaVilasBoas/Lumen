@@ -9,4 +9,6 @@ internal interface IRefreshTokenRepository
     Task InsertAsync(RefreshToken token, CancellationToken ct = default);
 
     Task UpdateAsync(RefreshToken token, CancellationToken ct = default);
+
+    Task<int> DeleteExpiredAsync(DateTime cutoff, CancellationToken ct = default);
 }

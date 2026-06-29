@@ -11,12 +11,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Lumen.Modules.Identity.Application.Auth.ForgotPassword;
 
-internal sealed class ForgotPasswordCommandHandler
-    : IRequestHandler<ForgotPasswordCommandHandler.Command, Unit>
-{
-    public sealed record Command(string Email) : IRequest<Unit>;
+public sealed record ForgotPasswordCommand(string Email) : IRequest<Unit>;
 
-    public sealed class Validator : AbstractValidator<Command>
+internal sealed class ForgotPasswordCommandHandler
+    : IRequestHandler<ForgotPasswordCommand, Unit>
+{
+    public sealed class Validator : AbstractValidator<ForgotPasswordCommand>
     {
         public Validator()
         {
@@ -52,7 +52,7 @@ internal sealed class ForgotPasswordCommandHandler
         _logger = logger;
     }
 
-    public async Task<Unit> Handle(Command cmd, CancellationToken ct)
+    public async Task<Unit> Handle(ForgotPasswordCommand cmd, CancellationToken ct)
     {
         var normalizedEmail = User.NormalizeEmail(cmd.Email);
         var user = await _userRepository.FindByEmailAsync(normalizedEmail, ct);

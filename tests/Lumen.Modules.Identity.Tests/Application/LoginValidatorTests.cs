@@ -11,21 +11,21 @@ public sealed class LoginValidatorTests
     [Fact]
     public void Validate_EmptyIdentifier_ProducesError()
     {
-        var result = _validator.TestValidate(new LoginCommandHandler.Command("", "pass", "ip"));
+        var result = _validator.TestValidate(new LoginCommand("", "pass", "ip"));
         result.ShouldHaveValidationErrorFor(x => x.Identifier);
     }
 
     [Fact]
     public void Validate_EmptyPassword_ProducesError()
     {
-        var result = _validator.TestValidate(new LoginCommandHandler.Command("user", "", "ip"));
+        var result = _validator.TestValidate(new LoginCommand("user", "", "ip"));
         result.ShouldHaveValidationErrorFor(x => x.Password);
     }
 
     [Fact]
     public void Validate_ValidCommand_HasNoErrors()
     {
-        var result = _validator.TestValidate(new LoginCommandHandler.Command("user", "pass", "ip"));
+        var result = _validator.TestValidate(new LoginCommand("user", "pass", "ip"));
         result.ShouldNotHaveAnyValidationErrors();
     }
 }

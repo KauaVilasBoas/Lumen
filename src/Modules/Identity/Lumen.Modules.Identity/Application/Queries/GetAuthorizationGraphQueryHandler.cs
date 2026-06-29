@@ -4,34 +4,34 @@ using MediatR;
 
 namespace Lumen.Modules.Identity.Application.Queries;
 
+public sealed record GetAuthorizationGraphQuery : IRequest<AuthorizationGraphSnapshot>;
+
+public sealed record AuthorizationGraphUserNode(
+    Guid Id,
+    string Username,
+    string Email,
+    string State,
+    IReadOnlyList<string> Profiles);
+
+public sealed record AuthorizationGraphProfileNode(
+    string Name,
+    bool IsSystem,
+    IReadOnlyList<string> Permissions);
+
+public sealed record AuthorizationGraphPermissionNode(
+    string Code,
+    string Name,
+    string Group,
+    bool Orphan);
+
+public sealed record AuthorizationGraphSnapshot(
+    IReadOnlyList<AuthorizationGraphUserNode> Users,
+    IReadOnlyDictionary<string, AuthorizationGraphProfileNode> Profiles,
+    IReadOnlyDictionary<string, AuthorizationGraphPermissionNode> Permissions);
+
 internal sealed class GetAuthorizationGraphQueryHandler
-    : IRequestHandler<GetAuthorizationGraphQueryHandler.Query, GetAuthorizationGraphQueryHandler.GraphSnapshot>
+    : IRequestHandler<GetAuthorizationGraphQuery, AuthorizationGraphSnapshot>
 {
-    public sealed record Query : IRequest<GraphSnapshot>;
-
-    public sealed record UserNode(
-        Guid Id,
-        string Username,
-        string Email,
-        string State,
-        IReadOnlyList<string> Profiles);
-
-    public sealed record ProfileNode(
-        string Name,
-        bool IsSystem,
-        IReadOnlyList<string> Permissions);
-
-    public sealed record PermissionNode(
-        string Code,
-        string Name,
-        string Group,
-        bool Orphan);
-
-    public sealed record GraphSnapshot(
-        IReadOnlyList<UserNode> Users,
-        IReadOnlyDictionary<string, ProfileNode> Profiles,
-        IReadOnlyDictionary<string, PermissionNode> Permissions);
-
     private readonly IUserRepository _userRepository;
     private readonly IUserProfileRepository _userProfileRepository;
     private readonly IProfileRepository _profileRepository;
@@ -52,7 +52,7 @@ internal sealed class GetAuthorizationGraphQueryHandler
         _groupPermissionRepository = groupPermissionRepository;
     }
 
-    public async Task<GraphSnapshot> Handle(Query query, CancellationToken ct)
+    public async Task<AuthorizationGraphSnapshot> Handle(GetAuthorizationGraphQuery query, CancellationToken ct)
     {
         var (rawUsers, _) = await _userRepository.ListAsync(
             search: null,
@@ -72,14 +72,14 @@ internal sealed class GetAuthorizationGraphQueryHandler
         var profileNodes     = await BuildProfileNodesAsync(profiles, permissionNodes, ct);
         var userNodes        = await BuildUserNodesAsync(rawUsers, profileById, ct);
 
-        return new GraphSnapshot(userNodes, profileNodes, permissionNodes);
+        return new AuthorizationGraphSnapshot(userNodes, profileNodes, permissionNodes);
     }
 
-    private static Dictionary<string, PermissionNode> BuildPermissionNodes(
+    private static Dictionary<string, AuthorizationGraphPermissionNode> BuildPermissionNodes(
         IReadOnlyList<Permission> permissions,
         Dictionary<Guid, string> groupNameById)
     {
-        var result = new Dictionary<string, PermissionNode>(permissions.Count);
+        var result = new Dictionary<string, AuthorizationGraphPermissionNode>(permissions.Count);
 
         foreach (var p in permissions)
         {
@@ -87,7 +87,7 @@ internal sealed class GetAuthorizationGraphQueryHandler
                 ? name
                 : string.Empty;
 
-            result[p.Id.ToString()] = new PermissionNode(
+            result[p.Id.ToString()] = new AuthorizationGraphPermissionNode(
                 Code:   p.Code,
                 Name:   p.DisplayName,
                 Group:  groupName,
@@ -97,12 +97,12 @@ internal sealed class GetAuthorizationGraphQueryHandler
         return result;
     }
 
-    private async Task<Dictionary<string, ProfileNode>> BuildProfileNodesAsync(
+    private async Task<Dictionary<string, AuthorizationGraphProfileNode>> BuildProfileNodesAsync(
         IReadOnlyList<Profile> profiles,
-        Dictionary<string, PermissionNode> permissionNodes,
+        Dictionary<string, AuthorizationGraphPermissionNode> permissionNodes,
         CancellationToken ct)
     {
-        var result = new Dictionary<string, ProfileNode>(profiles.Count);
+        var result = new Dictionary<string, AuthorizationGraphProfileNode>(profiles.Count);
 
         if (profiles.Count == 0)
             return result;
@@ -122,7 +122,7 @@ internal sealed class GetAuthorizationGraphQueryHandler
                 .Where(permissionNodes.ContainsKey)
                 .ToList();
 
-            result[profile.Id.ToString()] = new ProfileNode(
+            result[profile.Id.ToString()] = new AuthorizationGraphProfileNode(
                 Name:        profile.Name,
                 IsSystem:    profile.IsSystem,
                 Permissions: permissionIds);
@@ -131,7 +131,7 @@ internal sealed class GetAuthorizationGraphQueryHandler
         return result;
     }
 
-    private async Task<IReadOnlyList<UserNode>> BuildUserNodesAsync(
+    private async Task<IReadOnlyList<AuthorizationGraphUserNode>> BuildUserNodesAsync(
         IReadOnlyList<User> users,
         Dictionary<Guid, Profile> profileById,
         CancellationToken ct)
@@ -154,7 +154,7 @@ internal sealed class GetAuthorizationGraphQueryHandler
                     .Select(id => id.ToString())
                     .ToList();
 
-                return new UserNode(
+                return new AuthorizationGraphUserNode(
                     Id:       user.Id,
                     Username: user.Username,
                     Email:    user.Email,

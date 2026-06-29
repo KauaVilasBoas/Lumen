@@ -9,16 +9,18 @@ using Microsoft.Extensions.Logging;
 
 namespace Lumen.Modules.Identity.Application.Users.Update;
 
-internal sealed class UpdateUserCommandHandler
-    : IRequestHandler<UpdateUserCommandHandler.Command, UpdateUserCommandHandler.Result>
-{
-    public sealed record Command(
-        Guid UserId,
-        string? NewEmail,
-        string? NewUsername,
-        string ActorId) : IRequest<Result>;
+public sealed record UpdateUserCommand(
+    Guid UserId,
+    string? NewEmail,
+    string? NewUsername,
+    string ActorId) : IRequest<UpdateUserResult>;
 
-    public sealed class Validator : AbstractValidator<Command>
+public sealed record UpdateUserResult(Guid UserId, bool EmailChanged);
+
+internal sealed class UpdateUserCommandHandler
+    : IRequestHandler<UpdateUserCommand, UpdateUserResult>
+{
+    public sealed class Validator : AbstractValidator<UpdateUserCommand>
     {
         public Validator()
         {
@@ -38,8 +40,6 @@ internal sealed class UpdateUserCommandHandler
         }
     }
 
-    public sealed record Result(Guid UserId, bool EmailChanged);
-
     private readonly IUserRepository _userRepository;
     private readonly IEmailConfirmationTokenRepository _tokenRepository;
     private readonly IEmailConfirmationService _emailConfirmationService;
@@ -57,7 +57,7 @@ internal sealed class UpdateUserCommandHandler
         _logger = logger;
     }
 
-    public async Task<Result> Handle(Command cmd, CancellationToken ct)
+    public async Task<UpdateUserResult> Handle(UpdateUserCommand cmd, CancellationToken ct)
     {
         var user = await _userRepository.FindByIdAsync(cmd.UserId, ct)
             ?? throw new NotFoundException(AuthErrorMessages.UserNotFound);
@@ -92,7 +92,7 @@ internal sealed class UpdateUserCommandHandler
         }
 
         if (changedFields.Count == 0)
-            return new Result(user.Id, EmailChanged: false);
+            return new UpdateUserResult(user.Id, EmailChanged: false);
 
         try
         {
@@ -117,6 +117,6 @@ internal sealed class UpdateUserCommandHandler
             await _emailConfirmationService.SendConfirmationEmailAsync(user, ct);
         }
 
-        return new Result(user.Id, emailChanged);
+        return new UpdateUserResult(user.Id, emailChanged);
     }
 }

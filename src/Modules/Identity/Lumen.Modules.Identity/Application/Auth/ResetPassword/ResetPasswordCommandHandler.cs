@@ -11,12 +11,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Lumen.Modules.Identity.Application.Auth.ResetPassword;
 
-internal sealed class ResetPasswordCommandHandler
-    : IRequestHandler<ResetPasswordCommandHandler.Command, Unit>
-{
-    public sealed record Command(string Token, string NewPassword) : IRequest<Unit>;
+public sealed record ResetPasswordCommand(string Token, string NewPassword) : IRequest<Unit>;
 
-    public sealed class Validator : AbstractValidator<Command>
+internal sealed class ResetPasswordCommandHandler
+    : IRequestHandler<ResetPasswordCommand, Unit>
+{
+    public sealed class Validator : AbstractValidator<ResetPasswordCommand>
     {
         public Validator()
         {
@@ -57,7 +57,7 @@ internal sealed class ResetPasswordCommandHandler
         _logger = logger;
     }
 
-    public async Task<Unit> Handle(Command cmd, CancellationToken ct)
+    public async Task<Unit> Handle(ResetPasswordCommand cmd, CancellationToken ct)
     {
         var tokenHash = Sha256Hasher.ComputeHex(cmd.Token);
         var resetToken = await _tokenRepository.FindByTokenHashAsync(tokenHash, ct);

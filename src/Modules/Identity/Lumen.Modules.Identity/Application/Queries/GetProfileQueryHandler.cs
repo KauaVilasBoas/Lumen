@@ -3,18 +3,18 @@ using MediatR;
 
 namespace Lumen.Modules.Identity.Application.Queries;
 
+public sealed record GetProfileQuery(Guid Id) : IRequest<GetProfileResult?>;
+
+public sealed record GetProfileResult(
+    Guid Id,
+    string Name,
+    string Description,
+    bool IsSystem,
+    IReadOnlyList<Guid> PermissionIds);
+
 internal sealed class GetProfileQueryHandler
-    : IRequestHandler<GetProfileQueryHandler.Query, GetProfileQueryHandler.Result?>
+    : IRequestHandler<GetProfileQuery, GetProfileResult?>
 {
-    public sealed record Query(Guid Id) : IRequest<Result?>;
-
-    public sealed record Result(
-        Guid Id,
-        string Name,
-        string Description,
-        bool IsSystem,
-        IReadOnlyList<Guid> PermissionIds);
-
     private readonly IProfileRepository _profileRepository;
 
     public GetProfileQueryHandler(IProfileRepository profileRepository)
@@ -22,7 +22,7 @@ internal sealed class GetProfileQueryHandler
         _profileRepository = profileRepository;
     }
 
-    public async Task<Result?> Handle(Query query, CancellationToken ct)
+    public async Task<GetProfileResult?> Handle(GetProfileQuery query, CancellationToken ct)
     {
         var profile = await _profileRepository.FindByIdAsync(query.Id, ct);
 
@@ -34,7 +34,7 @@ internal sealed class GetProfileQueryHandler
 
         var permissionIds = permissionProfiles.Select(pp => pp.PermissionId).ToList();
 
-        return new Result(
+        return new GetProfileResult(
             profile.Id,
             profile.Name,
             profile.Description,

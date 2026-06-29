@@ -3,22 +3,22 @@ using MediatR;
 
 namespace Lumen.Modules.Identity.Application.Queries;
 
+public sealed record ListPermissionsQuery : IRequest<IReadOnlyList<ListPermissionsGroupResult>>;
+
+public sealed record ListPermissionsPermissionResult(
+    Guid Id,
+    string Code,
+    string DisplayName,
+    bool IsOrphan);
+
+public sealed record ListPermissionsGroupResult(
+    Guid? GroupId,
+    string GroupName,
+    IReadOnlyList<ListPermissionsPermissionResult> Permissions);
+
 internal sealed class ListPermissionsQueryHandler
-    : IRequestHandler<ListPermissionsQueryHandler.Query, IReadOnlyList<ListPermissionsQueryHandler.GroupResult>>
+    : IRequestHandler<ListPermissionsQuery, IReadOnlyList<ListPermissionsGroupResult>>
 {
-    public sealed record Query : IRequest<IReadOnlyList<GroupResult>>;
-
-    public sealed record PermissionResult(
-        Guid Id,
-        string Code,
-        string DisplayName,
-        bool IsOrphan);
-
-    public sealed record GroupResult(
-        Guid? GroupId,
-        string GroupName,
-        IReadOnlyList<PermissionResult> Permissions);
-
     private readonly IPermissionRepository _permissionRepository;
     private readonly IGroupPermissionRepository _groupPermissionRepository;
 
@@ -30,7 +30,7 @@ internal sealed class ListPermissionsQueryHandler
         _groupPermissionRepository = groupPermissionRepository;
     }
 
-    public async Task<IReadOnlyList<GroupResult>> Handle(Query query, CancellationToken ct)
+    public async Task<IReadOnlyList<ListPermissionsGroupResult>> Handle(ListPermissionsQuery query, CancellationToken ct)
     {
         var permissions = await _permissionRepository.ListAllAsync(ct);
         var groups = await _groupPermissionRepository.ListAllAsync(ct);
@@ -46,11 +46,11 @@ internal sealed class ListPermissionsQueryHandler
                     : "Ungrouped";
 
                 var items = g
-                    .Select(p => new PermissionResult(p.Id, p.Code, p.DisplayName, p.IsOrphan))
+                    .Select(p => new ListPermissionsPermissionResult(p.Id, p.Code, p.DisplayName, p.IsOrphan))
                     .OrderBy(p => p.Code)
                     .ToList();
 
-                return new GroupResult(g.Key, groupName, items);
+                return new ListPermissionsGroupResult(g.Key, groupName, items);
             })
             .OrderBy(g => g.GroupName)
             .ToList();

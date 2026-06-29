@@ -8,12 +8,12 @@ using MediatR;
 
 namespace Lumen.Modules.Identity.Application.Profiles.SetPermissions;
 
-internal sealed class SetProfilePermissionsCommandHandler
-    : IRequestHandler<SetProfilePermissionsCommandHandler.Command>
-{
-    public sealed record Command(Guid ProfileId, IReadOnlyList<Guid> PermissionIds, string? ActorUsername = null) : IRequest;
+public sealed record SetProfilePermissionsCommand(Guid ProfileId, IReadOnlyList<Guid> PermissionIds, string? ActorUsername = null) : IRequest;
 
-    public sealed class Validator : AbstractValidator<Command>
+internal sealed class SetProfilePermissionsCommandHandler
+    : IRequestHandler<SetProfilePermissionsCommand>
+{
+    public sealed class Validator : AbstractValidator<SetProfilePermissionsCommand>
     {
         public Validator()
         {
@@ -42,7 +42,7 @@ internal sealed class SetProfilePermissionsCommandHandler
         _eventBus = eventBus;
     }
 
-    public async Task Handle(Command cmd, CancellationToken ct)
+    public async Task Handle(SetProfilePermissionsCommand cmd, CancellationToken ct)
     {
         var profile = await _profileRepository.FindByIdAsync(cmd.ProfileId, ct)
             ?? throw new NotFoundException($"Profile '{cmd.ProfileId}' not found.");

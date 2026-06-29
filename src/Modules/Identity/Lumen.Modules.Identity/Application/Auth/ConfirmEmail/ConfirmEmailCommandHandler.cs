@@ -8,12 +8,12 @@ using MediatR;
 
 namespace Lumen.Modules.Identity.Application.Auth.ConfirmEmail;
 
-internal sealed class ConfirmEmailCommandHandler
-    : IRequestHandler<ConfirmEmailCommandHandler.Command, Unit>
-{
-    public sealed record Command(string Token) : IRequest<Unit>;
+public sealed record ConfirmEmailCommand(string Token) : IRequest<Unit>;
 
-    public sealed class Validator : AbstractValidator<Command>
+internal sealed class ConfirmEmailCommandHandler
+    : IRequestHandler<ConfirmEmailCommand, Unit>
+{
+    public sealed class Validator : AbstractValidator<ConfirmEmailCommand>
     {
         public Validator()
         {
@@ -33,7 +33,7 @@ internal sealed class ConfirmEmailCommandHandler
         _userRepository = userRepository;
     }
 
-    public async Task<Unit> Handle(Command cmd, CancellationToken ct)
+    public async Task<Unit> Handle(ConfirmEmailCommand cmd, CancellationToken ct)
     {
         var tokenHash = Sha256Hasher.ComputeHex(cmd.Token);
         var confirmationToken = await _tokenRepository.FindByTokenHashAsync(tokenHash, ct);

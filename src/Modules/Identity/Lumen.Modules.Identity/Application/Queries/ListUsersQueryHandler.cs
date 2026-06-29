@@ -6,35 +6,35 @@ using MediatR;
 
 namespace Lumen.Modules.Identity.Application.Queries;
 
+public sealed record ListUsersQuery(
+    string? Search,
+    string? State,
+    int Page,
+    int PageSize) : IRequest<ListUsersPagedResult>;
+
+public sealed record ListUsersUserResult(
+    Guid Id,
+    string Username,
+    string Email,
+    string State,
+    bool IsBootstrap,
+    DateTime CreatedAt,
+    DateTime? LastLoginAt,
+    DateTime? EmailConfirmedAt,
+    DateTime? LockoutEndAt,
+    int ProfileCount,
+    int ResolvedPermissionCount);
+
+public sealed record ListUsersPagedResult(
+    IReadOnlyList<ListUsersUserResult> Items,
+    int Page,
+    int PageSize,
+    int Total);
+
 internal sealed class ListUsersQueryHandler
-    : IRequestHandler<ListUsersQueryHandler.Query, ListUsersQueryHandler.PagedResult>
+    : IRequestHandler<ListUsersQuery, ListUsersPagedResult>
 {
-    public sealed record Query(
-        string? Search,
-        string? State,
-        int Page,
-        int PageSize) : IRequest<PagedResult>;
-
-    public sealed record UserResult(
-        Guid Id,
-        string Username,
-        string Email,
-        string State,
-        bool IsBootstrap,
-        DateTime CreatedAt,
-        DateTime? LastLoginAt,
-        DateTime? EmailConfirmedAt,
-        DateTime? LockoutEndAt,
-        int ProfileCount,
-        int ResolvedPermissionCount);
-
-    public sealed record PagedResult(
-        IReadOnlyList<UserResult> Items,
-        int Page,
-        int PageSize,
-        int Total);
-
-    public sealed class Validator : AbstractValidator<Query>
+    public sealed class Validator : AbstractValidator<ListUsersQuery>
     {
         private static readonly HashSet<string> ValidStateValues =
             ["active", "locked", "pending", "deleted", "all", ""];
@@ -69,7 +69,7 @@ internal sealed class ListUsersQueryHandler
         _profileRepository = profileRepository;
     }
 
-    public async Task<PagedResult> Handle(Query query, CancellationToken ct)
+    public async Task<ListUsersPagedResult> Handle(ListUsersQuery query, CancellationToken ct)
     {
         var stateFilter = ParseStateFilter(query.State);
 
@@ -93,14 +93,14 @@ internal sealed class ListUsersQueryHandler
         };
 
         if (filtered.Count == 0)
-            return new PagedResult([], query.Page, query.PageSize, 0);
+            return new ListUsersPagedResult([], query.Page, query.PageSize, 0);
 
         var userIds = filtered.Select(u => u.Id).ToList();
         var profilesByUser = await _profileRepository.GetProfilesByUserIdsAsync(userIds, ct);
         var permissionCountByUser = await _profileRepository.GetPermissionCountsByUserIdsAsync(userIds, ct);
 
         var items = filtered
-            .Select(u => new UserResult(
+            .Select(u => new ListUsersUserResult(
                 Id: u.Id,
                 Username: u.Username,
                 Email: u.Email,
@@ -114,7 +114,7 @@ internal sealed class ListUsersQueryHandler
                 ResolvedPermissionCount: permissionCountByUser.GetValueOrDefault(u.Id, 0)))
             .ToList();
 
-        return new PagedResult(items, query.Page, query.PageSize, total);
+        return new ListUsersPagedResult(items, query.Page, query.PageSize, total);
     }
 
     private static UserStateFilter ParseStateFilter(string? state)

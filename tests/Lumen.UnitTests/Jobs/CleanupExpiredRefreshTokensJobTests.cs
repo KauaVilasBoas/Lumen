@@ -1,7 +1,8 @@
-using Lumen.Domain.Tokens;
 using Lumen.Jobs.Jobs;
+using Lumen.Modularity;
+using Lumen.Modules.Audit.Contracts.Events;
+using Lumen.Modules.Identity.Application.Tokens;
 using FluentAssertions;
-using MediatR;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -10,65 +11,58 @@ namespace Lumen.UnitTests.Jobs;
 
 public sealed class CleanupExpiredRefreshTokensJobTests
 {
-    private readonly IRefreshTokenRepository _repository;
-    private readonly IPublisher _publisher;
+    private readonly ITokenCleanupService _tokenCleanupService;
+    private readonly IEventBus _eventBus;
     private readonly CleanupExpiredRefreshTokensJob _sut;
 
     public CleanupExpiredRefreshTokensJobTests()
     {
-        _repository = Substitute.For<IRefreshTokenRepository>();
-        _publisher = Substitute.For<IPublisher>();
+        _tokenCleanupService = Substitute.For<ITokenCleanupService>();
+        _eventBus = Substitute.For<IEventBus>();
         _sut = new CleanupExpiredRefreshTokensJob(
-            _repository,
-            _publisher,
+            _tokenCleanupService,
+            _eventBus,
             NullLogger<CleanupExpiredRefreshTokensJob>.Instance);
     }
 
     [Fact]
     public async Task ExecuteAsync_CallsDeleteExpiredAsync_WithUtcCutoffNoEarlierThanNow()
     {
-        // Arrange
         var before = DateTime.UtcNow;
-        _repository.DeleteExpiredAsync(Arg.Any<DateTime>(), Arg.Any<CancellationToken>())
-                   .Returns(0L);
+        _tokenCleanupService.DeleteExpiredRefreshTokensAsync(Arg.Any<DateTime>(), Arg.Any<CancellationToken>())
+                            .Returns(0);
 
-        // Act
         await _sut.ExecuteAsync(CancellationToken.None);
         var after = DateTime.UtcNow;
 
-        // Assert
-        await _repository.Received(1).DeleteExpiredAsync(
+        await _tokenCleanupService.Received(1).DeleteExpiredRefreshTokensAsync(
             Arg.Is<DateTime>(cutoff =>
                 cutoff >= before.AddSeconds(-1) && cutoff <= after.AddSeconds(1)),
             Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task ExecuteAsync_WhenRepositoryDeletesTokens_DoesNotThrow()
+    public async Task ExecuteAsync_WhenCleanupDeletesTokens_PublishesCleanupJobExecutedEvent()
     {
-        // Arrange
-        const long deletedCount = 42L;
-        _repository.DeleteExpiredAsync(Arg.Any<DateTime>(), Arg.Any<CancellationToken>())
-                   .Returns(deletedCount);
+        const int deletedCount = 42;
+        _tokenCleanupService.DeleteExpiredRefreshTokensAsync(Arg.Any<DateTime>(), Arg.Any<CancellationToken>())
+                            .Returns(deletedCount);
 
-        // Act
-        var act = async () => await _sut.ExecuteAsync(CancellationToken.None);
+        await _sut.ExecuteAsync(CancellationToken.None);
 
-        // Assert
-        await act.Should().NotThrowAsync();
+        await _eventBus.Received(1).PublishAsync(
+            Arg.Is<CleanupJobExecutedEvent>(e => e.DeletedCount == deletedCount),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task ExecuteAsync_WhenRepositoryThrows_PropagatesException()
+    public async Task ExecuteAsync_WhenCleanupServiceThrows_PropagatesException()
     {
-        // Arrange
-        _repository.DeleteExpiredAsync(Arg.Any<DateTime>(), Arg.Any<CancellationToken>())
-                   .ThrowsAsync(new InvalidOperationException("storage unavailable"));
+        _tokenCleanupService.DeleteExpiredRefreshTokensAsync(Arg.Any<DateTime>(), Arg.Any<CancellationToken>())
+                            .ThrowsAsync(new InvalidOperationException("storage unavailable"));
 
-        // Act
         var act = async () => await _sut.ExecuteAsync(CancellationToken.None);
 
-        // Assert
         await act.Should().ThrowAsync<InvalidOperationException>()
                  .WithMessage("storage unavailable");
     }

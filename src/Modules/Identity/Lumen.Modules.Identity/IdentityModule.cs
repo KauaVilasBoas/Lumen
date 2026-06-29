@@ -2,6 +2,8 @@ using System.Net.Http.Headers;
 using FluentValidation;
 using Lumen.Modularity;
 using Lumen.Modules.Identity.Application.Behaviors;
+using Lumen.Modules.Identity.Application.Permissions;
+using Lumen.Modules.Identity.Application.Tokens;
 using Lumen.Modules.Identity.Domain.Authorization;
 using Lumen.Modules.Identity.Domain.Configuration;
 using Lumen.Modules.Identity.Domain.Notifications;
@@ -137,6 +139,9 @@ public sealed class IdentityModule : IModule
             cfg.RegisterServicesFromAssembly(assembly);
             cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
         });
+
+        services.AddScoped<IPermissionSyncService, PermissionSyncService>();
+        services.AddScoped<ITokenCleanupService, TokenCleanupService>();
 
         RegisterValidators(services, assembly);
     }

@@ -32,7 +32,7 @@ public sealed class AssignUserProfileCommandHandlerTests
         _userProfileRepository.FindActiveAsync(userId, profileId, Arg.Any<CancellationToken>()).Returns((UserProfile?)null);
 
         var handler = CreateHandler();
-        await handler.Handle(new AssignUserProfileCommandHandler.Command(userId, profileId), CancellationToken.None);
+        await handler.Handle(new AssignUserProfileCommand(userId, profileId), CancellationToken.None);
 
         await _userProfileRepository.Received(1).InsertAsync(Arg.Any<UserProfile>(), Arg.Any<CancellationToken>());
 
@@ -62,7 +62,7 @@ public sealed class AssignUserProfileCommandHandlerTests
         _userProfileRepository.FindActiveAsync(userId, profileId, Arg.Any<CancellationToken>()).Returns(existingAssignment);
 
         var handler = CreateHandler();
-        await handler.Handle(new AssignUserProfileCommandHandler.Command(userId, profileId), CancellationToken.None);
+        await handler.Handle(new AssignUserProfileCommand(userId, profileId), CancellationToken.None);
 
         await _userProfileRepository.DidNotReceive().InsertAsync(Arg.Any<UserProfile>(), Arg.Any<CancellationToken>());
         await _eventBus.DidNotReceive().PublishAsync(Arg.Any<IIntegrationEvent>(), Arg.Any<CancellationToken>());
@@ -75,7 +75,7 @@ public sealed class AssignUserProfileCommandHandlerTests
 
         var handler = CreateHandler();
         var act = async () => await handler.Handle(
-            new AssignUserProfileCommandHandler.Command(Guid.NewGuid(), Guid.NewGuid()),
+            new AssignUserProfileCommand(Guid.NewGuid(), Guid.NewGuid()),
             CancellationToken.None);
 
         await act.Should().ThrowAsync<NotFoundException>();

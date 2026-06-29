@@ -3,17 +3,17 @@ using MediatR;
 
 namespace Lumen.Modules.Identity.Application.Queries;
 
+public sealed record ListUserProfilesQuery(Guid UserId) : IRequest<IReadOnlyList<ListUserProfilesResult>>;
+
+public sealed record ListUserProfilesResult(
+    Guid AssignmentId,
+    Guid ProfileId,
+    string ProfileName,
+    bool IsSystem);
+
 internal sealed class ListUserProfilesQueryHandler
-    : IRequestHandler<ListUserProfilesQueryHandler.Query, IReadOnlyList<ListUserProfilesQueryHandler.Result>>
+    : IRequestHandler<ListUserProfilesQuery, IReadOnlyList<ListUserProfilesResult>>
 {
-    public sealed record Query(Guid UserId) : IRequest<IReadOnlyList<Result>>;
-
-    public sealed record Result(
-        Guid AssignmentId,
-        Guid ProfileId,
-        string ProfileName,
-        bool IsSystem);
-
     private readonly IUserProfileRepository _userProfileRepository;
     private readonly IProfileRepository _profileRepository;
 
@@ -25,7 +25,7 @@ internal sealed class ListUserProfilesQueryHandler
         _profileRepository = profileRepository;
     }
 
-    public async Task<IReadOnlyList<Result>> Handle(Query query, CancellationToken ct)
+    public async Task<IReadOnlyList<ListUserProfilesResult>> Handle(ListUserProfilesQuery query, CancellationToken ct)
     {
         var userProfiles = await _userProfileRepository.ListByUserIdAsync(query.UserId, ct);
 
@@ -38,7 +38,7 @@ internal sealed class ListUserProfilesQueryHandler
 
         return userProfiles
             .Where(up => profileById.ContainsKey(up.ProfileId))
-            .Select(up => new Result(
+            .Select(up => new ListUserProfilesResult(
                 up.Id,
                 up.ProfileId,
                 profileById[up.ProfileId].Name,

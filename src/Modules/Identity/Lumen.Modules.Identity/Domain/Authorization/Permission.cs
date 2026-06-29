@@ -48,6 +48,26 @@ internal sealed class Permission : ISoftDeletable
         };
     }
 
+    public void Update(string controller, string action, string displayName, Guid? groupPermissionId)
+    {
+        Controller = controller;
+        Action = action;
+        DisplayName = displayName;
+        GroupPermissionId = groupPermissionId;
+    }
+
+    public void MarkAsOrphan()
+    {
+        IsOrphan = true;
+        OrphanedAt = DateTime.UtcNow;
+    }
+
+    public void ClearOrphan()
+    {
+        IsOrphan = false;
+        OrphanedAt = null;
+    }
+
     public void SoftDelete()
     {
         IsDeleted = true;

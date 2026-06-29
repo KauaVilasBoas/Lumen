@@ -8,12 +8,12 @@ using MediatR;
 
 namespace Lumen.Modules.Identity.Application.UserProfiles.Remove;
 
-internal sealed class RemoveUserProfileCommandHandler
-    : IRequestHandler<RemoveUserProfileCommandHandler.Command>
-{
-    public sealed record Command(Guid UserId, Guid ProfileId) : IRequest;
+public sealed record RemoveUserProfileCommand(Guid UserId, Guid ProfileId) : IRequest;
 
-    public sealed class Validator : AbstractValidator<Command>
+internal sealed class RemoveUserProfileCommandHandler
+    : IRequestHandler<RemoveUserProfileCommand>
+{
+    public sealed class Validator : AbstractValidator<RemoveUserProfileCommand>
     {
         public Validator()
         {
@@ -42,7 +42,7 @@ internal sealed class RemoveUserProfileCommandHandler
         _eventBus = eventBus;
     }
 
-    public async Task Handle(Command cmd, CancellationToken ct)
+    public async Task Handle(RemoveUserProfileCommand cmd, CancellationToken ct)
     {
         var user = await _userRepository.FindByIdAsync(cmd.UserId, ct)
             ?? throw new NotFoundException($"User '{cmd.UserId}' not found.");

@@ -6,11 +6,11 @@ using Microsoft.Extensions.Logging;
 
 namespace Lumen.Modules.Identity.Application.Users.Restore;
 
-internal sealed class RestoreUserCommandHandler
-    : IRequestHandler<RestoreUserCommandHandler.Command>
-{
-    public sealed record Command(Guid UserId, string ActorId) : IRequest;
+public sealed record RestoreUserCommand(Guid UserId, string ActorId) : IRequest;
 
+internal sealed class RestoreUserCommandHandler
+    : IRequestHandler<RestoreUserCommand>
+{
     private readonly IUserRepository _userRepository;
     private readonly ILogger<RestoreUserCommandHandler> _logger;
 
@@ -22,7 +22,7 @@ internal sealed class RestoreUserCommandHandler
         _logger = logger;
     }
 
-    public async Task Handle(Command cmd, CancellationToken ct)
+    public async Task Handle(RestoreUserCommand cmd, CancellationToken ct)
     {
         var user = await _userRepository.FindByIdIgnoringFiltersAsync(cmd.UserId, ct)
             ?? throw new NotFoundException(AuthErrorMessages.UserNotFound);

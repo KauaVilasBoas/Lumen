@@ -35,4 +35,17 @@ internal sealed class RefreshTokenRepository : IRefreshTokenRepository
         _dbContext.RefreshTokens.Update(token);
         await _dbContext.SaveChangesAsync(ct);
     }
+
+    public async Task<int> DeleteExpiredAsync(DateTime cutoff, CancellationToken ct = default)
+    {
+        var expired = await _dbContext.RefreshTokens
+            .IgnoreQueryFilters()
+            .Where(t => t.ExpiresAt < cutoff)
+            .ToListAsync(ct);
+
+        _dbContext.RefreshTokens.RemoveRange(expired);
+        await _dbContext.SaveChangesAsync(ct);
+
+        return expired.Count;
+    }
 }

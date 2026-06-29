@@ -1,104 +1,67 @@
-using Lumen.Domain.Authorization;
-using Lumen.Domain.Users;
-using Lumen.ReadModels.Queries;
-using Lumen.ReadModels.Users;
+using Lumen.Modularity;
+using Lumen.Modules.Identity.Application.Queries;
+using Lumen.Modules.Identity.Contracts.Events;
 using MediatR;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Lumen.Api.Hubs;
 
-public sealed class GraphLivePushHandler : INotificationHandler<UserPermissionsChanged>
+internal sealed class GraphLivePushHandler : IIntegrationEventHandler<UserPermissionsChangedEvent>
 {
     private readonly IHubContext<AuthorizationGraphHub, IAuthorizationGraphHubClient> _hub;
-    private readonly IUserRepository _userRepository;
-    private readonly IUserProfileRepository _userProfileRepository;
-    private readonly IProfileRepository _profileRepository;
+    private readonly IMediator _mediator;
     private readonly ILogger<GraphLivePushHandler> _logger;
 
     public GraphLivePushHandler(
         IHubContext<AuthorizationGraphHub, IAuthorizationGraphHubClient> hub,
-        IUserRepository userRepository,
-        IUserProfileRepository userProfileRepository,
-        IProfileRepository profileRepository,
+        IMediator mediator,
         ILogger<GraphLivePushHandler> logger)
     {
         _hub = hub;
-        _userRepository = userRepository;
-        _userProfileRepository = userProfileRepository;
-        _profileRepository = profileRepository;
+        _mediator = mediator;
         _logger = logger;
     }
 
-    public async Task Handle(UserPermissionsChanged notification, CancellationToken cancellationToken)
+    public async Task HandleAsync(UserPermissionsChangedEvent @event, CancellationToken cancellationToken = default)
     {
-        var user = await _userRepository.FindByIdAsync(notification.UserId, cancellationToken);
+        var query = new GetAuthorizationGraphQuery();
+        var snapshot = await _mediator.Send(query, cancellationToken);
 
-        if (user is null)
+        var userNode = snapshot.Users.FirstOrDefault(u => u.Id == @event.UserId);
+
+        if (userNode is null)
         {
             _logger.LogWarning(
-                "GraphLivePushHandler: user {UserId} not found — skipping hub push.",
-                notification.UserId);
+                "GraphLivePushHandler: user {UserId} not found in snapshot — skipping hub push.",
+                @event.UserId);
             return;
         }
 
-        var delta = await BuildUserDeltaAsync(user, cancellationToken);
+        var profileKeys = new HashSet<string>(userNode.Profiles);
+        var userProfiles = snapshot.Profiles
+            .Where(kvp => profileKeys.Contains(kvp.Key))
+            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+
+        var permissionKeys = userProfiles.Values
+            .SelectMany(p => p.Permissions)
+            .ToHashSet();
+
+        var userPermissions = snapshot.Permissions
+            .Where(kvp => permissionKeys.Contains(kvp.Key))
+            .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+
+        var delta = new AuthorizationGraphSnapshot(
+            Users: [userNode],
+            Profiles: userProfiles,
+            Permissions: userPermissions);
 
         await _hub.Clients
-            .User(notification.UserId.ToString())
+            .User(@event.UserId.ToString())
             .GraphUpdated(delta);
 
         _logger.LogInformation(
             "GraphUpdated pushed to hub for user {UserId} with {ProfileCount} profile(s).",
-            notification.UserId,
-            delta.Users.Count > 0 ? delta.Users[0].Profiles.Count : 0);
-    }
-
-    private async Task<GetAuthorizationGraphQueryHandler.GraphSnapshot> BuildUserDeltaAsync(
-        User user,
-        CancellationToken cancellationToken)
-    {
-        var userProfiles = await _userProfileRepository.ListByUserIdAsync(user.Id, cancellationToken);
-        var profileIds = userProfiles.Select(up => up.ProfileId).ToList();
-        var profiles = await _profileRepository.GetByIdsAsync(profileIds, cancellationToken);
-
-        var profileNodes = new Dictionary<string, GetAuthorizationGraphQueryHandler.ProfileNode>();
-
-        foreach (var profile in profiles)
-        {
-            var permissionProfiles = await _profileRepository
-                .GetActivePermissionProfilesByProfileIdAsync(profile.Id, cancellationToken);
-
-            var permissionIdStrings = permissionProfiles
-                .Select(pp => pp.PermissionId.ToString())
-                .ToList();
-
-            profileNodes[profile.Id.ToString()] = new GetAuthorizationGraphQueryHandler.ProfileNode(
-                Name: profile.Name,
-                IsSystem: profile.IsSystem,
-                Permissions: permissionIdStrings);
-        }
-
-        var resolvedPermissionIds = profileNodes.Values
-            .SelectMany(p => p.Permissions)
-            .Distinct()
-            .ToDictionary(
-                id => id,
-                _ => new GetAuthorizationGraphQueryHandler.PermissionNode(
-                    Code: string.Empty,
-                    Name: string.Empty,
-                    Group: string.Empty,
-                    Orphan: false));
-
-        var userNode = new GetAuthorizationGraphQueryHandler.UserNode(
-            Id: user.Id,
-            Username: user.Username,
-            Email: user.Email,
-            State: UserStateResolver.Resolve(user, DateTime.UtcNow),
-            Profiles: profileIds.Select(id => id.ToString()).ToList());
-
-        return new GetAuthorizationGraphQueryHandler.GraphSnapshot(
-            Users: [userNode],
-            Profiles: profileNodes,
-            Permissions: resolvedPermissionIds);
+            @event.UserId,
+            userNode.Profiles.Count);
     }
 }
