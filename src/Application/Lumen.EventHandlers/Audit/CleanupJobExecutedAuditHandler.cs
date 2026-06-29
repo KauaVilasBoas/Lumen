@@ -1,33 +1,21 @@
 using Lumen.Domain.Audit;
-using Lumen.SharedKernel.Constants;
+using Lumen.Modularity;
+using Lumen.Modules.Audit.Contracts.Events;
 using MediatR;
-using Microsoft.Extensions.Logging;
 
 namespace Lumen.EventHandlers.Audit;
 
 public sealed class CleanupJobExecutedAuditHandler : INotificationHandler<CleanupJobExecuted>
 {
-    private readonly IAuditRepository _auditRepository;
-    private readonly ILogger<CleanupJobExecutedAuditHandler> _logger;
+    private readonly IEventBus _eventBus;
 
-    public CleanupJobExecutedAuditHandler(
-        IAuditRepository auditRepository,
-        ILogger<CleanupJobExecutedAuditHandler> logger)
+    public CleanupJobExecutedAuditHandler(IEventBus eventBus)
     {
-        _auditRepository = auditRepository;
-        _logger = logger;
+        _eventBus = eventBus;
     }
 
-    public async Task Handle(CleanupJobExecuted notification, CancellationToken cancellationToken)
-    {
-        var entry = AuditEntry.Create(
-            kind: AuditEventKinds.JobCleanup,
-            actor: null,
-            target: null,
-            message: string.Format(AuditMessageTemplates.CleanupJobExecuted, notification.JobName, notification.DeletedCount));
-
-        await _auditRepository.InsertAsync(entry, cancellationToken);
-
-        _logger.LogDebug("Audit entry recorded for cleanup job: {JobName}", notification.JobName);
-    }
+    public Task Handle(CleanupJobExecuted notification, CancellationToken cancellationToken)
+        => _eventBus.PublishAsync(
+            new CleanupJobExecutedEvent(notification.JobName, notification.DeletedCount),
+            cancellationToken);
 }

@@ -1,33 +1,21 @@
 using Lumen.Domain.Audit;
-using Lumen.SharedKernel.Constants;
+using Lumen.Modularity;
+using Lumen.Modules.Audit.Contracts.Events;
 using MediatR;
-using Microsoft.Extensions.Logging;
 
 namespace Lumen.EventHandlers.Audit;
 
 public sealed class UserLoggedInAuditHandler : INotificationHandler<UserLoggedIn>
 {
-    private readonly IAuditRepository _auditRepository;
-    private readonly ILogger<UserLoggedInAuditHandler> _logger;
+    private readonly IEventBus _eventBus;
 
-    public UserLoggedInAuditHandler(
-        IAuditRepository auditRepository,
-        ILogger<UserLoggedInAuditHandler> logger)
+    public UserLoggedInAuditHandler(IEventBus eventBus)
     {
-        _auditRepository = auditRepository;
-        _logger = logger;
+        _eventBus = eventBus;
     }
 
-    public async Task Handle(UserLoggedIn notification, CancellationToken cancellationToken)
-    {
-        var entry = AuditEntry.Create(
-            kind: AuditEventKinds.AuthLogin,
-            actor: notification.Username,
-            target: null,
-            message: string.Format(AuditMessageTemplates.UserLoggedIn, notification.Username));
-
-        await _auditRepository.InsertAsync(entry, cancellationToken);
-
-        _logger.LogDebug("Audit entry recorded for user login: {UserId}", notification.UserId);
-    }
+    public Task Handle(UserLoggedIn notification, CancellationToken cancellationToken)
+        => _eventBus.PublishAsync(
+            new UserLoggedInEvent(notification.UserId, notification.Username),
+            cancellationToken);
 }

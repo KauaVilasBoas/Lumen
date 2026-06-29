@@ -1,33 +1,21 @@
 using Lumen.Domain.Audit;
-using Lumen.SharedKernel.Constants;
+using Lumen.Modularity;
+using Lumen.Modules.Audit.Contracts.Events;
 using MediatR;
-using Microsoft.Extensions.Logging;
 
 namespace Lumen.EventHandlers.Audit;
 
 public sealed class UserLockedOutAuditHandler : INotificationHandler<UserLockedOut>
 {
-    private readonly IAuditRepository _auditRepository;
-    private readonly ILogger<UserLockedOutAuditHandler> _logger;
+    private readonly IEventBus _eventBus;
 
-    public UserLockedOutAuditHandler(
-        IAuditRepository auditRepository,
-        ILogger<UserLockedOutAuditHandler> logger)
+    public UserLockedOutAuditHandler(IEventBus eventBus)
     {
-        _auditRepository = auditRepository;
-        _logger = logger;
+        _eventBus = eventBus;
     }
 
-    public async Task Handle(UserLockedOut notification, CancellationToken cancellationToken)
-    {
-        var entry = AuditEntry.Create(
-            kind: AuditEventKinds.AuthLockout,
-            actor: null,
-            target: notification.Username,
-            message: string.Format(AuditMessageTemplates.UserLockedOut, notification.Username));
-
-        await _auditRepository.InsertAsync(entry, cancellationToken);
-
-        _logger.LogDebug("Audit entry recorded for lockout: {UserId}", notification.UserId);
-    }
+    public Task Handle(UserLockedOut notification, CancellationToken cancellationToken)
+        => _eventBus.PublishAsync(
+            new UserLockedOutEvent(notification.UserId, notification.Username),
+            cancellationToken);
 }

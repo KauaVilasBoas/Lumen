@@ -3,6 +3,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Lumen.Domain\Lumen.Domain.csproj" />
     <ProjectReference Include="..\..\SharedKernel\Lumen.SharedKernel\Lumen.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\Lumen.Modularity\Lumen.Modularity.csproj" />
+    <ProjectReference Include="..\..\Modules\Audit\Lumen.Modules.Audit.Contracts\Lumen.Modules.Audit.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

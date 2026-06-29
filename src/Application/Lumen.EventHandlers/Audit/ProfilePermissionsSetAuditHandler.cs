@@ -1,33 +1,24 @@
 using Lumen.Domain.Audit;
-using Lumen.SharedKernel.Constants;
+using Lumen.Modularity;
+using Lumen.Modules.Audit.Contracts.Events;
 using MediatR;
-using Microsoft.Extensions.Logging;
 
 namespace Lumen.EventHandlers.Audit;
 
 public sealed class ProfilePermissionsSetAuditHandler : INotificationHandler<ProfilePermissionsSet>
 {
-    private readonly IAuditRepository _auditRepository;
-    private readonly ILogger<ProfilePermissionsSetAuditHandler> _logger;
+    private readonly IEventBus _eventBus;
 
-    public ProfilePermissionsSetAuditHandler(
-        IAuditRepository auditRepository,
-        ILogger<ProfilePermissionsSetAuditHandler> logger)
+    public ProfilePermissionsSetAuditHandler(IEventBus eventBus)
     {
-        _auditRepository = auditRepository;
-        _logger = logger;
+        _eventBus = eventBus;
     }
 
-    public async Task Handle(ProfilePermissionsSet notification, CancellationToken cancellationToken)
-    {
-        var entry = AuditEntry.Create(
-            kind: AuditEventKinds.ProfilePermSet,
-            actor: notification.ActorUsername,
-            target: notification.ProfileName,
-            message: string.Format(AuditMessageTemplates.ProfilePermissionsUpdated, notification.ProfileName, notification.ActorUsername));
-
-        await _auditRepository.InsertAsync(entry, cancellationToken);
-
-        _logger.LogDebug("Audit entry recorded for profile permissions set: {ProfileId}", notification.ProfileId);
-    }
+    public Task Handle(ProfilePermissionsSet notification, CancellationToken cancellationToken)
+        => _eventBus.PublishAsync(
+            new ProfilePermissionsSetEvent(
+                notification.ProfileId,
+                notification.ProfileName,
+                notification.ActorUsername),
+            cancellationToken);
 }

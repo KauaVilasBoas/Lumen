@@ -1,35 +1,25 @@
 using Lumen.Domain.Audit;
-using Lumen.SharedKernel.Constants;
+using Lumen.Modularity;
+using Lumen.Modules.Audit.Contracts.Events;
 using MediatR;
-using Microsoft.Extensions.Logging;
 
 namespace Lumen.EventHandlers.Audit;
 
 public sealed class UserProfileRemovedAuditHandler : INotificationHandler<UserProfileRemoved>
 {
-    private readonly IAuditRepository _auditRepository;
-    private readonly ILogger<UserProfileRemovedAuditHandler> _logger;
+    private readonly IEventBus _eventBus;
 
-    public UserProfileRemovedAuditHandler(
-        IAuditRepository auditRepository,
-        ILogger<UserProfileRemovedAuditHandler> logger)
+    public UserProfileRemovedAuditHandler(IEventBus eventBus)
     {
-        _auditRepository = auditRepository;
-        _logger = logger;
+        _eventBus = eventBus;
     }
 
-    public async Task Handle(UserProfileRemoved notification, CancellationToken cancellationToken)
-    {
-        var entry = AuditEntry.Create(
-            kind: AuditEventKinds.UserProfileRemove,
-            actor: null,
-            target: notification.Username,
-            message: string.Format(AuditMessageTemplates.UserProfileRemoved, notification.ProfileName, notification.Username));
-
-        await _auditRepository.InsertAsync(entry, cancellationToken);
-
-        _logger.LogDebug(
-            "Audit entry recorded for profile removal: user={UserId}, profile={ProfileId}",
-            notification.UserId, notification.ProfileId);
-    }
+    public Task Handle(UserProfileRemoved notification, CancellationToken cancellationToken)
+        => _eventBus.PublishAsync(
+            new UserProfileRemovedEvent(
+                notification.UserId,
+                notification.Username,
+                notification.ProfileId,
+                notification.ProfileName),
+            cancellationToken);
 }

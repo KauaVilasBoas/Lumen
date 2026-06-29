@@ -1,34 +1,21 @@
-using Lumen.Domain.Audit;
 using Lumen.Domain.Authorization;
-using Lumen.SharedKernel.Constants;
+using Lumen.Modularity;
+using Lumen.Modules.Audit.Contracts.Events;
 using MediatR;
-using Microsoft.Extensions.Logging;
 
 namespace Lumen.EventHandlers.Audit;
 
 public sealed class UserPermissionsChangedAuditHandler : INotificationHandler<UserPermissionsChanged>
 {
-    private readonly IAuditRepository _auditRepository;
-    private readonly ILogger<UserPermissionsChangedAuditHandler> _logger;
+    private readonly IEventBus _eventBus;
 
-    public UserPermissionsChangedAuditHandler(
-        IAuditRepository auditRepository,
-        ILogger<UserPermissionsChangedAuditHandler> logger)
+    public UserPermissionsChangedAuditHandler(IEventBus eventBus)
     {
-        _auditRepository = auditRepository;
-        _logger = logger;
+        _eventBus = eventBus;
     }
 
-    public async Task Handle(UserPermissionsChanged notification, CancellationToken cancellationToken)
-    {
-        var entry = AuditEntry.Create(
-            kind: AuditEventKinds.CacheInvalidate,
-            actor: null,
-            target: notification.UserId.ToString(),
-            message: string.Format(AuditMessageTemplates.UserPermissionCacheInvalidated, notification.UserId));
-
-        await _auditRepository.InsertAsync(entry, cancellationToken);
-
-        _logger.LogDebug("Audit entry recorded for permission cache invalidation: {UserId}", notification.UserId);
-    }
+    public Task Handle(UserPermissionsChanged notification, CancellationToken cancellationToken)
+        => _eventBus.PublishAsync(
+            new UserPermissionsChangedEvent(notification.UserId),
+            cancellationToken);
 }

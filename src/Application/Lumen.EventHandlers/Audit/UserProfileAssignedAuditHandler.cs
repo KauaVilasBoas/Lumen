@@ -1,35 +1,25 @@
 using Lumen.Domain.Audit;
-using Lumen.SharedKernel.Constants;
+using Lumen.Modularity;
+using Lumen.Modules.Audit.Contracts.Events;
 using MediatR;
-using Microsoft.Extensions.Logging;
 
 namespace Lumen.EventHandlers.Audit;
 
 public sealed class UserProfileAssignedAuditHandler : INotificationHandler<UserProfileAssigned>
 {
-    private readonly IAuditRepository _auditRepository;
-    private readonly ILogger<UserProfileAssignedAuditHandler> _logger;
+    private readonly IEventBus _eventBus;
 
-    public UserProfileAssignedAuditHandler(
-        IAuditRepository auditRepository,
-        ILogger<UserProfileAssignedAuditHandler> logger)
+    public UserProfileAssignedAuditHandler(IEventBus eventBus)
     {
-        _auditRepository = auditRepository;
-        _logger = logger;
+        _eventBus = eventBus;
     }
 
-    public async Task Handle(UserProfileAssigned notification, CancellationToken cancellationToken)
-    {
-        var entry = AuditEntry.Create(
-            kind: AuditEventKinds.UserProfileAssign,
-            actor: null,
-            target: notification.Username,
-            message: string.Format(AuditMessageTemplates.UserProfileAssigned, notification.ProfileName, notification.Username));
-
-        await _auditRepository.InsertAsync(entry, cancellationToken);
-
-        _logger.LogDebug(
-            "Audit entry recorded for profile assignment: user={UserId}, profile={ProfileId}",
-            notification.UserId, notification.ProfileId);
-    }
+    public Task Handle(UserProfileAssigned notification, CancellationToken cancellationToken)
+        => _eventBus.PublishAsync(
+            new UserProfileAssignedEvent(
+                notification.UserId,
+                notification.Username,
+                notification.ProfileId,
+                notification.ProfileName),
+            cancellationToken);
 }
