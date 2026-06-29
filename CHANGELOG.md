@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (E0 — Lumen.Modularity: lib reutilizável de modularidade)
+- **Lumen.Modularity** (novo projeto em `src/BuildingBlocks/Lumen.Modularity`): building block de modularidade que viabiliza monolito modular plug-and-play; adicionado à `Lumen.sln` sob a pasta de solução `BuildingBlocks`.
+- **IModule**: interface de contrato de módulo com `RegisterServices(IServiceCollection, IConfiguration)` e `MapEndpoints(IEndpointRouteBuilder)`.
+- **[Module]**: annotation `ModuleAttribute` que marca classes como módulo descobrível por assembly scanning.
+- **ModuleRegistry**: discovery engine interno que varre assemblies e devolve todos os tipos anotados com `[Module]` que implementam `IModule`.
+- **AddModules(IServiceCollection, IConfiguration, params Assembly[])**: extension method que dispara o auto-discovery e chama `RegisterServices` em cada módulo encontrado, registrando também a lista de módulos no container.
+- **MapModules(IEndpointRouteBuilder)**: extension method que resolve os módulos do container e chama `MapEndpoints` em cada um.
+- **IIntegrationEvent / IntegrationEvent**: interface e record base para eventos de integração; transportam `EventId` (Guid) e `OccurredOn` (DateTimeOffset UTC) gerados no momento da criação.
+- **IIntegrationEventHandler\<TEvent\>**: interface de handler de evento de integração tipada no evento.
+- **IEventBus / InProcessEventBus**: barramento de eventos in-process; `PublishAsync` cria um novo scope DI, resolve todos os handlers registrados para o tipo do evento e os invoca em sequência; projetado para evoluir para filas sem mudança de interface.
+- **AddEventBus(IServiceCollection, params Assembly[])**: extension method que registra `InProcessEventBus` como singleton e descobre/registra automaticamente todos os `IIntegrationEventHandler<TEvent>` nos assemblies fornecidos como `Scoped`.
+- **Lumen.Modularity.UnitTests** (novo projeto em `tests/Lumen.Modularity.UnitTests`): 15 testes unitários cobrindo discovery (tipos válidos, sem atributo, sem interface, abstratos, lista vazia), event bus (handler único, múltiplos handlers, sem handlers, metadados do evento, handler de tipo diferente) e extension methods (`AddModules`, `AddEventBus`).
+
 ### Changed (REFACTOR — normalização da hierarquia de exceções de domínio)
 - **ConflictException**: removido modificador `sealed` para permitir herança por exceções de domínio específicas; nenhuma mudança de comportamento ou status HTTP.
 - **DuplicateEmailException**: migrada de `Exception` para `ConflictException` — agora faz parte da hierarquia de `BusinessException` (HTTP 409); mensagem mantida via construtor existente.
