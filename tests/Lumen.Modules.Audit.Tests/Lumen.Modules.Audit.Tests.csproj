@@ -22,6 +22,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Modules\Audit\Lumen.Modules.Audit\Lumen.Modules.Audit.csproj" />
     <ProjectReference Include="..\..\src\Modules\Audit\Lumen.Modules.Audit.Contracts\Lumen.Modules.Audit.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Identity\Lumen.Modules.Identity.Contracts\Lumen.Modules.Identity.Contracts.csproj" />
     <ProjectReference Include="..\..\src\SharedKernel\Lumen.SharedKernel\Lumen.SharedKernel.csproj" />
   </ItemGroup>
 

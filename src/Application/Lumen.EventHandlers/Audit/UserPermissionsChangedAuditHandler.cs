@@ -1,6 +1,6 @@
 using Lumen.Domain.Authorization;
 using Lumen.Modularity;
-using Lumen.Modules.Audit.Contracts.Events;
+using Lumen.Modules.Identity.Contracts.Events;
 using MediatR;
 
 namespace Lumen.EventHandlers.Audit;

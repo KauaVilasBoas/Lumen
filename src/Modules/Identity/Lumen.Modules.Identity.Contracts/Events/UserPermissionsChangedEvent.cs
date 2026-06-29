@@ -1,5 +1,5 @@
 using Lumen.Modularity;
 
-namespace Lumen.Modules.Audit.Contracts.Events;
+namespace Lumen.Modules.Identity.Contracts.Events;
 
 public sealed record UserPermissionsChangedEvent(Guid UserId) : IntegrationEvent;
