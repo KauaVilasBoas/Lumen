@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (E4 — Docs & validação: documentação e malha de testes restaurada)
+- **CLAUDE.md reescrito** para o modelo modular: seção de arquitetura descreve módulos verticais, padrão `[Module]`/`IModule`, `AddModules`/`MapModules`/`AddEventBus`, regra de fronteira "0 dependências de internals — só Contratos + event bus", schema/DbContext/migrations por módulo; estrutura de solução atualizada; tabela de constraints alinhada às 7 regras dos ArchitectureTests; comandos de EF por módulo.
+- **Testes de handler e validator restaurados em `Lumen.Modules.Identity.Tests`**: 97 novos testes cobrindo todos os fluxos de auth/authz — Register, Login, Logout, RefreshToken, ForgotPassword, ResetPassword, ConfirmEmail, ResendConfirmationEmail, ChangePassword, UpdateUser, RestoreUser, CreateProfile, UpdateProfile, DeleteProfile, RemoveUserProfile. Inclui cenários de segurança: SHA-256 hash de token, revogação de refresh tokens em troca/reset de senha, resposta uniforme anti-enumeração (forgot/resend), lockout com publicação de evento, replay detection.
+- **Contagem de testes (suítes sem Docker)**: `Lumen.UnitTests` 80, `Lumen.Modules.Identity.Tests` 115, `Lumen.Modules.Audit.Tests` 6, `Lumen.Modularity.UnitTests` 15, `Lumen.ArchitectureTests` 7 — total 223 passando.
+
 ### Added (E3 — Composition root e limpeza: migração completa para monolito modular)
 - **GetRecentAuditFeedQueryHandler** (novo em `Lumen.Modules.Audit`): handler MediatR com `GetRecentAuditFeedQuery` e `AuditEntryResult` públicos — elimina dependência do `AuditController` no `Lumen.ReadModels` legado; `AuditModule` agora registra MediatR e FluentValidation.
 - **IPermissionSyncService / PermissionSyncService** (novos em `Lumen.Modules.Identity`): encapsula sincronização de permissões descobertas (`SyncDiscoveredAsync`) e reconciliação do perfil Administrator (`ReconcileAdministratorAsync`); elimina acesso direto aos repositórios legados do `Lumen.Api.Authorization`.
