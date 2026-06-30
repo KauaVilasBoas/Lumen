@@ -3,7 +3,9 @@
 ## Password policy
 
 Every password accepted by the system (registration, change, reset) is validated by
-`IPasswordValidator` (implementation in `src/Lumen.Infrastructure/Security/`). The rules:
+`IPasswordValidator` (defined in the Identity module's domain at
+`src/Modules/Identity/Lumen.Modules.Identity/Domain/Security/`, implemented at
+`src/Modules/Identity/Lumen.Modules.Identity/Infrastructure/Security/`). The rules:
 
 - Minimum **12 characters**.
 - At least **one uppercase letter**, **one lowercase letter**, **one digit** and **one special character** from ``!@#$%^&*()-_=+[]{};:'",.<>/?\|`~``.
@@ -38,7 +40,9 @@ tracked in `SEC-05`.
 ## Authorization fail-safe behaviour
 
 User permissions are cached in Redis under `user:permissions:{userId}` with event-driven
-invalidation (`UserPermissionsChanged`). When Redis is unavailable the enforcement layer falls
-back to the database — **authorization never fails open**.
+invalidation: the Identity module publishes a `UserPermissionsChangedEvent` integration event on
+the in-process `IEventBus`, and `UserPermissionsChangedCacheHandler` evicts the affected user's
+key. When Redis is unavailable the enforcement layer falls back to the database —
+**authorization never fails open**.
 
 See [authz.md](authz.md) for the complete authorization model.
