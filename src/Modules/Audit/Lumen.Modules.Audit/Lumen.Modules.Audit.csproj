@@ -23,6 +23,7 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Lumen.Modules.Audit.Tests" />
     <InternalsVisibleTo Include="Lumen.Modules.Audit.Migrations" />
+    <InternalsVisibleTo Include="Lumen.IntegrationTests" />
   </ItemGroup>
 
 </Project>

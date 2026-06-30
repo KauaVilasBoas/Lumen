@@ -34,6 +34,7 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Lumen.Modules.Identity.Tests" />
     <InternalsVisibleTo Include="Lumen.Modules.Identity.Migrations" />
+    <InternalsVisibleTo Include="Lumen.IntegrationTests" />
     <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
   </ItemGroup>
 
