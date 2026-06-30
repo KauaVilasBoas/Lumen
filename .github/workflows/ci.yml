@@ -26,21 +26,26 @@ jobs:
       - name: Build
         run: dotnet build --no-restore --configuration Release
 
-      # Runs every test project in Lumen.sln: module suites
-      # (Identity, Audit), the Lumen.Modularity building-block suite,
-      # the module-boundary architecture suite (NetArchTest) and the
-      # legacy unit suite. The ExternalApi category (live HaveIBeenPwned
-      # call) is excluded from CI.
-      - name: Tests
+      # Runs unit/module/architecture suites (no Docker required).
+      # The ExternalApi category (live HaveIBeenPwned call) and Integration
+      # category (Testcontainers · SQL Server + Redis) are excluded here;
+      # integration tests run in the dedicated step below.
+      - name: Tests (unit + architecture)
         run: >
           dotnet test Lumen.sln
           --no-build --configuration Release
-          --filter "Category!=ExternalApi"
+          --filter "Category!=ExternalApi&Category!=Integration"
           --logger "trx;LogFileName=tests.trx"
 
-      # NOTE: tests/Lumen.IntegrationTests (Testcontainers · SQL Server + Redis)
-      # is temporarily out of the solution while it is rewritten to target the
-      # per-module IdentityDbContext. Re-add a dedicated step here once it builds.
+      # Integration tests require Docker (Testcontainers: SQL Server + Redis).
+      # Runs Lumen.IntegrationTests as a separate step so failures here are
+      # clearly distinguishable from unit-test failures.
+      - name: Tests (integration)
+        run: >
+          dotnet test tests/Lumen.IntegrationTests
+          --no-build --configuration Release
+          --filter "Category=Integration"
+          --logger "trx;LogFileName=integration-tests.trx"
 
       - name: Upload test results
         if: always()
