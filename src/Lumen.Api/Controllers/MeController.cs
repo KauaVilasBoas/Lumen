@@ -1,5 +1,5 @@
-using Lumen.CommandHandlers.Users.ChangePassword;
-using Lumen.ReadModels.Queries;
+using Lumen.Modules.Identity.Application.Queries;
+using Lumen.Modules.Identity.Application.Users.ChangePassword;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -18,7 +18,7 @@ public sealed class MeController : ApiBaseController
     public sealed record ChangePasswordRequest(string CurrentPassword, string NewPassword);
 
     [HttpGet]
-    [ProducesResponseType(typeof(GetCurrentUserQueryHandler.Result), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(GetCurrentUserResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get(CancellationToken ct)
@@ -26,7 +26,7 @@ public sealed class MeController : ApiBaseController
         var unauthorized = RequireCurrentUserId(out var userId);
         if (unauthorized is not null) return unauthorized;
 
-        var result = await _mediator.Send(new GetCurrentUserQueryHandler.Query(userId), ct);
+        var result = await _mediator.Send(new GetCurrentUserQuery(userId), ct);
 
         if (result is null)
             return NotFound();
@@ -45,8 +45,7 @@ public sealed class MeController : ApiBaseController
         var unauthorized = RequireCurrentUserId(out var userId);
         if (unauthorized is not null) return unauthorized;
 
-        var command = new ChangePasswordCommandHandler.Command(userId, request.CurrentPassword, request.NewPassword);
-        await _mediator.Send(command, ct);
+        await _mediator.Send(new ChangePasswordCommand(userId, request.CurrentPassword, request.NewPassword), ct);
 
         return NoContent();
     }

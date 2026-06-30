@@ -1,6 +1,6 @@
 using System.Security.Claims;
 
-using Lumen.Domain.Authorization;
+using Lumen.Modules.Identity.Contracts;
 using Lumen.SharedKernel.Authorization;
 
 using Microsoft.AspNetCore.Html;
@@ -43,7 +43,7 @@ public static class HasPermissionHtmlHelperExtensions
             .GetRequiredService<IUserPermissionService>();
 
         var normalizedController = ControllerNameNormalizer.Normalize(controller);
-        var permissionCode = Permission.BuildCode(normalizedController, action);
+        var permissionCode = $"{normalizedController}.{action}";
 
         return await permissionService.HasPermissionAsync(userId, permissionCode, cancellationToken);
     }

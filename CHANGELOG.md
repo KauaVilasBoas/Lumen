@@ -7,6 +7,86 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (E4 — Docs & validação: documentação e malha de testes restaurada)
+- **CLAUDE.md reescrito** para o modelo modular: seção de arquitetura descreve módulos verticais, padrão `[Module]`/`IModule`, `AddModules`/`MapModules`/`AddEventBus`, regra de fronteira "0 dependências de internals — só Contratos + event bus", schema/DbContext/migrations por módulo; estrutura de solução atualizada; tabela de constraints alinhada às 7 regras dos ArchitectureTests; comandos de EF por módulo.
+- **Testes de handler e validator restaurados em `Lumen.Modules.Identity.Tests`**: 97 novos testes cobrindo todos os fluxos de auth/authz — Register, Login, Logout, RefreshToken, ForgotPassword, ResetPassword, ConfirmEmail, ResendConfirmationEmail, ChangePassword, UpdateUser, RestoreUser, CreateProfile, UpdateProfile, DeleteProfile, RemoveUserProfile. Inclui cenários de segurança: SHA-256 hash de token, revogação de refresh tokens em troca/reset de senha, resposta uniforme anti-enumeração (forgot/resend), lockout com publicação de evento, replay detection.
+- **Contagem de testes (suítes sem Docker)**: `Lumen.UnitTests` 80, `Lumen.Modules.Identity.Tests` 115, `Lumen.Modules.Audit.Tests` 6, `Lumen.Modularity.UnitTests` 15, `Lumen.ArchitectureTests` 7 — total 223 passando.
+
+### Added (E3 — Composition root e limpeza: migração completa para monolito modular)
+- **GetRecentAuditFeedQueryHandler** (novo em `Lumen.Modules.Audit`): handler MediatR com `GetRecentAuditFeedQuery` e `AuditEntryResult` públicos — elimina dependência do `AuditController` no `Lumen.ReadModels` legado; `AuditModule` agora registra MediatR e FluentValidation.
+- **IPermissionSyncService / PermissionSyncService** (novos em `Lumen.Modules.Identity`): encapsula sincronização de permissões descobertas (`SyncDiscoveredAsync`) e reconciliação do perfil Administrator (`ReconcileAdministratorAsync`); elimina acesso direto aos repositórios legados do `Lumen.Api.Authorization`.
+- **ITokenCleanupService / TokenCleanupService** (novos em `Lumen.Modules.Identity`): serviço público para limpeza de refresh tokens expirados, usado pelo job Hangfire sem depender de interfaces `internal` do módulo.
+- **IdentityAuthServiceCollectionExtensions** (novo em `Lumen.Modules.Identity`): `AddIdentityJwtBearerAuthentication(signalRHubPath)` configura JWT Bearer usando `IdentityJwtOptions` — elimina dependência do Api no legado `JwtOptions` + `AddSecurity()`.
+- **DeleteExpiredAsync** adicionado ao `IRefreshTokenRepository` e implementado no `RefreshTokenRepository` do módulo Identity.
+- **Permission.Update/MarkAsOrphan/ClearOrphan** adicionados à entidade `Permission` do módulo Identity.
+- **Lumen.Infrastructure** reduzido: apenas `SqlServerOptions` + `InfrastructureOptionsExtensions` (`AddSqlServerOptions`) permanecem; Security, `AppSettingsAdapter`, `JwtOptions`, `SmtpOptions`, etc. foram removidos (gerenciados internamente pelo módulo Identity).
+
+### Changed (E3 — Composition root)
+- **Todos os controllers da Lumen.Api** migrados para usar Commands/Queries/Results do módulo Identity (`LoginCommand`, `RegisterCommand`, `LoginResult`, `GetCurrentUserQuery`, `ListUsersQuery`, etc.) em vez dos handlers legados. O `AuditController` usa `GetRecentAuditFeedQuery` do módulo Audit.
+- **`GraphLivePushHandler`** reimplementado como `IIntegrationEventHandler<UserPermissionsChangedEvent>` registrado no host Api via `AddEventBus(typeof(Program).Assembly)` — publica delta do grafo via SignalR usando `GetAuthorizationGraphQuery`.
+- **`AuthorizationGraphHub`** usa `IUserPermissionService` dos contratos do Identity.
+- **`PermissionSyncService` e `AdministratorPermissionReconciliationService`** no Api se tornaram wrappers finos que delegam ao `IPermissionSyncService` do módulo Identity.
+- **`PermissionDiscoveryScanner`** sem dependência de `Permission.BuildCode()` — usa interpolação inline.
+- **`CleanupExpiredRefreshTokensJob`** usa `ITokenCleanupService` e `IEventBus` em vez de `IRefreshTokenRepository` legado e `IPublisher` MediatR; publica `CleanupJobExecutedEvent` diretamente.
+- **`Lumen.Api.Program.cs`**: `AddSqlServerOptions` (Hangfire), `AddIdentityJwtBearerAuthentication`, `AddModules`, `AddEventBus` (incluindo assembly do host para `GraphLivePushHandler`). Remove: `AddRelationalDataAccess`, `AddSecurity`, `AddNotifications`, `AddHibpClient`, `AddInfrastructureOptions`, `AddDomainServices`, `EfMigrationsHostedService` (schema dbo).
+- **`Lumen.Backoffice.Program.cs`**: usa `AddModules(IdentityModule)` para obter `IUserPermissionService` via Redis cache do módulo. Remove: `AddRelationalDataAccess`, `AddRedisCache` legados.
+- **Backoffice**: `AuthorizationGraphController`, `RequirePermissionTagHelper`, `HasPermissionHtmlHelperExtensions`, `AuthorizationGraphProxyMiddleware` agora usam `IUserPermissionService` do `Lumen.Modules.Identity.Contracts`.
+- **Commands/Queries/Results** do módulo Identity: extraídos dos handlers `internal` para records `public` de nível de namespace (ex.: `LoginCommand`, `LoginResult`, `RegisterCommand`, `GetCurrentUserQuery`, `GetCurrentUserResult`, etc.) — mantém encapsulamento dos handlers mas expõe os contratos de request/response para os hosts.
+- **`IdentitySmtpOptions`**, **`EmailMessage`**, **`IEmailService`**, **`IEmailTemplateRenderer`** tornados públicos no módulo Identity para acesso do `DevController`.
+
+### Removed (E3 — projetos de camada legados)
+- **`src/Application/Lumen.CommandHandlers`** — removido; 20+ handlers migrados para `Lumen.Modules.Identity`.
+- **`src/Application/Lumen.ReadModels`** — removido; 9 query handlers migrados para módulos (Identity e Audit).
+- **`src/Application/Lumen.EventHandlers`** — removido; bridges MediatR obsoletos (módulos publicam direto no `IEventBus`).
+- **`src/Lumen.Domain`** — removido; domínio migrado inteiramente para `src/Modules/Identity/Lumen.Modules.Identity`.
+- **`tests/Lumen.ArchitectureTests`** reescrito para regras de fronteira de módulo (7 regras, sem referências às camadas legadas).
+- **~60 arquivos de `tests/Lumen.UnitTests`** removidos (testavam handlers/entidades legadas); cobertura equivalente existe em `Lumen.Modules.Identity.Tests`.
+- **`Lumen.IntegrationTests` removida da solution temporariamente** (exige reescrita para usar `IdentityDbContext` em vez de `LumenDbContext` — pendente E4).
+
+### Added (E2 — Identity: vertical autocontida do monolito modular)
+- **Lumen.Modules.Identity.Contracts** (novo projeto em `src/Modules/Identity/Lumen.Modules.Identity.Contracts`): assembly público com 6 integration events publicados pelo módulo Identity — `UserLoggedInEvent`, `UserLockedOutEvent`, `ProfilePermissionsSetEvent`, `UserProfileAssignedEvent`, `UserProfileRemovedEvent`, `UserPermissionsChangedEvent`; interface pública `IUserPermissionService` exposta para os hosts.
+- **Lumen.Modules.Identity** (novo projeto em `src/Modules/Identity/Lumen.Modules.Identity`): vertical autocontida com domínio próprio (`Users`, `Tokens`, `Authorization`, `Security`, `Notifications`, `Configuration` — todos internal), `IdentityDbContext` mapeado no schema `identity.*`, repositórios, command handlers (Auth, Users, Profiles, UserProfiles), query handlers, behaviors, infrastructure (JWT, BCrypt, HIBP, MailKit, Redis cache) e `IdentityModule [Module]`. Handlers publicam diretamente no `IEventBus` via Identity.Contracts — elimina a ponte MediatR para operações do novo módulo.
+- **Lumen.Modules.Identity.Migrations** (novo projeto em `src/Modules/Identity/Lumen.Modules.Identity.Migrations`): migration `InitialIdentitySchema` que cria 9 tabelas no schema `identity.*` (Users, RefreshTokens, PasswordResetTokens, EmailConfirmationTokens, GroupPermissions, Permissions, Profiles, PermissionProfiles, UserProfiles), migration `SeedIdentityBootstrapData` com 7 grupos, 19 permissões curadas, perfis Administrator e User, usuário bootstrap e atribuição de perfil; `IdentityMigrationsHostedService` aplica migrations na inicialização.
+- **DatabaseSchemas.Identity** (nova constante em `SharedKernel`): `DatabaseSchemas.Identity = "identity"` — elimina literal do schema nas configurações EF Core do módulo.
+- **Lumen.Modules.Identity.Tests** (novo projeto em `tests/Lumen.Modules.Identity.Tests`): 18 testes cobrindo `LoginCommandHandler`, `DeleteUserCommandHandler`, `AssignUserProfileCommandHandler`, `SetProfilePermissionsCommandHandler`, `UserPermissionsChangedCacheHandler` e validadores.
+- **FluentValidation.DependencyInjectionExtensions**: adicionado ao `Directory.Packages.props` para futuros projetos que precisem do método `AddValidatorsFromAssembly`.
+
+### Changed (E2 — migração dos Integration Events do Audit para o Identity)
+- **Lumen.Modules.Audit.Contracts**: 6 events removidos (`UserLoggedInEvent`, `UserLockedOutEvent`, `ProfilePermissionsSetEvent`, `UserProfileAssignedEvent`, `UserProfileRemovedEvent`, `UserPermissionsChangedEvent`) — agora pertencem a `Lumen.Modules.Identity.Contracts` por regra: "o evento mora no módulo que o publica". `CleanupJobExecutedEvent` permanece no Audit.
+- **Lumen.Modules.Audit**: adicionada dependência de `Lumen.Modules.Identity.Contracts`; 6 event handlers do Audit atualizados para importar tipos do Identity.Contracts.
+- **Lumen.EventHandlers.Audit (bridges MediatR)**: bridges atualizados para importar e publicar eventos de `Lumen.Modules.Identity.Contracts.Events` em vez de `Lumen.Modules.Audit.Contracts.Events`; mantidos em coexistência com o módulo para suporte ao código legado.
+- **EventBusServiceCollectionExtensions**: `GetExportedTypes()` substituído por `GetTypes()` para descobrir `IIntegrationEventHandler<T>` com modificador `internal` nos módulos.
+- **Lumen.Api Program.cs**: `AddModules` e `AddEventBus` passam ambos os assemblies (Audit e Identity); `AddIdentityMigrationsHostedService` adicionado.
+- **Lumen.Api.csproj**: referências aos projetos `Lumen.Modules.Identity` e `Lumen.Modules.Identity.Migrations` adicionadas.
+- **UnitTests**: `Lumen.Modules.Identity.Contracts` adicionado como referência; `AuditEventHandlerTests` atualizado com using correto.
+
+### Added (E1 — Audit: módulo piloto do monolito modular)
+- **Lumen.Modules.Audit.Contracts** (novo projeto em `src/Modules/Audit/Lumen.Modules.Audit.Contracts`): assembly público com 7 integration events que o módulo Audit consome — `UserLoggedInEvent`, `UserLockedOutEvent`, `UserProfileAssignedEvent`, `UserProfileRemovedEvent`, `ProfilePermissionsSetEvent`, `UserPermissionsChangedEvent` e `CleanupJobExecutedEvent`; herdam de `IntegrationEvent` da `Lumen.Modularity`.
+- **Lumen.Modules.Audit** (novo projeto em `src/Modules/Audit/Lumen.Modules.Audit`): vertical autocontida com domínio próprio (`AuditEntry` — internal), `AuditDbContext` mapeado no schema `audit.*`, `AuditRepository` interno, 7 `IIntegrationEventHandler<T>` e `AuditModule` anotado com `[Module]` para auto-discovery.
+- **Lumen.Modules.Audit.Migrations** (novo projeto em `src/Modules/Audit/Lumen.Modules.Audit.Migrations`): migration `InitialAuditSchema` que cria `audit.AuditEntries` (schema separado do LumenDbContext), `AuditDbContextFactory` para design-time e `AuditMigrationsHostedService` que aplica migrations do módulo na inicialização.
+- **DatabaseSchemas** (nova constante em `SharedKernel`): `DatabaseSchemas.Audit = "audit"` — elimina literal do schema nas configurações EF Core.
+- **Lumen.Modules.Audit.Tests** (novo projeto em `tests/Lumen.Modules.Audit.Tests`): 6 testes de domínio cobrindo `AuditEntry.Create` (campos, validação, unicidade de Id).
+
+### Changed (E1 — ponte de transição INotification → IEventBus)
+- **Bridge handlers** em `Lumen.EventHandlers.Audit`: os 7 `INotificationHandler<T>` de Audit foram convertidos de gravação direta em `IAuditRepository` para redirecionamento ao `IEventBus` — publicam o integration event correspondente para que o `Lumen.Modules.Audit` consuma e grave em `audit.*`.
+- **Lumen.Api Program.cs**: adicionado `AddModules`, `AddEventBus` (com o assembly do módulo Audit) e `MapModules`; `AddAuditMigrationsHostedService` registrado logo após as migrations centrais.
+- **Lumen.EventHandlers.csproj**: adicionadas referências a `Lumen.Modularity` e `Lumen.Modules.Audit.Contracts`.
+- **Lumen.Api.csproj**: adicionadas referências a `Lumen.Modules.Audit` e `Lumen.Modules.Audit.Migrations`.
+- **AuditEventHandlerTests**: atualizados para assertar que os bridges publicam o integration event correto no `IEventBus` (via NSubstitute), removendo verificação direta em `IAuditRepository`.
+
+### Added (E0 — Lumen.Modularity: lib reutilizável de modularidade)
+- **Lumen.Modularity** (novo projeto em `src/BuildingBlocks/Lumen.Modularity`): building block de modularidade que viabiliza monolito modular plug-and-play; adicionado à `Lumen.sln` sob a pasta de solução `BuildingBlocks`.
+- **IModule**: interface de contrato de módulo com `RegisterServices(IServiceCollection, IConfiguration)` e `MapEndpoints(IEndpointRouteBuilder)`.
+- **[Module]**: annotation `ModuleAttribute` que marca classes como módulo descobrível por assembly scanning.
+- **ModuleRegistry**: discovery engine interno que varre assemblies e devolve todos os tipos anotados com `[Module]` que implementam `IModule`.
+- **AddModules(IServiceCollection, IConfiguration, params Assembly[])**: extension method que dispara o auto-discovery e chama `RegisterServices` em cada módulo encontrado, registrando também a lista de módulos no container.
+- **MapModules(IEndpointRouteBuilder)**: extension method que resolve os módulos do container e chama `MapEndpoints` em cada um.
+- **IIntegrationEvent / IntegrationEvent**: interface e record base para eventos de integração; transportam `EventId` (Guid) e `OccurredOn` (DateTimeOffset UTC) gerados no momento da criação.
+- **IIntegrationEventHandler\<TEvent\>**: interface de handler de evento de integração tipada no evento.
+- **IEventBus / InProcessEventBus**: barramento de eventos in-process; `PublishAsync` cria um novo scope DI, resolve todos os handlers registrados para o tipo do evento e os invoca em sequência; projetado para evoluir para filas sem mudança de interface.
+- **AddEventBus(IServiceCollection, params Assembly[])**: extension method que registra `InProcessEventBus` como singleton e descobre/registra automaticamente todos os `IIntegrationEventHandler<TEvent>` nos assemblies fornecidos como `Scoped`.
+- **Lumen.Modularity.UnitTests** (novo projeto em `tests/Lumen.Modularity.UnitTests`): 15 testes unitários cobrindo discovery (tipos válidos, sem atributo, sem interface, abstratos, lista vazia), event bus (handler único, múltiplos handlers, sem handlers, metadados do evento, handler de tipo diferente) e extension methods (`AddModules`, `AddEventBus`).
+
 ### Changed (REFACTOR — normalização da hierarquia de exceções de domínio)
 - **ConflictException**: removido modificador `sealed` para permitir herança por exceções de domínio específicas; nenhuma mudança de comportamento ou status HTTP.
 - **DuplicateEmailException**: migrada de `Exception` para `ConflictException` — agora faz parte da hierarquia de `BusinessException` (HTTP 409); mensagem mantida via construtor existente.

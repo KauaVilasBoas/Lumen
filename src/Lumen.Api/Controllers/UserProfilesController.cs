@@ -1,6 +1,6 @@
-using Lumen.CommandHandlers.UserProfiles.AssignUserProfile;
-using Lumen.CommandHandlers.UserProfiles.RemoveUserProfile;
-using Lumen.ReadModels.Queries;
+using Lumen.Modules.Identity.Application.Queries;
+using Lumen.Modules.Identity.Application.UserProfiles.Assign;
+using Lumen.Modules.Identity.Application.UserProfiles.Remove;
 using Lumen.SharedKernel.Authorization;
 using Lumen.SharedKernel.Constants;
 using MediatR;
@@ -23,12 +23,12 @@ public sealed class UserProfilesController : ApiBaseController
     [HttpGet]
     [RequirePermission]
     [Authorize(Policy = PermissionCodes.UserProfiles.List)]
-    [ProducesResponseType(typeof(IReadOnlyList<ListUserProfilesQueryHandler.Result>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IReadOnlyList<ListUserProfilesResult>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> List(Guid userId, CancellationToken ct)
     {
-        var result = await _mediator.Send(new ListUserProfilesQueryHandler.Query(userId), ct);
+        var result = await _mediator.Send(new ListUserProfilesQuery(userId), ct);
         return Ok(result);
     }
 
@@ -42,8 +42,7 @@ public sealed class UserProfilesController : ApiBaseController
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Assign(Guid userId, Guid profileId, CancellationToken ct)
     {
-        var command = new AssignUserProfileCommandHandler.Command(userId, profileId);
-        await _mediator.Send(command, ct);
+        await _mediator.Send(new AssignUserProfileCommand(userId, profileId), ct);
         return NoContent();
     }
 
@@ -56,8 +55,7 @@ public sealed class UserProfilesController : ApiBaseController
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Remove(Guid userId, Guid profileId, CancellationToken ct)
     {
-        var command = new RemoveUserProfileCommandHandler.Command(userId, profileId);
-        await _mediator.Send(command, ct);
+        await _mediator.Send(new RemoveUserProfileCommand(userId, profileId), ct);
         return NoContent();
     }
 }

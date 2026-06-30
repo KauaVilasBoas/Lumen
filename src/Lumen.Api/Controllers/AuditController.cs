@@ -1,4 +1,4 @@
-using Lumen.ReadModels.Queries;
+using Lumen.Modules.Audit.Application;
 using Lumen.SharedKernel.Authorization;
 using Lumen.SharedKernel.Constants;
 using MediatR;
@@ -21,7 +21,7 @@ public sealed class AuditController : ApiBaseController
     [HttpGet("recent")]
     [RequirePermission]
     [Authorize(Policy = PermissionCodes.Audit.Read)]
-    [ProducesResponseType(typeof(IReadOnlyList<GetRecentAuditFeedQueryHandler.AuditEntryResult>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IReadOnlyList<AuditEntryResult>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -29,9 +29,7 @@ public sealed class AuditController : ApiBaseController
         [FromQuery] int take = ValidationLimits.AuditTakeDefaultValue,
         CancellationToken ct = default)
     {
-        var query = new GetRecentAuditFeedQueryHandler.Query(take);
-        var result = await _mediator.Send(query, ct);
-
+        var result = await _mediator.Send(new GetRecentAuditFeedQuery(take), ct);
         return Ok(result);
     }
 }

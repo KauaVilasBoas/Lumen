@@ -1,8 +1,8 @@
-using Lumen.CommandHandlers.Profiles.CreateProfile;
-using Lumen.CommandHandlers.Profiles.DeleteProfile;
-using Lumen.CommandHandlers.Profiles.SetProfilePermissions;
-using Lumen.CommandHandlers.Profiles.UpdateProfile;
-using Lumen.ReadModels.Queries;
+using Lumen.Modules.Identity.Application.Profiles.Create;
+using Lumen.Modules.Identity.Application.Profiles.Delete;
+using Lumen.Modules.Identity.Application.Profiles.SetPermissions;
+using Lumen.Modules.Identity.Application.Profiles.Update;
+using Lumen.Modules.Identity.Application.Queries;
 using Lumen.SharedKernel.Authorization;
 using Lumen.SharedKernel.Constants;
 using MediatR;
@@ -25,25 +25,25 @@ public sealed class ProfilesController : ApiBaseController
     [HttpGet]
     [RequirePermission]
     [Authorize(Policy = PermissionCodes.Profiles.List)]
-    [ProducesResponseType(typeof(IReadOnlyList<ListProfilesQueryHandler.Result>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IReadOnlyList<ListProfilesResult>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> List(CancellationToken ct)
     {
-        var result = await _mediator.Send(new ListProfilesQueryHandler.Query(), ct);
+        var result = await _mediator.Send(new ListProfilesQuery(), ct);
         return Ok(result);
     }
 
     [HttpGet("{id:guid}")]
     [RequirePermission]
     [Authorize(Policy = PermissionCodes.Profiles.Get)]
-    [ProducesResponseType(typeof(GetProfileQueryHandler.Result), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(GetProfileResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get(Guid id, CancellationToken ct)
     {
-        var result = await _mediator.Send(new GetProfileQueryHandler.Query(id), ct);
+        var result = await _mediator.Send(new GetProfileQuery(id), ct);
 
         if (result is null)
             return NotFound();
@@ -54,13 +54,13 @@ public sealed class ProfilesController : ApiBaseController
     [HttpPost]
     [RequirePermission]
     [Authorize(Policy = PermissionCodes.Profiles.Create)]
-    [ProducesResponseType(typeof(CreateProfileCommandHandler.Result), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(CreateProfileResult), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Create(
-        [FromBody] CreateProfileCommandHandler.Command command,
+        [FromBody] CreateProfileCommand command,
         CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
@@ -81,8 +81,7 @@ public sealed class ProfilesController : ApiBaseController
         [FromBody] UpdateProfileRequest request,
         CancellationToken ct)
     {
-        var command = new UpdateProfileCommandHandler.Command(id, request.Name, request.Description);
-        await _mediator.Send(command, ct);
+        await _mediator.Send(new UpdateProfileCommand(id, request.Name, request.Description), ct);
         return NoContent();
     }
 
@@ -95,7 +94,7 @@ public sealed class ProfilesController : ApiBaseController
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
-        await _mediator.Send(new DeleteProfileCommandHandler.Command(id), ct);
+        await _mediator.Send(new DeleteProfileCommand(id), ct);
         return NoContent();
     }
 
@@ -112,8 +111,7 @@ public sealed class ProfilesController : ApiBaseController
         [FromBody] SetPermissionsRequest request,
         CancellationToken ct)
     {
-        var command = new SetProfilePermissionsCommandHandler.Command(id, request.PermissionIds, GetActorIdentifier());
-        await _mediator.Send(command, ct);
+        await _mediator.Send(new SetProfilePermissionsCommand(id, request.PermissionIds, GetActorIdentifier()), ct);
         return NoContent();
     }
 

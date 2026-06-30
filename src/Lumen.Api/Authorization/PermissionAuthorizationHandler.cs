@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using Lumen.Domain.Authorization;
+using Lumen.Modules.Identity.Contracts;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Lumen.Api.Authorization;

@@ -4,6 +4,12 @@ Lumen uses a permission-based authorization model introduced across AUTH-08 thro
 AUTH-16. This document describes the full model, enforcement mechanics, data lifecycle, and
 operational guides.
 
+> **Where it lives (modular monolith).** The entire authorization model is owned by the
+> **Identity module** (`src/Modules/Identity/`). Its entities, repositories, cache and the
+> `IUserPermissionService` are internal to the module; the only piece exposed to other modules
+> and to the hosts is `IUserPermissionService` in `Lumen.Modules.Identity.Contracts`. All tables
+> below live under the **`identity.*`** SQL schema, owned by `IdentityDbContext`.
+
 ---
 
 ## Domain model
@@ -67,7 +73,9 @@ enforcement layer and the Backoffice helpers use it.
 ### Initial data via EF Core migration
 
 The admin user, the two system profiles and the initial user-profile binding are all inserted
-by **EF Core data migrations** — there is no runtime seed and no seed CLI command.
+by **EF Core data migrations** owned by the Identity module
+(`src/Modules/Identity/Lumen.Modules.Identity.Migrations`), applied at startup by
+`IdentityMigrationsHostedService` — there is no runtime seed and no seed CLI command.
 
 | Migration | What it inserts |
 |---|---|
@@ -173,9 +181,11 @@ User permissions are cached in Redis under the key:
 user:permissions:{userId}
 ```
 
-Cache read/write is abstracted by `IUserPermissionCache` (Domain) with the Redis
-implementation in `UserPermissionCache` (DataAccess). The resolution layer is
-`IUserPermissionService` which:
+Cache read/write is abstracted by `IUserPermissionCache` (Identity module domain) with the Redis
+implementation in `UserPermissionCache`
+(`src/Modules/Identity/Lumen.Modules.Identity/Infrastructure/Cache`). The resolution layer is
+`IUserPermissionService` — exposed publicly via `Lumen.Modules.Identity.Contracts` so the
+Backoffice can reuse it — which:
 
 1. Checks the Redis cache.
 2. On a cache miss, queries the database via `IProfileRepository.GetPermissionCodesByUserIdAsync`.
@@ -192,7 +202,9 @@ outage**. When Redis recovers, the next request repopulates the cache automatica
 Invalidation is **event-driven**, not TTL-driven (TTL is a safety net only).
 
 Whenever a profile assignment or permission association changes, the relevant command handler
-publishes `UserPermissionsChanged { UserId }` for every affected user. The `InvalidateUserPermissionsEventHandler` calls `IUserPermissionCache.InvalidateAsync(userId)`.
+publishes `UserPermissionsChangedEvent { UserId }` on the in-process `IEventBus` for every
+affected user. `UserPermissionsChangedCacheHandler` (an `IIntegrationEventHandler`) calls
+`IUserPermissionCache.InvalidateAsync(userId)`.
 
 Scenarios that trigger invalidation:
 
@@ -241,7 +253,7 @@ CREATE UNIQUE INDEX UX_Users_Username ON Users (Username) WHERE IsDeleted = 0;
 When a `Profile` is soft-deleted:
 1. All `UserProfile` rows for that profile are soft-deleted.
 2. All `PermissionProfile` rows for that profile are soft-deleted.
-3. `UserPermissionsChanged` is published for all affected users (cache invalidation).
+3. `UserPermissionsChangedEvent` is published on the `IEventBus` for all affected users (cache invalidation).
 
 When a `User` is soft-deleted:
 1. All `UserProfile` rows for that user are soft-deleted.

@@ -1,6 +1,6 @@
 using System.Security.Claims;
 using Lumen.Api.Hubs;
-using Lumen.Domain.Authorization;
+using Lumen.Modules.Identity.Contracts;
 using Lumen.SharedKernel.Constants;
 using FluentAssertions;
 using Microsoft.AspNetCore.SignalR;

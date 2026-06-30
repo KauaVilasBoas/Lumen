@@ -1,6 +1,6 @@
 # Lumen
 
-Plataforma de identidade e autorização (.NET 8) construída com Clean Architecture, DDD e CQRS. Expõe uma **API REST** (`Lumen.Api`) para autenticação/identidade e um **Backoffice MVC** (`Lumen.Backoffice`) para administração. Este documento é a fonte de verdade da stack e das convenções arquiteturais — todo agente e contribuição deve se basear aqui.
+Plataforma de identidade e autorização (.NET 8) construída como **monolito modular** com DDD e CQRS. Expõe uma **API REST** (`Lumen.Api`) para autenticação/identidade e um **Backoffice MVC** (`Lumen.Backoffice`) para administração. Este documento é a fonte de verdade da stack e das convenções arquiteturais — todo agente e contribuição deve se basear aqui.
 
 ## Stack
 
@@ -29,26 +29,95 @@ Plataforma de identidade e autorização (.NET 8) construída com Clean Architec
 
 ```
 src/
-  Lumen.Domain/                 Entidades, agregados, interfaces de repositório, domain services
-  SharedKernel/Lumen.SharedKernel/  Constants, Exceptions, Util (cross-cutting, sem dependências de infra)
-  Application/
-    Lumen.CommandHandlers/      Commands + CommandHandlers (escrita) + Behaviors (ValidationBehavior)
-    Lumen.ReadModels/           Queries + QueryHandlers (leitura)
-    Lumen.EventHandlers/        Handlers de domain/integration events
-  Infrastructure/
-    Lumen.DataAccess/           DbContext EF Core, Configurations, Repositories
-    Lumen.Integration/          Integrações externas (HTTP, etc.)
-  Lumen.Infrastructure/         Composição de infra (Security, DI, serviços)
-  Migrations/
-    Lumen.Migrations/           Migrations EF Core
-    Lumen.Migrations.Cli/       CLI para aplicar migrations
-  Jobs/Lumen.Jobs/              Hangfire (registro de jobs e dashboard)
+  BuildingBlocks/
+    Lumen.Modularity/             IModule, [Module], AddModules/MapModules, IEventBus/InProcessEventBus/AddEventBus, IIntegrationEvent
+  SharedKernel/
+    Lumen.SharedKernel/           Constants, Exceptions, Util (cross-cutting, sem dependências de infra ou módulos)
+  Modules/
+    Identity/
+      Lumen.Modules.Identity.Contracts/   Contratos públicos: 6 integration events + IUserPermissionService
+      Lumen.Modules.Identity/             Módulo vertical: domínio, CQRS, infra, IdentityDbContext (schema identity.*)
+      Lumen.Modules.Identity.Migrations/  EF migrations do módulo (IdentityMigrationsHostedService)
+    Audit/
+      Lumen.Modules.Audit.Contracts/      Contratos públicos: CleanupJobExecutedEvent (+ events do Identity que o Audit consome)
+      Lumen.Modules.Audit/                Módulo vertical: AuditEntry, AuditDbContext (schema audit.*), event handlers
+      Lumen.Modules.Audit.Migrations/     EF migrations do módulo (AuditMigrationsHostedService)
+  Lumen.Infrastructure/           SqlServerOptions + InfrastructureOptionsExtensions (mínimo cross-cutting)
+  Jobs/
+    Lumen.Jobs/                   Hangfire (registro de jobs e dashboard)
   Presentation/
-    Lumen.Backoffice/           Backoffice MVC (Controllers, Views, ViewComponents)
-  Lumen.Api/                    Host da API REST (Controllers, Program.cs, DI root)
+    Lumen.Backoffice/             Backoffice MVC (Controllers, Views, ViewComponents)
+  Lumen.Api/                      Host da API REST (Controllers, Program.cs, DI root)
 tests/
-  Lumen.UnitTests/              Testes de handlers/validators (xUnit + NSubstitute + FluentAssertions)
-  Lumen.IntegrationTests/       Testes de endpoint (WebApplicationFactory + Testcontainers — exigem Docker)
+  Lumen.UnitTests/                Testes legados não migrados (ViewComponents, helpers, queries de auditoria)
+  Lumen.Modules.Identity.Tests/   Handler + validator tests do módulo Identity (xUnit + NSubstitute + FluentAssertions)
+  Lumen.Modules.Audit.Tests/      Testes de domínio do módulo Audit
+  Lumen.Modularity.UnitTests/     Testes do building block Lumen.Modularity
+  Lumen.ArchitectureTests/        Testes de fronteira de módulo (NetArchTest.Rules — 7 regras)
+```
+
+> `tests/Lumen.IntegrationTests` foi removida temporariamente da solução — exige reescrita para usar `IdentityDbContext` em vez do legado `LumenDbContext`.
+
+## Arquitetura modular
+
+### Building block: `Lumen.Modularity`
+
+Lib reutilizável que viabiliza o plug-and-play dos módulos nos hosts:
+
+- **`[Module]` / `IModule`**: a annotation `[Module]` marca a classe principal de cada módulo. `IModule` exige dois métodos: `RegisterServices(IServiceCollection, IConfiguration)` e `MapEndpoints(IEndpointRouteBuilder)`.
+- **`AddModules(assemblies...)`**: extension method que faz auto-discovery de todos os `[Module]` nos assemblies fornecidos e chama `RegisterServices` em cada um.
+- **`MapModules()`**: extension method que resolve os módulos do container e chama `MapEndpoints` em cada um.
+- **`IEventBus` / `InProcessEventBus`**: barramento in-process; `PublishAsync<TEvent>` cria um scope DI, resolve todos os `IIntegrationEventHandler<TEvent>` e os invoca em sequência.
+- **`AddEventBus(assemblies...)`**: registra `InProcessEventBus` como singleton e descobre/registra automaticamente todos os `IIntegrationEventHandler<TEvent>` nos assemblies fornecidos como `Scoped`.
+- **`IIntegrationEvent` / `IntegrationEvent`**: base para eventos de integração cross-módulo; transportam `EventId` (Guid) e `OccurredOn` (DateTimeOffset UTC).
+
+### Estrutura interna de um módulo
+
+Cada módulo é uma vertical autocontida com suas camadas internas. Exemplo (Identity):
+
+```
+src/Modules/Identity/
+  Lumen.Modules.Identity.Contracts/   ← PUBLIC: integration events + interfaces expostas a outros módulos/hosts
+  Lumen.Modules.Identity/
+    Domain/                            ← Entidades, repositórios (interfaces), domain services — todos internal
+    Application/                       ← Command/QueryHandlers, Behaviors, EventHandlers — todos internal
+    Infrastructure/                    ← JWT, BCrypt, Redis cache, MailKit, HIBP — todos internal
+    Persistence/                       ← IdentityDbContext, Repositories, Configurations — todos internal
+    IdentityModule.cs                  ← [Module] IModule — entry point de DI e endpoints
+  Lumen.Modules.Identity.Migrations/  ← EF migrations + IdentityMigrationsHostedService
+```
+
+### Regra de fronteira de módulo (OBRIGATÓRIA)
+
+**0 dependências de internals entre módulos.** Cross-module só via Contratos + event bus:
+
+- Um módulo **nunca** importa namespace interno de outro módulo (`Lumen.Modules.Identity.*` ≠ `Lumen.Modules.Audit.*`).
+- Comunicação cross-módulo usa apenas: `Lumen.Modules.<X>.Contracts` + `IEventBus.PublishAsync`.
+- Os assemblies de Contratos (`*.Contracts`) só podem depender de `Lumen.Modularity` (para herdar `IntegrationEvent`).
+- Os Contratos de um módulo não importam Contratos de outro módulo.
+
+### Schema e DbContext por módulo
+
+Cada módulo gerencia seu próprio schema SQL:
+
+- `identity.*` — `IdentityDbContext` do módulo Identity (Users, RefreshTokens, Tokens, Profiles, Permissions, UserProfiles, GroupPermissions, PermissionProfiles).
+- `audit.*` — `AuditDbContext` do módulo Audit (AuditEntries).
+- Sem FKs cross-schema. Referências cruzadas são por ID (Guid), sem `FOREIGN KEY` declarado.
+- Migrations ficam em `Lumen.Modules.<X>.Migrations` e são aplicadas por um `HostedService` na inicialização (`IdentityMigrationsHostedService`, `AuditMigrationsHostedService`).
+
+### Hosts (como os módulos são compostos)
+
+`Lumen.Api/Program.cs`:
+```csharp
+builder.Services.AddModules(IdentityModule.Assembly, AuditModule.Assembly);
+builder.Services.AddEventBus(IdentityModule.Assembly, AuditModule.Assembly, typeof(Program).Assembly);
+// ...
+app.MapModules();
+```
+
+`Lumen.Backoffice/Program.cs`:
+```csharp
+builder.Services.AddModules(IdentityModule.Assembly); // só IUserPermissionService via Redis
 ```
 
 ## Regras arquiteturais (OBRIGATÓRIAS)
@@ -56,12 +125,12 @@ tests/
 ### CQRS — Command (escrita)
 - **Command e CommandHandler vivem no MESMO arquivo `.cs`.** O `record` do Command pode estar fora da classe do Handler, mas no mesmo arquivo. Padrão atual: `Command` aninhado como `public sealed record Command(...) : IRequest<Unit>` dentro da classe do Handler.
 - **O Controller dispara o Command via MediatR** (`_mediator.Send(command, ct)`). Controller não contém regra de negócio.
-- **Dentro de um CommandHandler só é permitido usar Repositories** (escrita via EF Core). Um CommandHandler **nunca** chama um QueryHandler nem acessa a camada de leitura (Dapper).
+- **Dentro de um CommandHandler só é permitido usar repositórios** (escrita via EF Core). Um CommandHandler **nunca** chama um QueryHandler nem acessa `IEventBus` fora da camada de Aplicação do próprio módulo (handlers de comandos que precisam publicar eventos usam `IEventBus` diretamente).
 - Validação via `AbstractValidator<Command>` no mesmo arquivo, aplicada pelo `ValidationBehavior` do MediatR.
 
 ### CQRS — Query (leitura)
 - **Query e QueryHandler vivem no MESMO arquivo `.cs`** (mesmo padrão do Command).
-- **O QueryHandler usa EF Core para leitura**, preferindo `AsNoTracking`. (Decisão de 2026-06-14: Dapper foi descartado; toda a persistência usa EF Core.) Pode acessar o `DbContext`/repositórios de leitura; corrija N+1 com projeção/joins/`Include`.
+- **O QueryHandler usa EF Core para leitura**, preferindo `AsNoTracking`. Pode acessar o `DbContext`/repositórios de leitura; corrija N+1 com projeção/joins/`Include`.
 - Query handlers são **leitura pura**: sem `Insert/Update`, sem domain events.
 
 ### Apresentação (Backoffice MVC — telas)
@@ -94,9 +163,9 @@ tests/
 
 ## Testes
 
-- **Unit** (`Lumen.UnitTests`): handlers e validators com xUnit + NSubstitute + FluentAssertions. Toda nova feature deve ter testes de handler e de validator.
-- **Integration** (`Lumen.IntegrationTests`): endpoints via `WebApplicationFactory` + Testcontainers (SQL Server + Redis). **Exigem Docker rodando**; rodam no CI. Quando não executados localmente, declare isso explicitamente.
-- **Architecture** (`Lumen.ArchitectureTests`): testes de dependência de assembly via NetArchTest.Rules. Devem ser rodados junto com os unit tests. **Não exigem Docker.**
+- **Unit / Module** (`Lumen.Modules.Identity.Tests`, `Lumen.Modules.Audit.Tests`, `Lumen.UnitTests`): handlers e validators com xUnit + NSubstitute + FluentAssertions. Toda nova feature deve ter testes de handler e de validator. O módulo Identity expõe internals via `InternalsVisibleTo` para o projeto de testes.
+- **Integration** (`Lumen.IntegrationTests`): endpoints via `WebApplicationFactory` + Testcontainers (SQL Server + Redis). **Exigem Docker rodando**; rodam no CI. Quando não executados localmente, declare isso explicitamente. **Atualmente removida da solution** — exige reescrita para usar `IdentityDbContext`.
+- **Architecture** (`Lumen.ArchitectureTests`): testes de fronteira de módulo via NetArchTest.Rules. Devem ser rodados junto com os unit tests. **Não exigem Docker.**
 
 ## Constraints de arquitetura (testes automatizados)
 
@@ -105,28 +174,34 @@ Cada regra abaixo tem um teste correspondente em `ArchitectureTests.cs`.
 
 | # | Regra | Falha quando |
 |---|-------|-------------|
-| 01 | Domain não depende de Application | Tipo em `Lumen.Domain` importa namespace de CommandHandlers, ReadModels ou EventHandlers |
-| 01b | Domain não depende de Infrastructure | Tipo em `Lumen.Domain` importa `Lumen.DataAccess` ou `Lumen.Infrastructure` |
-| 01c | Domain não depende de Presentation | Tipo em `Lumen.Domain` importa `Lumen.Api` ou `Lumen.Backoffice` |
-| 02 | SharedKernel não depende de nenhuma camada superior | Tipo em `Lumen.SharedKernel` importa Application, Infrastructure ou Presentation |
-| 03 | Application não depende de Infrastructure concreta | `CommandHandlers`, `ReadModels` ou `EventHandlers` importam `Lumen.DataAccess` ou `Lumen.Infrastructure` |
-| 04 | Application não depende de Presentation | `CommandHandlers`, `ReadModels` ou `EventHandlers` importam `Lumen.Api` ou `Lumen.Backoffice` |
-| 05 | CQRS: CommandHandlers não chamam QueryHandlers | Tipo em `CommandHandlers` importa namespace `Lumen.ReadModels` |
-| 06 | CQRS: ReadModels não chamam CommandHandlers | Tipo em `ReadModels` importa namespace `Lumen.CommandHandlers` |
-| 07 | API Controllers não referenciam entidades de Domain diretamente | Controller em `Lumen.Api` importa `Domain.Users`, `Domain.Authorization`, `Domain.Tokens` ou `Domain.Audit` |
-| 08 | Backoffice Controllers não referenciam entidades de Domain diretamente | Controller em `Lumen.Backoffice` importa `Domain.Users`, `Domain.Tokens` ou `Domain.Audit` |
-| 09 | API Controllers não referenciam DataAccess (DbContext, Repositories) | Controller em `Lumen.Api` importa `Lumen.DataAccess` |
-| 10 | Application assemblies sem dependência transitiva de DataAccess | Qualquer tipo de Application importa `Lumen.DataAccess` |
+| 01 | SharedKernel não depende de módulos ou Modularity | Tipo em `Lumen.SharedKernel` importa `Lumen.Modules.Identity`, `Lumen.Modules.Audit` ou `Lumen.Modularity` |
+| 02 | Lumen.Modularity não depende de módulos de negócio | Tipo em `Lumen.Modularity` importa `Lumen.Modules.Identity`, `Lumen.Modules.Audit` ou `Lumen.SharedKernel` |
+| 03 | Identity module não referencia internals do Audit | Tipo em `Lumen.Modules.Identity` importa namespace `Lumen.Modules.Audit` |
+| 04 | Audit.Contracts não referencia internals do Identity | Tipo em `Lumen.Modules.Audit.Contracts` importa namespace `Lumen.Modules.Identity` |
+| 05 | Identity.Contracts não referencia internals do Audit | Tipo em `Lumen.Modules.Identity.Contracts` importa namespace `Lumen.Modules.Audit` |
+| 06 | Identity.Contracts não referencia Audit.Contracts | Tipo em `Lumen.Modules.Identity.Contracts` importa `Lumen.Modules.Audit.Contracts` |
+| 07 | Audit.Contracts não referencia Identity.Contracts | Tipo em `Lumen.Modules.Audit.Contracts` importa `Lumen.Modules.Identity.Contracts` |
 
 > Violação detectada = **build de testes falha**. Corrija a dependência, não o teste.
 
 ## Comandos
 
 ```bash
-dotnet build Lumen.sln                 # build (warnings = erro)
-dotnet test tests/Lumen.UnitTests       # testes unitários
-dotnet test tests/Lumen.IntegrationTests # integração (requer Docker)
-dotnet ef migrations add <Nome> -p src/Migrations/Lumen.Migrations   # nova migration
+dotnet build Lumen.sln                                    # build (warnings = erro)
+dotnet test tests/Lumen.Modules.Identity.Tests            # testes do módulo Identity
+dotnet test tests/Lumen.Modules.Audit.Tests               # testes do módulo Audit
+dotnet test tests/Lumen.Modularity.UnitTests              # testes do building block
+dotnet test tests/Lumen.ArchitectureTests                 # constraints de fronteira
+dotnet test tests/Lumen.UnitTests                         # testes legados (ViewComponents, etc.)
+# IntegrationTests exigem Docker e estão fora da solution — pendente reescrita para IdentityDbContext
+
+dotnet ef migrations add <Nome> \
+  -p src/Modules/Identity/Lumen.Modules.Identity.Migrations \
+  -s src/Modules/Identity/Lumen.Modules.Identity.Migrations    # nova migration do Identity
+
+dotnet ef migrations add <Nome> \
+  -p src/Modules/Audit/Lumen.Modules.Audit.Migrations \
+  -s src/Modules/Audit/Lumen.Modules.Audit.Migrations          # nova migration do Audit
 ```
 
 > Decisões arquiteturais não cobertas aqui são definidas durante o desenvolvimento. Ao encontrar um caso novo, proponha uma abordagem com o trade-off (ganhos/perdas), confirme, e então atualize este documento.

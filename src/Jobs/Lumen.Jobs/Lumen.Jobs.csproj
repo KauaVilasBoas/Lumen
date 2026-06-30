@@ -6,15 +6,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Lumen.Domain\Lumen.Domain.csproj" />
+    <ProjectReference Include="..\..\BuildingBlocks\Lumen.Modularity\Lumen.Modularity.csproj" />
     <ProjectReference Include="..\..\Lumen.Infrastructure\Lumen.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Audit\Lumen.Modules.Audit.Contracts\Lumen.Modules.Audit.Contracts.csproj" />
+    <ProjectReference Include="..\..\Modules\Identity\Lumen.Modules.Identity\Lumen.Modules.Identity.csproj" />
     <ProjectReference Include="..\..\SharedKernel\Lumen.SharedKernel\Lumen.SharedKernel.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Hangfire.AspNetCore" />
     <PackageReference Include="Hangfire.SqlServer" />
-    <PackageReference Include="MediatR" />
   </ItemGroup>
 
 </Project>

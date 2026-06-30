@@ -1,6 +1,7 @@
 using Lumen.DataAccess.Persistence;
 using Lumen.Domain.Authorization;
 using Lumen.IntegrationTests.Infrastructure;
+using Lumen.Modules.Identity.Application.Permissions;
 using Lumen.SharedKernel.Constants;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
@@ -99,10 +100,10 @@ public sealed class DefaultProfilesTests
         db.Permissions.Add(extraPermission);
         await db.SaveChangesAsync();
 
-        var reconciliationService = scope.ServiceProvider
-            .GetRequiredService<Lumen.Api.Authorization.AdministratorPermissionReconciliationService>();
+        var permissionSyncService = scope.ServiceProvider
+            .GetRequiredService<IPermissionSyncService>();
 
-        await reconciliationService.ReconcileAsync();
+        await permissionSyncService.ReconcileAdministratorAsync();
 
         var updatedAssignmentIds = await db.PermissionProfiles
             .Where(pp => pp.ProfileId == SystemProfiles.AdministratorId && !pp.IsDeleted)

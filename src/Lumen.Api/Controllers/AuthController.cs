@@ -1,11 +1,11 @@
-using Lumen.CommandHandlers.Auth.ConfirmEmail;
-using Lumen.CommandHandlers.Auth.ForgotPassword;
-using Lumen.CommandHandlers.Auth.Login;
-using Lumen.CommandHandlers.Auth.Logout;
-using Lumen.CommandHandlers.Auth.Refresh;
-using Lumen.CommandHandlers.Auth.Register;
-using Lumen.CommandHandlers.Auth.ResendConfirmationEmail;
-using Lumen.CommandHandlers.Auth.ResetPassword;
+using Lumen.Modules.Identity.Application.Auth.ConfirmEmail;
+using Lumen.Modules.Identity.Application.Auth.ForgotPassword;
+using Lumen.Modules.Identity.Application.Auth.Login;
+using Lumen.Modules.Identity.Application.Auth.Logout;
+using Lumen.Modules.Identity.Application.Auth.Refresh;
+using Lumen.Modules.Identity.Application.Auth.Register;
+using Lumen.Modules.Identity.Application.Auth.ResendConfirmationEmail;
+using Lumen.Modules.Identity.Application.Auth.ResetPassword;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -40,8 +40,7 @@ public sealed class AuthController : ApiBaseController
         [FromQuery] string token,
         CancellationToken ct)
     {
-        var command = new ConfirmEmailCommandHandler.Command(token);
-        await _mediator.Send(command, ct);
+        await _mediator.Send(new ConfirmEmailCommand(token), ct);
         return Ok();
     }
 
@@ -53,8 +52,7 @@ public sealed class AuthController : ApiBaseController
         [FromBody] ResendConfirmationRequest request,
         CancellationToken ct)
     {
-        var command = new ResendConfirmationEmailCommandHandler.Command(request.Email);
-        await _mediator.Send(command, ct);
+        await _mediator.Send(new ResendConfirmationEmailCommand(request.Email), ct);
         return Ok();
     }
 
@@ -67,8 +65,7 @@ public sealed class AuthController : ApiBaseController
         [FromBody] ResetPasswordRequest request,
         CancellationToken ct)
     {
-        var command = new ResetPasswordCommandHandler.Command(request.Token, request.NewPassword);
-        await _mediator.Send(command, ct);
+        await _mediator.Send(new ResetPasswordCommand(request.Token, request.NewPassword), ct);
         return NoContent();
     }
 
@@ -80,18 +77,17 @@ public sealed class AuthController : ApiBaseController
         [FromBody] ForgotPasswordRequest request,
         CancellationToken ct)
     {
-        var command = new ForgotPasswordCommandHandler.Command(request.Email);
-        await _mediator.Send(command, ct);
+        await _mediator.Send(new ForgotPasswordCommand(request.Email), ct);
         return Ok();
     }
 
     [HttpPost("register")]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(RegisterUserCommandHandler.Result), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(RegisterResult), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Register(
-        [FromBody] RegisterUserCommandHandler.Command command,
+        [FromBody] RegisterCommand command,
         CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
@@ -104,7 +100,7 @@ public sealed class AuthController : ApiBaseController
 
     [HttpPost("login")]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(LoginUserCommandHandler.Result), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(LoginResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -113,22 +109,20 @@ public sealed class AuthController : ApiBaseController
         [FromBody] LoginRequest request,
         CancellationToken ct)
     {
-        var command = new LoginUserCommandHandler.Command(request.Identifier, request.Password, GetClientIpAddress());
-        var result = await _mediator.Send(command, ct);
+        var result = await _mediator.Send(new LoginCommand(request.Identifier, request.Password, GetClientIpAddress()), ct);
         return Ok(result);
     }
 
     [HttpPost("refresh")]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(RefreshTokenCommandHandler.Result), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(RefreshTokenResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Refresh(
         [FromBody] RefreshRequest request,
         CancellationToken ct)
     {
-        var command = new RefreshTokenCommandHandler.Command(request.RefreshToken, GetClientIpAddress());
-        var result = await _mediator.Send(command, ct);
+        var result = await _mediator.Send(new RefreshTokenCommand(request.RefreshToken, GetClientIpAddress()), ct);
         return Ok(result);
     }
 
@@ -144,8 +138,7 @@ public sealed class AuthController : ApiBaseController
         var unauthorized = RequireCurrentUserId(out var userId);
         if (unauthorized is not null) return unauthorized;
 
-        var command = new LogoutUserCommandHandler.Command(request.RefreshToken, userId, GetClientIpAddress());
-        await _mediator.Send(command, ct);
+        await _mediator.Send(new LogoutCommand(request.RefreshToken, userId, GetClientIpAddress()), ct);
 
         return NoContent();
     }

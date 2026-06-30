@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using Lumen.Domain.Authorization;
+using Lumen.Modules.Identity.Contracts;
 using Lumen.SharedKernel.Authorization;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 
@@ -61,7 +61,7 @@ public sealed class RequirePermissionTagHelper : TagHelper
         }
 
         var normalizedController = ControllerNameNormalizer.Normalize(Controller);
-        var permissionCode = Permission.BuildCode(normalizedController, Action);
+        var permissionCode = $"{normalizedController}.{Action}";
 
         var hasPermission = await _permissionService.HasPermissionAsync(userId, permissionCode);
 

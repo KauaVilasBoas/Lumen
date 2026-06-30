@@ -25,9 +25,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Lumen.Api\Lumen.Api.csproj" />
     <ProjectReference Include="..\..\src\Lumen.Infrastructure\Lumen.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\src\Infrastructure\Lumen.DataAccess\Lumen.DataAccess.csproj" />
-    <ProjectReference Include="..\..\src\Infrastructure\Lumen.Integration\Lumen.Integration.csproj" />
-    <ProjectReference Include="..\..\src\Migrations\Lumen.Migrations\Lumen.Migrations.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Identity\Lumen.Modules.Identity\Lumen.Modules.Identity.csproj" />
   </ItemGroup>
 
 </Project>
