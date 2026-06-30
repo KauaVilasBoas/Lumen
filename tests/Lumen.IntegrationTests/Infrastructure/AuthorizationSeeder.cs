@@ -1,13 +1,15 @@
-using Lumen.DataAccess.Persistence;
-using Lumen.Domain.Authorization;
-using Lumen.Domain.Users;
+using Lumen.Modules.Identity.Domain.Authorization;
+using Lumen.Modules.Identity.Domain.Users;
+using Lumen.Modules.Identity.Persistence;
+using Lumen.SharedKernel.Constants;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace Lumen.IntegrationTests.Infrastructure;
 
 internal static class AuthorizationSeeder
 {
-    internal static async Task<User> EnsureUserAsync(LumenDbContext db, Guid userId)
+    internal static async Task<User> EnsureUserAsync(IdentityDbContext db, Guid userId)
     {
         var existing = await db.Users
             .IgnoreQueryFilters()
@@ -24,7 +26,7 @@ internal static class AuthorizationSeeder
         return user;
     }
 
-    internal static async Task EnsurePermissionAsync(LumenDbContext db, string permissionCode)
+    internal static async Task EnsurePermissionAsync(IdentityDbContext db, string permissionCode)
     {
         if (await db.Permissions.AnyAsync(p => p.Code == permissionCode))
             return;
@@ -34,9 +36,13 @@ internal static class AuthorizationSeeder
         await db.SaveChangesAsync();
     }
 
+    /// <summary>
+    /// Seeds a user with the given permission and invalidates the Redis permission cache
+    /// so the next request re-fetches from the database.
+    /// </summary>
     internal static async Task SeedUserWithPermissionAsync(
-        LumenDbContext db,
-        IUserPermissionCache permissionCache,
+        IdentityDbContext db,
+        IDistributedCache distributedCache,
         Guid userId,
         string permissionCode)
     {
@@ -69,6 +75,6 @@ internal static class AuthorizationSeeder
             await db.SaveChangesAsync();
         }
 
-        await permissionCache.InvalidateAsync(userId);
+        await distributedCache.RemoveAsync(CacheKeys.UserPermissions(userId));
     }
 }

@@ -1,7 +1,8 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Lumen.DataAccess.Persistence;
+using Lumen.Modules.Audit.Persistence;
+using Lumen.Modules.Identity.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -22,19 +23,17 @@ namespace Lumen.IntegrationTests.Infrastructure;
 /// Owns one SQL Server container and one Redis container; both are started
 /// once per test collection and torn down after the last test completes.
 ///
-/// Repository tests call <see cref="CreateDbContext"/> directly.
 /// HTTP tests call <see cref="CreateAnonymousClient"/> or <see cref="CreateAuthenticatedClient"/>.
+/// DbContext access uses <see cref="CreateIdentityDbContext"/> or <see cref="CreateAuditDbContext"/>.
 ///
 /// Design note: xUnit's ICollectionFixture guarantees exactly one instance per
-/// [Collection] across all test classes that belong to it.  Keeping a single
-/// fixture avoids the two-container problem where AuthorizationWebApplicationFactory
-/// previously spun up its own MsSqlContainer independently of SqlServerFixture.
+/// [Collection] across all test classes that belong to it.
 /// </summary>
 public sealed class IntegrationFixture : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    internal const string TestJwtIssuer = "aegis-test";
-    internal const string TestJwtAudience = "aegis-test";
-    internal const string TestJwtSecret = "aegis-test-secret-key-min-32-chars!!";
+    internal const string TestJwtIssuer = "lumen-test";
+    internal const string TestJwtAudience = "lumen-test";
+    internal const string TestJwtSecret = "lumen-test-secret-key-min-32-chars!!";
 
     private readonly MsSqlContainer _sqlContainer = new MsSqlBuilder()
         .WithImage("mcr.microsoft.com/mssql/server:2022-latest")
@@ -50,7 +49,7 @@ public sealed class IntegrationFixture : WebApplicationFactory<Program>, IAsyncL
             _sqlContainer.StartAsync(),
             _redisContainer.StartAsync());
 
-        await ApplyMigrationsAsync();
+        await ApplyModuleMigrationsAsync();
     }
 
     async Task IAsyncLifetime.DisposeAsync()
@@ -60,16 +59,24 @@ public sealed class IntegrationFixture : WebApplicationFactory<Program>, IAsyncL
         await base.DisposeAsync();
     }
 
-    /// <summary>Creates a <see cref="LumenDbContext"/> connected to the shared SQL Server container.</summary>
-    public LumenDbContext CreateDbContext()
+    /// <summary>Creates an <see cref="IdentityDbContext"/> connected to the shared SQL Server container.</summary>
+    internal IdentityDbContext CreateIdentityDbContext()
     {
-        var options = new DbContextOptionsBuilder<LumenDbContext>()
-            .UseSqlServer(
-                _sqlContainer.GetConnectionString(),
-                sql => sql.MigrationsAssembly("Lumen.Migrations"))
+        var options = new DbContextOptionsBuilder<IdentityDbContext>()
+            .UseSqlServer(_sqlContainer.GetConnectionString())
             .Options;
 
-        return new LumenDbContext(options);
+        return new IdentityDbContext(options);
+    }
+
+    /// <summary>Creates an <see cref="AuditDbContext"/> connected to the shared SQL Server container.</summary>
+    internal AuditDbContext CreateAuditDbContext()
+    {
+        var options = new DbContextOptionsBuilder<AuditDbContext>()
+            .UseSqlServer(_sqlContainer.GetConnectionString())
+            .Options;
+
+        return new AuditDbContext(options);
     }
 
     public HttpClient CreateAnonymousClient() => CreateClient();
@@ -83,45 +90,22 @@ public sealed class IntegrationFixture : WebApplicationFactory<Program>, IAsyncL
         return client;
     }
 
-    public HttpClient CreateProbeClient()
-        => WithProbeController(customize: null).CreateClient();
-
-    public HttpClient CreateAnonymousProbeClient()
-        => WithProbeController(customize: null).CreateClient();
-
-    public HttpClient CreateProbeClientWithUser(string userId)
+    public HttpClient CreateClientWithBrokenRedis(string userId)
     {
         var token = BuildValidJwt(userId);
-        var client = WithProbeController(customize: null).CreateClient();
-        client.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-        return client;
-    }
-
-    public HttpClient CreateProbeClientWithBrokenRedis(string userId)
-    {
-        var token = BuildValidJwt(userId);
-        var client = WithProbeController(customize: services =>
-        {
-            services.RemoveAll<IDistributedCache>();
-            services.AddSingleton<IDistributedCache, BrokenDistributedCache>();
-        }).CreateClient();
-        client.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-        return client;
-    }
-
-    private WebApplicationFactory<Program> WithProbeController(Action<IServiceCollection>? customize)
-        => WithWebHostBuilder(builder =>
+        var client = WithWebHostBuilder(builder =>
         {
             builder.ConfigureTestServices(services =>
             {
-                services.AddControllers()
-                    .AddApplicationPart(typeof(IntegrationFixture).Assembly);
-
-                customize?.Invoke(services);
+                services.RemoveAll<IDistributedCache>();
+                services.AddSingleton<IDistributedCache, BrokenDistributedCache>();
             });
-        });
+        }).CreateClient();
+
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        return client;
+    }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -131,23 +115,24 @@ public sealed class IntegrationFixture : WebApplicationFactory<Program>, IAsyncL
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
+                ["ConnectionStrings:DefaultConnection"] = _sqlContainer.GetConnectionString(),
+                ["ConnectionStrings:Redis"] = _redisContainer.GetConnectionString(),
                 ["Jwt:Issuer"] = TestJwtIssuer,
                 ["Jwt:Audience"] = TestJwtAudience,
                 ["Jwt:Secret"] = TestJwtSecret,
                 ["Jwt:ExpirationMinutes"] = "15",
                 ["Jwt:RefreshExpirationDays"] = "7",
-                ["SqlServer:ConnectionString"] = _sqlContainer.GetConnectionString(),
-                ["Redis:ConnectionString"] = _redisContainer.GetConnectionString(),
-                ["Redis:InstanceName"] = "aegis-test:",
+                ["Redis:InstanceName"] = "lumen-test:",
                 ["Smtp:Host"] = "localhost",
                 ["Smtp:Port"] = "1025",
-                ["Smtp:From"] = "test@aegis.local",
+                ["Smtp:From"] = "test@lumen.local",
                 ["Hibp:UserAgent"] = "Lumen-Tests/1.0",
                 ["Hibp:ApiBaseUrl"] = "https://api.pwnedpasswords.com/",
                 ["App:BaseUrl"] = "http://localhost:5000",
                 ["App:LockoutThreshold"] = "5",
                 ["App:LockoutDurationMinutes"] = "15",
                 ["App:RefreshTokenExpirationDays"] = "7",
+                ["SqlServer:ConnectionString"] = _sqlContainer.GetConnectionString(),
                 ["Hangfire:Dashboard:Path"] = "/internal/jobs-admin",
                 ["Hangfire:Dashboard:Username"] = "admin",
                 ["Hangfire:Dashboard:Password"] = "admin",
@@ -160,10 +145,13 @@ public sealed class IntegrationFixture : WebApplicationFactory<Program>, IAsyncL
         });
     }
 
-    private async Task ApplyMigrationsAsync()
+    private async Task ApplyModuleMigrationsAsync()
     {
-        await using var dbContext = CreateDbContext();
-        await dbContext.Database.MigrateAsync();
+        await using var identityDb = CreateIdentityDbContext();
+        await identityDb.Database.MigrateAsync();
+
+        await using var auditDb = CreateAuditDbContext();
+        await auditDb.Database.MigrateAsync();
     }
 
     public string BuildJwtForUser(string userId) => BuildValidJwt(userId);

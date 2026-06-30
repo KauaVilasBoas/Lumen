@@ -24,8 +24,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Lumen.Api\Lumen.Api.csproj" />
-    <ProjectReference Include="..\..\src\Lumen.Infrastructure\Lumen.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Modules\Identity\Lumen.Modules.Identity\Lumen.Modules.Identity.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Audit\Lumen.Modules.Audit\Lumen.Modules.Audit.csproj" />
   </ItemGroup>
 
 </Project>
