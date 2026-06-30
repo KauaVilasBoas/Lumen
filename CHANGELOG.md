@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Lumen.IntegrationTests reescrita para monolito modular** — `WebApplicationFactory` agora inicializa a aplicação via `AddModules`/`AddEventBus`, igual ao `Lumen.Api`; fixtures `CreateIdentityDbContext` e `CreateAuditDbContext` substituem `CreateDbContext(LumenDbContext)`; migrations aplicadas via `Database.Migrate()` em cada DbContext de módulo; Testcontainers (SQL Server + Redis) preservados. `Lumen.IntegrationTests` re-adicionada à `Lumen.sln`.
+- **Teste cross-módulo `LoginAuditCrossModuleTests`** — valida o fluxo `POST /api/auth/login` → `UserLoggedInEvent` (event bus in-process) → `audit.AuditEntries` gravado pelo `Audit` module.
+- **Suíte de testes `AuthEndpointTests`** — cobre endpoints anônimos de auth (400/401/200) sem necessidade de seed de banco.
+
+### Removed
+- **Projetos legados removidos do disco**: `src/Infrastructure/Lumen.DataAccess`, `src/Infrastructure/Lumen.Integration`, `src/Migrations/Lumen.Migrations`, `src/Migrations/Lumen.Migrations.Cli` — nenhum projeto ativo da solution os referenciava.
+
+### Changed
+- **CI (`.github/workflows/ci.yml`)** — passo de testes dividido em dois: (1) unit + architecture (sem Docker, `Category!=Integration&Category!=ExternalApi`); (2) integration com Testcontainers (`Category=Integration`), step separado executando `tests/Lumen.IntegrationTests`.
+
 ## [0.4.0] - 2026-06-30
 
 > Migração da Clean Architecture em camadas para **monolito modular** (épicos E0–E4): building block `Lumen.Modularity` (`[Module]`/`IModule`, auto-discovery, event bus in-process), módulos verticais `Identity` e `Audit` com schema/DbContext/migrations próprios, composition root via auto-discovery e fronteiras de módulo verificadas por testes. Ver [ADR-0003](docs/adr/0003-layered-to-modular-monolith.md).
