@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-06-30
+
+> Migração da Clean Architecture em camadas para **monolito modular** (épicos E0–E4): building block `Lumen.Modularity` (`[Module]`/`IModule`, auto-discovery, event bus in-process), módulos verticais `Identity` e `Audit` com schema/DbContext/migrations próprios, composition root via auto-discovery e fronteiras de módulo verificadas por testes. Ver [ADR-0003](docs/adr/0003-layered-to-modular-monolith.md).
+
 ### Added (E4 — Docs & validação: documentação e malha de testes restaurada)
 - **CLAUDE.md reescrito** para o modelo modular: seção de arquitetura descreve módulos verticais, padrão `[Module]`/`IModule`, `AddModules`/`MapModules`/`AddEventBus`, regra de fronteira "0 dependências de internals — só Contratos + event bus", schema/DbContext/migrations por módulo; estrutura de solução atualizada; tabela de constraints alinhada às 7 regras dos ArchitectureTests; comandos de EF por módulo.
 - **Testes de handler e validator restaurados em `Lumen.Modules.Identity.Tests`**: 97 novos testes cobrindo todos os fluxos de auth/authz — Register, Login, Logout, RefreshToken, ForgotPassword, ResetPassword, ConfirmEmail, ResendConfirmationEmail, ChangePassword, UpdateUser, RestoreUser, CreateProfile, UpdateProfile, DeleteProfile, RemoveUserProfile. Inclui cenários de segurança: SHA-256 hash de token, revogação de refresh tokens em troca/reset de senha, resposta uniforme anti-enumeração (forgot/resend), lockout com publicação de evento, replay detection.
