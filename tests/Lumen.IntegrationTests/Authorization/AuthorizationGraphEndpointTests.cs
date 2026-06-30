@@ -1,10 +1,9 @@
+using Microsoft.Extensions.Caching.Distributed;
 using System.Net;
-using Lumen.DataAccess.Persistence;
-using Lumen.Domain.Authorization;
-using Lumen.IntegrationTests.Infrastructure;
-using Lumen.SharedKernel.Constants;
 using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
+using Lumen.IntegrationTests.Infrastructure;
+
+using Lumen.SharedKernel.Constants;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Lumen.IntegrationTests.Authorization;
@@ -47,9 +46,9 @@ public sealed class AuthorizationGraphEndpointTests
     {
         const string userId = "88000000-0000-0000-0000-000000000002";
 
+        await using var db = _fixture.CreateIdentityDbContext();
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
-        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IDistributedCache>();
         await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(userId), PermissionCodes.AuthorizationGraph.View);
 
         var client = _fixture.CreateAuthenticatedClient(userId);
@@ -58,5 +57,4 @@ public sealed class AuthorizationGraphEndpointTests
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
-
 }

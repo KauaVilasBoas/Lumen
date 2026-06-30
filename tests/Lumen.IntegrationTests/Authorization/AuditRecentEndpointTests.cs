@@ -1,12 +1,13 @@
+using Microsoft.Extensions.Caching.Distributed;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Lumen.DataAccess.Persistence;
-using Lumen.Domain.Audit;
-using Lumen.Domain.Authorization;
-using Lumen.IntegrationTests.Infrastructure;
 using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
+using Lumen.IntegrationTests.Infrastructure;
+using Lumen.Modules.Audit.Domain;
+using Lumen.Modules.Audit.Persistence;
+
+using Lumen.SharedKernel.Constants;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Lumen.IntegrationTests.Authorization;
@@ -23,10 +24,6 @@ public sealed class AuditRecentEndpointTests
     {
         _fixture = fixture;
     }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // Authentication / authorisation enforcement
-    // ──────────────────────────────────────────────────────────────────────────
 
     [Fact]
     public async Task Recent_AnonymousRequest_Returns401()
@@ -48,20 +45,18 @@ public sealed class AuditRecentEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Response shape
-    // ──────────────────────────────────────────────────────────────────────────
-
     [Fact]
     public async Task Recent_AuthenticatedWithAuditReadPermission_Returns200WithExpectedShape()
     {
         const string requestingUserId = "97000000-0000-0000-0000-000000000002";
 
+        await using var identityDb = _fixture.CreateIdentityDbContext();
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
-        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
-        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(requestingUserId), "Audit.Read");
-        await SeedAuditEntryAsync(db);
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IDistributedCache>();
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(identityDb, permissionCache, Guid.Parse(requestingUserId), PermissionCodes.Audit.Read);
+
+        await using var auditDb = _fixture.CreateAuditDbContext();
+        await SeedAuditEntryAsync(auditDb);
 
         var client = _fixture.CreateAuthenticatedClient(requestingUserId);
         var response = await client.GetAsync(BaseEndpoint);
@@ -85,13 +80,15 @@ public sealed class AuditRecentEndpointTests
     {
         const string requestingUserId = "97000000-0000-0000-0000-000000000003";
 
+        await using var identityDb = _fixture.CreateIdentityDbContext();
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
-        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
-        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(requestingUserId), "Audit.Read");
-        await SeedAuditEntryAsync(db);
-        await SeedAuditEntryAsync(db);
-        await SeedAuditEntryAsync(db);
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IDistributedCache>();
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(identityDb, permissionCache, Guid.Parse(requestingUserId), PermissionCodes.Audit.Read);
+
+        await using var auditDb = _fixture.CreateAuditDbContext();
+        await SeedAuditEntryAsync(auditDb);
+        await SeedAuditEntryAsync(auditDb);
+        await SeedAuditEntryAsync(auditDb);
 
         var client = _fixture.CreateAuthenticatedClient(requestingUserId);
         var response = await client.GetAsync($"{BaseEndpoint}?take=2");
@@ -107,10 +104,10 @@ public sealed class AuditRecentEndpointTests
     {
         const string requestingUserId = "97000000-0000-0000-0000-000000000004";
 
+        await using var identityDb = _fixture.CreateIdentityDbContext();
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
-        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
-        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(requestingUserId), "Audit.Read");
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IDistributedCache>();
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(identityDb, permissionCache, Guid.Parse(requestingUserId), PermissionCodes.Audit.Read);
 
         var client = _fixture.CreateAuthenticatedClient(requestingUserId);
         var response = await client.GetAsync($"{BaseEndpoint}?take=0");
@@ -118,14 +115,10 @@ public sealed class AuditRecentEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Helpers
-    // ──────────────────────────────────────────────────────────────────────────
-
-    private static async Task SeedAuditEntryAsync(LumenDbContext db)
+    private static async Task SeedAuditEntryAsync(AuditDbContext db)
     {
         db.AuditEntries.Add(AuditEntry.Create(
-            kind: "auth.login",
+            kind: AuditEventKinds.AuthLogin,
             actor: "seed-user",
             target: null,
             message: "Seed audit entry for integration test."));

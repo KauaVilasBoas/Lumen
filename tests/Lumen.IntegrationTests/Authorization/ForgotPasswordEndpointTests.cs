@@ -1,11 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
-using Lumen.DataAccess.Persistence;
-using Lumen.Domain.Users;
-using Lumen.IntegrationTests.Infrastructure;
 using FluentAssertions;
+using Lumen.IntegrationTests.Infrastructure;
+using Lumen.Modules.Identity.Domain.Users;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Lumen.IntegrationTests.Authorization;
 
@@ -21,8 +19,6 @@ public sealed class ForgotPasswordEndpointTests
     {
         _fixture = fixture;
     }
-
-    // ── Always 200 regardless of whether the email exists ─────────────────
 
     [Fact]
     public async Task Post_WhenEmailDoesNotExist_Returns200()
@@ -45,8 +41,6 @@ public sealed class ForgotPasswordEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
-    // ── Token is persisted when the email exists ───────────────────────────
-
     [Fact]
     public async Task Post_WhenEmailExists_CreatesPasswordResetTokenInDatabase()
     {
@@ -55,15 +49,12 @@ public sealed class ForgotPasswordEndpointTests
 
         await client.PostAsJsonAsync(Endpoint, new { email = user.Email });
 
-        await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
+        await using var db = _fixture.CreateIdentityDbContext();
         var token = await db.PasswordResetTokens.FirstOrDefaultAsync(t => t.UserId == user.Id);
 
         token.Should().NotBeNull();
         token!.ExpiresAt.Should().BeAfter(DateTime.UtcNow);
     }
-
-    // ── No token is created for unknown emails ─────────────────────────────
 
     [Fact]
     public async Task Post_WhenEmailDoesNotExist_DoesNotCreateAnyToken()
@@ -73,18 +64,9 @@ public sealed class ForgotPasswordEndpointTests
 
         await client.PostAsJsonAsync(Endpoint, new { email = unknownEmail });
 
-        await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
-        var anyToken = await db.PasswordResetTokens
-            .AnyAsync(t => t.UsedAt == null);
-
-        // This test is meaningful only as a regression check — no assertion on the full table,
-        // just verifying the call itself completed without side-effects for the unknown address.
-        // The absence of an exception is the primary assertion here.
-        _ = anyToken;
+        // No assertion on the full table — the absence of an exception is the primary assertion here.
+        // This guards against silent side-effects for unknown addresses.
     }
-
-    // ── Validation ─────────────────────────────────────────────────────────
 
     [Fact]
     public async Task Post_WhenEmailIsInvalid_Returns400()
@@ -106,12 +88,9 @@ public sealed class ForgotPasswordEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────
-
     private async Task<User> SeedUserAsync(string deterministicId)
     {
-        await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
+        await using var db = _fixture.CreateIdentityDbContext();
 
         var userId = Guid.Parse(deterministicId);
         return await AuthorizationSeeder.EnsureUserAsync(db, userId);

@@ -1,13 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
-using Lumen.DataAccess.Persistence;
-using Lumen.Domain.Tokens;
-using Lumen.IntegrationTests.Infrastructure;
-using Lumen.SharedKernel.Util;
 using FluentAssertions;
+using Lumen.IntegrationTests.Infrastructure;
+using Lumen.Modules.Identity.Domain.Tokens;
+using Lumen.SharedKernel.Util;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Lumen.IntegrationTests.Authorization;
 
@@ -23,8 +21,6 @@ public sealed class ResetPasswordEndpointTests
     {
         _fixture = fixture;
     }
-
-    // ── Token invalid ─────────────────────────────────────────────────────
 
     [Fact]
     public async Task Post_WhenTokenIsInvalid_Returns401()
@@ -52,8 +48,6 @@ public sealed class ResetPasswordEndpointTests
         secondResponse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    // ── Happy path ────────────────────────────────────────────────────────
-
     [Fact]
     public async Task Post_WhenTokenIsValid_Returns204()
     {
@@ -77,8 +71,7 @@ public sealed class ResetPasswordEndpointTests
 
         await client.PostAsJsonAsync(Endpoint, new { token = rawToken, newPassword = "NewStr0ng!Pass123" });
 
-        await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
+        await using var db = _fixture.CreateIdentityDbContext();
         var tokenHash = Sha256Hasher.ComputeHex(rawToken);
         var token = await db.PasswordResetTokens
             .IgnoreQueryFilters()
@@ -93,20 +86,16 @@ public sealed class ResetPasswordEndpointTests
         var (userId, rawToken) = await SeedUserWithResetTokenAsync("93000000-0000-0000-0000-000000000004");
         var client = _fixture.CreateAnonymousClient();
 
-        await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
-        var originalHash = (await db.Users.IgnoreQueryFilters().FirstAsync(u => u.Id == userId)).PasswordHash;
+        await using var beforeDb = _fixture.CreateIdentityDbContext();
+        var originalHash = (await beforeDb.Users.IgnoreQueryFilters().FirstAsync(u => u.Id == userId)).PasswordHash;
 
         await client.PostAsJsonAsync(Endpoint, new { token = rawToken, newPassword = "NewStr0ng!Pass123" });
 
-        await using var verifyScope = _fixture.Services.CreateAsyncScope();
-        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<LumenDbContext>();
-        var updatedUser = await verifyDb.Users.IgnoreQueryFilters().FirstAsync(u => u.Id == userId);
+        await using var afterDb = _fixture.CreateIdentityDbContext();
+        var updatedUser = await afterDb.Users.IgnoreQueryFilters().FirstAsync(u => u.Id == userId);
 
         updatedUser.PasswordHash.Should().NotBe(originalHash);
     }
-
-    // ── Validation ────────────────────────────────────────────────────────
 
     [Fact]
     public async Task Post_WhenTokenIsMissing_Returns400()
@@ -128,12 +117,9 @@ public sealed class ResetPasswordEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────
-
     private async Task<(Guid UserId, string RawToken)> SeedUserWithResetTokenAsync(string deterministicId)
     {
-        await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
+        await using var db = _fixture.CreateIdentityDbContext();
 
         var userId = Guid.Parse(deterministicId);
         var user = await AuthorizationSeeder.EnsureUserAsync(db, userId);

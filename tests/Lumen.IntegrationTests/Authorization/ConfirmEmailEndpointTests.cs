@@ -1,14 +1,12 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
-using Lumen.DataAccess.Persistence;
-using Lumen.Domain.Tokens;
-using Lumen.Domain.Users;
-using Lumen.IntegrationTests.Infrastructure;
-using Lumen.SharedKernel.Util;
 using FluentAssertions;
+using Lumen.IntegrationTests.Infrastructure;
+using Lumen.Modules.Identity.Domain.Tokens;
+using Lumen.Modules.Identity.Domain.Users;
+using Lumen.SharedKernel.Util;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Lumen.IntegrationTests.Authorization;
 
@@ -25,8 +23,6 @@ public sealed class ConfirmEmailEndpointTests
     {
         _fixture = fixture;
     }
-
-    // ── GET /api/auth/confirm-email ───────────────────────────────────────
 
     [Fact]
     public async Task Get_WhenTokenIsValid_Returns200()
@@ -47,8 +43,7 @@ public sealed class ConfirmEmailEndpointTests
 
         await client.GetAsync($"{ConfirmEndpoint}?token={Uri.EscapeDataString(rawToken)}");
 
-        await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
+        await using var db = _fixture.CreateIdentityDbContext();
         var user = await db.Users.IgnoreQueryFilters().FirstAsync(u => u.Id == userId);
 
         user.IsActive.Should().BeTrue();
@@ -63,8 +58,7 @@ public sealed class ConfirmEmailEndpointTests
 
         await client.GetAsync($"{ConfirmEndpoint}?token={Uri.EscapeDataString(rawToken)}");
 
-        await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
+        await using var db = _fixture.CreateIdentityDbContext();
         var tokenHash = Sha256Hasher.ComputeHex(rawToken);
         var token = await db.EmailConfirmationTokens
             .IgnoreQueryFilters()
@@ -105,8 +99,6 @@ public sealed class ConfirmEmailEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
-    // ── POST /api/auth/resend-confirmation ────────────────────────────────
-
     [Fact]
     public async Task ResendPost_WhenEmailIsUnknown_Returns200()
     {
@@ -136,8 +128,7 @@ public sealed class ConfirmEmailEndpointTests
 
         await client.PostAsJsonAsync(ResendEndpoint, new { email = user.Email });
 
-        await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
+        await using var db = _fixture.CreateIdentityDbContext();
         var anyToken = await db.EmailConfirmationTokens.AnyAsync(t => t.UserId == user.Id);
 
         anyToken.Should().BeTrue();
@@ -153,12 +144,9 @@ public sealed class ConfirmEmailEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────
-
     private async Task<(Guid UserId, string RawToken)> SeedPendingUserWithTokenAsync(string deterministicId)
     {
-        await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
+        await using var db = _fixture.CreateIdentityDbContext();
 
         var userId = Guid.Parse(deterministicId);
         var user = await AuthorizationSeeder.EnsureUserAsync(db, userId);
@@ -179,8 +167,7 @@ public sealed class ConfirmEmailEndpointTests
 
     private async Task<User> SeedPendingUserOnlyAsync(string deterministicId)
     {
-        await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
+        await using var db = _fixture.CreateIdentityDbContext();
 
         var userId = Guid.Parse(deterministicId);
         return await AuthorizationSeeder.EnsureUserAsync(db, userId);

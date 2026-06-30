@@ -1,8 +1,7 @@
-using Lumen.DataAccess.Persistence;
-using Lumen.DataAccess.Persistence.Repositories;
-using Lumen.Domain.Users;
-using Lumen.IntegrationTests.Infrastructure;
 using FluentAssertions;
+using Lumen.IntegrationTests.Infrastructure;
+using Lumen.Modules.Identity.Domain.Users;
+using Lumen.Modules.Identity.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 namespace Lumen.IntegrationTests.Persistence;
@@ -14,7 +13,7 @@ public sealed class UserRepositoryIntegrationTests(IntegrationFixture fixture)
     [Fact]
     public async Task InsertAsync_ValidUser_PersistsToDatabase()
     {
-        await using var dbContext = fixture.CreateDbContext();
+        await using var dbContext = fixture.CreateIdentityDbContext();
         var repository = new UserRepository(dbContext);
         var user = User.Create($"insert-{Guid.NewGuid():N}@test.com", $"user-{Guid.NewGuid():N}", "hash");
 
@@ -28,7 +27,7 @@ public sealed class UserRepositoryIntegrationTests(IntegrationFixture fixture)
     [Fact]
     public async Task FindByEmailAsync_ExistingUser_ReturnsUser()
     {
-        await using var dbContext = fixture.CreateDbContext();
+        await using var dbContext = fixture.CreateIdentityDbContext();
         var repository = new UserRepository(dbContext);
         var email = $"find-email-{Guid.NewGuid():N}@test.com";
         var user = User.Create(email, $"user-{Guid.NewGuid():N}", "hash");
@@ -43,7 +42,7 @@ public sealed class UserRepositoryIntegrationTests(IntegrationFixture fixture)
     [Fact]
     public async Task FindByUsernameAsync_ExistingUser_ReturnsUser()
     {
-        await using var dbContext = fixture.CreateDbContext();
+        await using var dbContext = fixture.CreateIdentityDbContext();
         var repository = new UserRepository(dbContext);
         var username = $"user-{Guid.NewGuid():N}";
         var user = User.Create($"{Guid.NewGuid():N}@test.com", username, "hash");
@@ -58,7 +57,7 @@ public sealed class UserRepositoryIntegrationTests(IntegrationFixture fixture)
     [Fact]
     public async Task InsertAsync_DuplicateEmail_ThrowsDuplicateEmailException()
     {
-        await using var dbContext = fixture.CreateDbContext();
+        await using var dbContext = fixture.CreateIdentityDbContext();
         var repository = new UserRepository(dbContext);
         var email = $"dup-email-{Guid.NewGuid():N}@test.com";
 
@@ -73,7 +72,7 @@ public sealed class UserRepositoryIntegrationTests(IntegrationFixture fixture)
     [Fact]
     public async Task InsertAsync_DuplicateUsername_ThrowsDuplicateUsernameException()
     {
-        await using var dbContext = fixture.CreateDbContext();
+        await using var dbContext = fixture.CreateIdentityDbContext();
         var repository = new UserRepository(dbContext);
         var username = $"dup-user-{Guid.NewGuid():N}";
 
@@ -88,7 +87,7 @@ public sealed class UserRepositoryIntegrationTests(IntegrationFixture fixture)
     [Fact]
     public async Task SoftDelete_DeletedUser_IsHiddenByGlobalFilter()
     {
-        await using var dbContext = fixture.CreateDbContext();
+        await using var dbContext = fixture.CreateIdentityDbContext();
         var repository = new UserRepository(dbContext);
         var email = $"soft-del-{Guid.NewGuid():N}@test.com";
         var user = User.Create(email, $"user-{Guid.NewGuid():N}", "hash");
@@ -109,7 +108,7 @@ public sealed class UserRepositoryIntegrationTests(IntegrationFixture fixture)
     [Fact]
     public async Task SoftDelete_AllowsEmailReuseViaFilteredUniqueIndex()
     {
-        await using var dbContext = fixture.CreateDbContext();
+        await using var dbContext = fixture.CreateIdentityDbContext();
         var repository = new UserRepository(dbContext);
         var email = $"reuse-email-{Guid.NewGuid():N}@test.com";
         var original = User.Create(email, $"user-{Guid.NewGuid():N}", "hash");
@@ -127,7 +126,7 @@ public sealed class UserRepositoryIntegrationTests(IntegrationFixture fixture)
     [Fact]
     public async Task SoftDelete_AllowsUsernameReuseViaFilteredUniqueIndex()
     {
-        await using var dbContext = fixture.CreateDbContext();
+        await using var dbContext = fixture.CreateIdentityDbContext();
         var repository = new UserRepository(dbContext);
         var username = $"reuse-user-{Guid.NewGuid():N}";
         var original = User.Create($"{Guid.NewGuid():N}@test.com", username, "hash");

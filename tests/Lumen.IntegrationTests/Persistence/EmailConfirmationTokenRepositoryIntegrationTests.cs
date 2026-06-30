@@ -1,8 +1,8 @@
-using Lumen.DataAccess.Persistence.Repositories;
-using Lumen.Domain.Tokens;
-using Lumen.Domain.Users;
-using Lumen.IntegrationTests.Infrastructure;
 using FluentAssertions;
+using Lumen.IntegrationTests.Infrastructure;
+using Lumen.Modules.Identity.Domain.Tokens;
+using Lumen.Modules.Identity.Domain.Users;
+using Lumen.Modules.Identity.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 namespace Lumen.IntegrationTests.Persistence;
@@ -14,7 +14,7 @@ public sealed class EmailConfirmationTokenRepositoryIntegrationTests(Integration
     [Fact]
     public async Task InsertAsync_ValidToken_PersistsToDatabase()
     {
-        await using var dbContext = fixture.CreateDbContext();
+        await using var dbContext = fixture.CreateIdentityDbContext();
         var userRepo = new UserRepository(dbContext);
         var tokenRepo = new EmailConfirmationTokenRepository(dbContext);
 
@@ -30,7 +30,7 @@ public sealed class EmailConfirmationTokenRepositoryIntegrationTests(Integration
     [Fact]
     public async Task FindByTokenHashAsync_ExistingToken_ReturnsToken()
     {
-        await using var dbContext = fixture.CreateDbContext();
+        await using var dbContext = fixture.CreateIdentityDbContext();
         var userRepo = new UserRepository(dbContext);
         var tokenRepo = new EmailConfirmationTokenRepository(dbContext);
 
@@ -48,7 +48,7 @@ public sealed class EmailConfirmationTokenRepositoryIntegrationTests(Integration
     [Fact]
     public async Task UpdateAsync_MarkAsUsed_PersistsUsedAt()
     {
-        await using var dbContext = fixture.CreateDbContext();
+        await using var dbContext = fixture.CreateIdentityDbContext();
         var userRepo = new UserRepository(dbContext);
         var tokenRepo = new EmailConfirmationTokenRepository(dbContext);
 
@@ -68,7 +68,7 @@ public sealed class EmailConfirmationTokenRepositoryIntegrationTests(Integration
     [Fact]
     public async Task SoftDelete_DeletedToken_IsHiddenByGlobalFilter()
     {
-        await using var dbContext = fixture.CreateDbContext();
+        await using var dbContext = fixture.CreateIdentityDbContext();
         var userRepo = new UserRepository(dbContext);
         var tokenRepo = new EmailConfirmationTokenRepository(dbContext);
 

@@ -1,10 +1,9 @@
-using Lumen.DataAccess.Persistence;
-using Lumen.Domain.Authorization;
-using Lumen.IntegrationTests.Infrastructure;
-using Lumen.SharedKernel.Constants;
+using Microsoft.Extensions.Caching.Distributed;
 using FluentAssertions;
+using Lumen.IntegrationTests.Infrastructure;
+
+using Lumen.SharedKernel.Constants;
 using Microsoft.AspNetCore.SignalR.Client;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Lumen.IntegrationTests.Authorization;
@@ -40,9 +39,9 @@ public sealed class AuthorizationGraphHubTests
     {
         const string userId = "77000000-0000-0000-0000-000000000002";
 
+        await using var db = _fixture.CreateIdentityDbContext();
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
-        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IDistributedCache>();
         await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(userId), PermissionCodes.AuthorizationGraph.View);
 
         var token = _fixture.BuildJwtForUser(userId);
@@ -68,5 +67,4 @@ public sealed class AuthorizationGraphHubTests
             })
             .Build();
     }
-
 }

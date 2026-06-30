@@ -1,11 +1,9 @@
+using Microsoft.Extensions.Caching.Distributed;
 using System.Net;
-using Lumen.DataAccess.Persistence;
-using Lumen.Domain.Authorization;
-using Lumen.IntegrationTests.Infrastructure;
-using Lumen.SharedKernel.Authorization;
 using FluentAssertions;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+using Lumen.IntegrationTests.Infrastructure;
+
+using Lumen.SharedKernel.Constants;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Lumen.IntegrationTests.Authorization;
@@ -22,14 +20,11 @@ public sealed class PermissionEnforcementTests
     }
 
     [Fact]
-    public async Task AuthenticatedUser_WithoutRequiredPermission_Returns403()
+    public async Task AuthenticatedUser_WithoutRequiredPermission_OnUsersEndpoint_Returns403()
     {
-        await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
-        await AuthorizationSeeder.EnsurePermissionAsync(db, PermissionProbeController.ProbePermissionCode);
+        var client = _fixture.CreateAuthenticatedClient("00000000-0000-0000-0000-000000000005");
 
-        var client = _fixture.CreateProbeClientWithUser("00000000-0000-0000-0000-000000000005");
-        var response = await client.GetAsync(PermissionProbeController.ProtectedPath);
+        var response = await client.GetAsync("/api/users");
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
@@ -37,8 +32,9 @@ public sealed class PermissionEnforcementTests
     [Fact]
     public async Task AnonymousUser_OnPermissionProtectedEndpoint_Returns401()
     {
-        var client = _fixture.CreateAnonymousProbeClient();
-        var response = await client.GetAsync(PermissionProbeController.ProtectedPath);
+        var client = _fixture.CreateAnonymousClient();
+
+        var response = await client.GetAsync("/api/users");
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
@@ -46,70 +42,56 @@ public sealed class PermissionEnforcementTests
     [Fact]
     public async Task AuthenticatedUser_WithRequiredPermission_Returns200()
     {
-        const string userId = "00000000-0000-0000-0000-000000000002";
+        const string userId = "00000000-0000-0000-0000-000000000006";
 
+        await using var db = _fixture.CreateIdentityDbContext();
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
-        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
-        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(userId), PermissionProbeController.ProbePermissionCode);
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IDistributedCache>();
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(userId), PermissionCodes.Users.List);
 
-        var client = _fixture.CreateProbeClientWithUser(userId);
-        var response = await client.GetAsync(PermissionProbeController.ProtectedPath);
+        var client = _fixture.CreateAuthenticatedClient(userId);
+        var response = await client.GetAsync("/api/users");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     [Fact]
-    public async Task CacheInvalidation_AfterProfileChange_ReflectsNewPermissionsImmediately()
+    public async Task CacheInvalidation_AfterPermissionGrant_ReflectsNewPermissionsImmediately()
     {
-        const string userId = "00000000-0000-0000-0000-000000000003";
+        const string userId = "00000000-0000-0000-0000-000000000007";
         var userGuid = Guid.Parse(userId);
 
+        await using var db = _fixture.CreateIdentityDbContext();
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
-        var cache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
+        var cache = scope.ServiceProvider.GetRequiredService<IDistributedCache>();
 
-        await AuthorizationSeeder.EnsurePermissionAsync(db, PermissionProbeController.ProbePermissionCode);
+        await AuthorizationSeeder.EnsureUserAsync(db, userGuid);
 
-        var client = _fixture.CreateProbeClientWithUser(userId);
+        var client = _fixture.CreateAuthenticatedClient(userId);
 
-        var firstResponse = await client.GetAsync(PermissionProbeController.ProtectedPath);
+        var firstResponse = await client.GetAsync("/api/users");
         firstResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, cache, userGuid, PermissionProbeController.ProbePermissionCode);
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, cache, userGuid, PermissionCodes.Users.List);
 
-        var secondResponse = await client.GetAsync(PermissionProbeController.ProtectedPath);
+        var secondResponse = await client.GetAsync("/api/users");
         secondResponse.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     [Fact]
     public async Task AuthenticatedUser_WithPermission_WhenRedisUnavailable_FallsBackToDatabase_Returns200()
     {
-        const string userId = "00000000-0000-0000-0000-000000000004";
+        const string userId = "00000000-0000-0000-0000-000000000008";
 
+        await using var db = _fixture.CreateIdentityDbContext();
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
-        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
-        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(userId), PermissionProbeController.ProbePermissionCode);
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IDistributedCache>();
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(userId), PermissionCodes.Users.List);
 
-        var client = _fixture.CreateProbeClientWithBrokenRedis(userId);
-        var response = await client.GetAsync(PermissionProbeController.ProtectedPath);
+        var client = _fixture.CreateClientWithBrokenRedis(userId);
+        var response = await client.GetAsync("/api/users");
 
         response.StatusCode.Should().Be(HttpStatusCode.OK,
             "authorization must fall back to the database when Redis is unavailable");
     }
-
-}
-
-[ApiController]
-[Route("probe")]
-public sealed class PermissionProbeController : ControllerBase
-{
-    public const string ProbePermissionCode = "Probe.Protected";
-    public const string ProtectedPath = "/probe/protected";
-
-    [HttpGet("protected")]
-    [RequirePermission(ProbePermissionCode)]
-    [Authorize(Policy = ProbePermissionCode)]
-    public IActionResult Protected() => Ok(new { ok = true });
 }

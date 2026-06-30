@@ -1,10 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
-using Lumen.DataAccess.Persistence;
-using Lumen.Domain.Security;
-using Lumen.Domain.Users;
-using Lumen.IntegrationTests.Infrastructure;
 using FluentAssertions;
+using Lumen.IntegrationTests.Infrastructure;
+using Lumen.Modules.Identity.Domain.Security;
+using Lumen.Modules.Identity.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -23,8 +22,6 @@ public sealed class ChangePasswordEndpointTests
         _fixture = fixture;
     }
 
-    // ── Authentication enforcement ────────────────────────────────────────
-
     [Fact]
     public async Task Post_AnonymousRequest_Returns401()
     {
@@ -38,8 +35,6 @@ public sealed class ChangePasswordEndpointTests
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
-
-    // ── Current password incorrect ─────────────────────────────────────────
 
     [Fact]
     public async Task Post_WhenCurrentPasswordIsWrong_Returns400()
@@ -57,8 +52,6 @@ public sealed class ChangePasswordEndpointTests
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
-
-    // ── Happy path ────────────────────────────────────────────────────────
 
     [Fact]
     public async Task Post_WhenCurrentPasswordIsCorrect_Returns204()
@@ -83,8 +76,7 @@ public sealed class ChangePasswordEndpointTests
         const string userId = "91000000-0000-0000-0000-000000000003";
         var knownPassword = await SeedUserWithKnownPasswordAsync(userId);
 
-        await using var beforeScope = _fixture.Services.CreateAsyncScope();
-        var beforeDb = beforeScope.ServiceProvider.GetRequiredService<LumenDbContext>();
+        await using var beforeDb = _fixture.CreateIdentityDbContext();
         var originalHash = (await beforeDb.Users.IgnoreQueryFilters()
             .FirstAsync(u => u.Id == Guid.Parse(userId))).PasswordHash;
 
@@ -95,15 +87,12 @@ public sealed class ChangePasswordEndpointTests
             newPassword = "NewStr0ng!Pass123"
         });
 
-        await using var afterScope = _fixture.Services.CreateAsyncScope();
-        var afterDb = afterScope.ServiceProvider.GetRequiredService<LumenDbContext>();
+        await using var afterDb = _fixture.CreateIdentityDbContext();
         var updatedUser = await afterDb.Users.IgnoreQueryFilters()
             .FirstAsync(u => u.Id == Guid.Parse(userId));
 
         updatedUser.PasswordHash.Should().NotBe(originalHash);
     }
-
-    // ── Validation ────────────────────────────────────────────────────────
 
     [Fact]
     public async Task Post_WhenCurrentPasswordIsMissing_Returns400()
@@ -139,17 +128,15 @@ public sealed class ChangePasswordEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────
-
     private async Task<string> SeedUserWithKnownPasswordAsync(string deterministicId)
     {
         const string knownPassword = "Kn0wn!P@ssword42";
 
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
         var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
 
         var userId = Guid.Parse(deterministicId);
+        await using var db = _fixture.CreateIdentityDbContext();
         var existing = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == userId);
 
         if (existing is not null)

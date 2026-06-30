@@ -1,6 +1,6 @@
 using System.Net.Http.Headers;
-using Lumen.Integration.Security;
 using FluentAssertions;
+using Lumen.Modules.Identity.Infrastructure.Security;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
 

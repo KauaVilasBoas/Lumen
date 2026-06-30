@@ -1,11 +1,12 @@
+using Microsoft.Extensions.Caching.Distributed;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Lumen.DataAccess.Persistence;
-using Lumen.Domain.Authorization;
-using Lumen.Domain.Users;
-using Lumen.IntegrationTests.Infrastructure;
 using FluentAssertions;
+using Lumen.IntegrationTests.Infrastructure;
+using Lumen.Modules.Identity.Domain.Users;
+
+using Lumen.SharedKernel.Constants;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Lumen.IntegrationTests.Authorization;
@@ -22,10 +23,6 @@ public sealed class UserUpdateEndpointTests
     {
         _fixture = fixture;
     }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // Authentication / authorisation enforcement
-    // ──────────────────────────────────────────────────────────────────────────
 
     [Fact]
     public async Task Put_AnonymousRequest_Returns401()
@@ -47,19 +44,15 @@ public sealed class UserUpdateEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // 404 — user not found
-    // ──────────────────────────────────────────────────────────────────────────
-
     [Fact]
     public async Task Put_WithUsersUpdatePermission_NonExistentId_Returns404()
     {
         const string requestingUserId = "96000000-0000-0000-0000-000000000002";
 
+        await using var db = _fixture.CreateIdentityDbContext();
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
-        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
-        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(requestingUserId), "Users.Update");
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IDistributedCache>();
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(requestingUserId), PermissionCodes.Users.Update);
 
         var client = _fixture.CreateAuthenticatedClient(requestingUserId);
         var response = await client.PutAsJsonAsync(
@@ -69,20 +62,16 @@ public sealed class UserUpdateEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Happy path — username update
-    // ──────────────────────────────────────────────────────────────────────────
-
     [Fact]
     public async Task Put_ChangeUsername_Returns200WithEmailChangedFalse()
     {
         const string requestingUserId = "96000000-0000-0000-0000-000000000003";
         var targetUserId = Guid.Parse("96000000-0000-0000-0000-000000000004");
 
+        await using var db = _fixture.CreateIdentityDbContext();
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
-        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
-        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(requestingUserId), "Users.Update");
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IDistributedCache>();
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(requestingUserId), PermissionCodes.Users.Update);
         await AuthorizationSeeder.EnsureUserAsync(db, targetUserId);
 
         var client = _fixture.CreateAuthenticatedClient(requestingUserId);
@@ -97,20 +86,16 @@ public sealed class UserUpdateEndpointTests
         json.GetProperty("emailChanged").GetBoolean().Should().BeFalse();
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Happy path — email update
-    // ──────────────────────────────────────────────────────────────────────────
-
     [Fact]
     public async Task Put_ChangeEmail_Returns200WithEmailChangedTrue()
     {
         const string requestingUserId = "96000000-0000-0000-0000-000000000005";
         var targetUserId = Guid.Parse("96000000-0000-0000-0000-000000000006");
 
+        await using var db = _fixture.CreateIdentityDbContext();
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
-        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
-        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(requestingUserId), "Users.Update");
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IDistributedCache>();
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(requestingUserId), PermissionCodes.Users.Update);
         await AuthorizationSeeder.EnsureUserAsync(db, targetUserId);
 
         var client = _fixture.CreateAuthenticatedClient(requestingUserId);
@@ -125,20 +110,16 @@ public sealed class UserUpdateEndpointTests
         json.GetProperty("emailChanged").GetBoolean().Should().BeTrue();
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // 409 — conflict on duplicate
-    // ──────────────────────────────────────────────────────────────────────────
-
     [Fact]
     public async Task Put_WithDuplicateUsername_Returns409()
     {
         const string requestingUserId = "96000000-0000-0000-0000-000000000007";
         var targetUserId = Guid.Parse("96000000-0000-0000-0000-000000000008");
 
+        await using var db = _fixture.CreateIdentityDbContext();
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
-        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
-        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(requestingUserId), "Users.Update");
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IDistributedCache>();
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(requestingUserId), PermissionCodes.Users.Update);
         await AuthorizationSeeder.EnsureUserAsync(db, targetUserId);
 
         var takenUsername = $"taken-{Guid.NewGuid():N}"[..20];
@@ -160,10 +141,10 @@ public sealed class UserUpdateEndpointTests
         const string requestingUserId = "96000000-0000-0000-0000-000000000009";
         var targetUserId = Guid.Parse("96000000-0000-0000-0000-000000000010");
 
+        await using var db = _fixture.CreateIdentityDbContext();
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
-        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
-        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(requestingUserId), "Users.Update");
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IDistributedCache>();
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(requestingUserId), PermissionCodes.Users.Update);
         await AuthorizationSeeder.EnsureUserAsync(db, targetUserId);
 
         var takenEmail = $"taken-{Guid.NewGuid():N}@test.com";
@@ -179,20 +160,16 @@ public sealed class UserUpdateEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // 400 — validation failure
-    // ──────────────────────────────────────────────────────────────────────────
-
     [Fact]
     public async Task Put_WithInvalidEmail_Returns400()
     {
         const string requestingUserId = "96000000-0000-0000-0000-000000000011";
         var targetUserId = Guid.Parse("96000000-0000-0000-0000-000000000012");
 
+        await using var db = _fixture.CreateIdentityDbContext();
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
-        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
-        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(requestingUserId), "Users.Update");
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IDistributedCache>();
+        await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(requestingUserId), PermissionCodes.Users.Update);
         await AuthorizationSeeder.EnsureUserAsync(db, targetUserId);
 
         var client = _fixture.CreateAuthenticatedClient(requestingUserId);

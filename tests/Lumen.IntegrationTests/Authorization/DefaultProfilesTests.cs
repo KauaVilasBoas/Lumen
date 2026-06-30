@@ -1,9 +1,8 @@
-using Lumen.DataAccess.Persistence;
-using Lumen.Domain.Authorization;
+using FluentAssertions;
 using Lumen.IntegrationTests.Infrastructure;
 using Lumen.Modules.Identity.Application.Permissions;
+using Lumen.Modules.Identity.Domain.Authorization;
 using Lumen.SharedKernel.Constants;
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -23,7 +22,7 @@ public sealed class DefaultProfilesTests
     [Fact]
     public async Task SeedDefaultProfiles_Migration_CreatesAdministratorProfile()
     {
-        await using var db = _fixture.CreateDbContext();
+        await using var db = _fixture.CreateIdentityDbContext();
 
         var profile = await db.Profiles
             .FirstOrDefaultAsync(p => p.Id == SystemProfiles.AdministratorId);
@@ -37,7 +36,7 @@ public sealed class DefaultProfilesTests
     [Fact]
     public async Task SeedDefaultProfiles_Migration_CreatesUserProfile()
     {
-        await using var db = _fixture.CreateDbContext();
+        await using var db = _fixture.CreateIdentityDbContext();
 
         var profile = await db.Profiles
             .FirstOrDefaultAsync(p => p.Id == SystemProfiles.UserId);
@@ -51,7 +50,7 @@ public sealed class DefaultProfilesTests
     [Fact]
     public async Task SeedDefaultProfiles_Migration_BindsAdminUserToAdministratorProfile()
     {
-        await using var db = _fixture.CreateDbContext();
+        await using var db = _fixture.CreateIdentityDbContext();
 
         var userProfile = await db.UserProfiles
             .FirstOrDefaultAsync(up =>
@@ -66,7 +65,7 @@ public sealed class DefaultProfilesTests
     public async Task AdministratorPermissionReconciliation_AfterDiscovery_AdminHoldsAllPermissions()
     {
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
+        await using var db = _fixture.CreateIdentityDbContext();
 
         var allPermissionIds = await db.Permissions
             .Where(p => !p.IsDeleted)
@@ -89,7 +88,7 @@ public sealed class DefaultProfilesTests
     public async Task AdministratorPermissionReconciliation_IsAdditive_DoesNotRemoveExistingAssignments()
     {
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
+        await using var db = _fixture.CreateIdentityDbContext();
 
         var existingAssignmentIds = await db.PermissionProfiles
             .Where(pp => pp.ProfileId == SystemProfiles.AdministratorId && !pp.IsDeleted)
@@ -128,7 +127,7 @@ public sealed class DefaultProfilesTests
     [Fact]
     public async Task UserProfile_HasNoPermissionsAssigned_ByDefault()
     {
-        await using var db = _fixture.CreateDbContext();
+        await using var db = _fixture.CreateIdentityDbContext();
 
         var userProfilePermissions = await db.PermissionProfiles
             .Where(pp => pp.ProfileId == SystemProfiles.UserId && !pp.IsDeleted)

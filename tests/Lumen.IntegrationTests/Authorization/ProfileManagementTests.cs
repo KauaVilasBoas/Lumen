@@ -1,9 +1,10 @@
-using Lumen.DataAccess.Persistence;
-using Lumen.Domain.Authorization;
+using Microsoft.Extensions.Caching.Distributed;
+using FluentAssertions;
 using Lumen.IntegrationTests.Infrastructure;
+using Lumen.Modules.Identity.Domain.Authorization;
+
 using Lumen.SharedKernel.Constants;
 using Lumen.SharedKernel.Exceptions;
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -23,9 +24,9 @@ public sealed class ProfileManagementTests
     [Fact]
     public async Task CreateProfile_WithUniqueName_PersistsToDatabase()
     {
-        await using var db = _fixture.CreateDbContext();
+        await using var db = _fixture.CreateIdentityDbContext();
 
-        var profile = Domain.Authorization.Profile.Create("Managers", "Profile for managers");
+        var profile = Profile.Create("Managers", "Profile for managers");
         db.Profiles.Add(profile);
         await db.SaveChangesAsync();
 
@@ -40,12 +41,12 @@ public sealed class ProfileManagementTests
     [Fact]
     public async Task SoftDeleteProfile_SetsIsDeletedAndCascadesToJoinRows()
     {
-        await using var db = _fixture.CreateDbContext();
+        await using var db = _fixture.CreateIdentityDbContext();
 
         var permission = Permission.Create("Reports", "View", "Reports — View");
         db.Permissions.Add(permission);
 
-        var profile = Domain.Authorization.Profile.Create("Analysts", "Profile for analysts");
+        var profile = Profile.Create("Analysts", "Profile for analysts");
         db.Profiles.Add(profile);
 
         var userId = Guid.NewGuid();
@@ -93,7 +94,7 @@ public sealed class ProfileManagementTests
     [Fact]
     public async Task SoftDeleteProfile_SystemProfile_ThrowsForbiddenException()
     {
-        await using var db = _fixture.CreateDbContext();
+        await using var db = _fixture.CreateIdentityDbContext();
 
         var adminProfile = await db.Profiles
             .FirstOrDefaultAsync(p => p.Id == SystemProfiles.AdministratorId);
@@ -109,13 +110,13 @@ public sealed class ProfileManagementTests
     [Fact]
     public async Task SetProfilePermissions_SoftDeletesRemovedAndAddsNew()
     {
-        await using var db = _fixture.CreateDbContext();
+        await using var db = _fixture.CreateIdentityDbContext();
 
         var permA = Permission.Create("Invoices", "List", "Invoices — List");
         var permB = Permission.Create("Invoices", "Export", "Invoices — Export");
         db.Permissions.AddRange(permA, permB);
 
-        var profile = Domain.Authorization.Profile.Create("Finance", "Finance profile");
+        var profile = Profile.Create("Finance", "Finance profile");
         db.Profiles.Add(profile);
 
         var ppA = PermissionProfile.Create(permA.Id, profile.Id);
@@ -148,9 +149,9 @@ public sealed class ProfileManagementTests
     [Fact]
     public async Task AssignUserProfile_CreatesActiveJoinRow()
     {
-        await using var db = _fixture.CreateDbContext();
+        await using var db = _fixture.CreateIdentityDbContext();
 
-        var profile = Domain.Authorization.Profile.Create("Support", "Support team profile");
+        var profile = Profile.Create("Support", "Support team profile");
         db.Profiles.Add(profile);
         await db.SaveChangesAsync();
 
@@ -170,9 +171,9 @@ public sealed class ProfileManagementTests
     [Fact]
     public async Task RemoveUserProfile_SoftDeletesJoinRow_NotPhysicalDelete()
     {
-        await using var db = _fixture.CreateDbContext();
+        await using var db = _fixture.CreateIdentityDbContext();
 
-        var profile = Domain.Authorization.Profile.Create("Auditors", "Auditors profile");
+        var profile = Profile.Create("Auditors", "Auditors profile");
         db.Profiles.Add(profile);
         await db.SaveChangesAsync();
 
@@ -206,38 +207,39 @@ public sealed class ProfileManagementTests
         var userGuid = Guid.Parse(userId);
 
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
-        var cache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
+        await using var db = _fixture.CreateIdentityDbContext();
+        var cache = scope.ServiceProvider.GetRequiredService<IDistributedCache>();
 
         var permission = Permission.Create("Documents", "Read", "Documents — Read");
         db.Permissions.Add(permission);
 
-        var profile = Domain.Authorization.Profile.Create("Readers", "Readers profile");
+        var profile = Profile.Create("Readers", "Readers profile");
         db.Profiles.Add(profile);
 
         await AuthorizationSeeder.EnsureUserAsync(db, userGuid);
         db.UserProfiles.Add(UserProfile.Create(userGuid, profile.Id));
         await db.SaveChangesAsync();
 
-        var beforePermissions = await cache.GetAsync(userGuid);
+        var cacheKey = CacheKeys.UserPermissions(userGuid);
+        var beforePermissions = await cache.GetStringAsync(cacheKey);
         beforePermissions.Should().BeNull("cache should start empty");
 
         var permissionProfile = PermissionProfile.Create(permission.Id, profile.Id);
         db.PermissionProfiles.Add(permissionProfile);
         await db.SaveChangesAsync();
 
-        await cache.InvalidateAsync(userGuid);
+        await cache.RemoveAsync(cacheKey);
 
-        var afterPermissions = await cache.GetAsync(userGuid);
+        var afterPermissions = await cache.GetStringAsync(cacheKey);
         afterPermissions.Should().BeNull("cache was explicitly invalidated; next read will rebuild from DB");
     }
 
     [Fact]
     public async Task ProfileNameUniqueness_AllowsDuplicateNamesOnSoftDeletedProfiles()
     {
-        await using var db = _fixture.CreateDbContext();
+        await using var db = _fixture.CreateIdentityDbContext();
 
-        var profile1 = Domain.Authorization.Profile.Create("TempProfile", "First temp");
+        var profile1 = Profile.Create("TempProfile", "First temp");
         db.Profiles.Add(profile1);
         await db.SaveChangesAsync();
 
@@ -245,7 +247,7 @@ public sealed class ProfileManagementTests
         db.Profiles.Update(profile1);
         await db.SaveChangesAsync();
 
-        var profile2 = Domain.Authorization.Profile.Create("TempProfile", "Second temp");
+        var profile2 = Profile.Create("TempProfile", "Second temp");
         db.Profiles.Add(profile2);
         var act = async () => await db.SaveChangesAsync();
 
@@ -253,20 +255,17 @@ public sealed class ProfileManagementTests
             "the unique index is partial ([IsDeleted] = 0), so a deleted profile does not block re-use of the name");
     }
 
-    // ── Atomic cascade via repository ─────────────────────────────────────────
-
     [Fact]
     public async Task DeleteWithCascade_SoftDeletesProfileAndAllAssociationsAtomically()
     {
         await using var scope = _fixture.Services.CreateAsyncScope();
         var repository = scope.ServiceProvider.GetRequiredService<IProfileRepository>();
-        var userProfileRepository = scope.ServiceProvider.GetRequiredService<IUserProfileRepository>();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
+        await using var db = _fixture.CreateIdentityDbContext();
 
         var permission = Permission.Create("Items", "Delete", "Items — Delete");
         db.Permissions.Add(permission);
 
-        var profile = Domain.Authorization.Profile.Create("Deletable", "Will be cascade-deleted");
+        var profile = Profile.Create("Deletable", "Will be cascade-deleted");
         db.Profiles.Add(profile);
 
         var userId = Guid.NewGuid();
@@ -279,7 +278,6 @@ public sealed class ProfileManagementTests
 
         await db.SaveChangesAsync();
 
-        // Soft-delete all in memory, then persist atomically.
         permissionProfile.SoftDelete();
         userProfile.SoftDelete();
         profile.SoftDelete();
@@ -289,7 +287,6 @@ public sealed class ProfileManagementTests
             new List<PermissionProfile> { permissionProfile },
             new List<UserProfile> { userProfile });
 
-        // All three must be soft-deleted — none physically removed.
         var rawProfile = await db.Profiles
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(p => p.Id == profile.Id);
@@ -309,7 +306,6 @@ public sealed class ProfileManagementTests
         rawPermissionProfile.Should().NotBeNull();
         rawPermissionProfile!.IsDeleted.Should().BeTrue();
 
-        // Active queries (with global filter) must return nothing.
         var activeProfile = await db.Profiles.FirstOrDefaultAsync(p => p.Id == profile.Id);
         activeProfile.Should().BeNull("soft-deleted profile must be hidden by the global query filter");
     }
@@ -319,9 +315,9 @@ public sealed class ProfileManagementTests
     {
         await using var scope = _fixture.Services.CreateAsyncScope();
         var repository = scope.ServiceProvider.GetRequiredService<IProfileRepository>();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
+        await using var db = _fixture.CreateIdentityDbContext();
 
-        var profile = Domain.Authorization.Profile.Create("IsolatedProfile", "No associations");
+        var profile = Profile.Create("IsolatedProfile", "No associations");
         db.Profiles.Add(profile);
         await db.SaveChangesAsync();
 

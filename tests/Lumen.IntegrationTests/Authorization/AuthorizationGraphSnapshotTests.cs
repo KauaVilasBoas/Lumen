@@ -1,12 +1,11 @@
+using Microsoft.Extensions.Caching.Distributed;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using Lumen.DataAccess.Persistence;
-using Lumen.Domain.Authorization;
-using Lumen.IntegrationTests.Infrastructure;
-using Lumen.SharedKernel.Constants;
 using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
+using Lumen.IntegrationTests.Infrastructure;
+
+using Lumen.SharedKernel.Constants;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Lumen.IntegrationTests.Authorization;
@@ -23,10 +22,6 @@ public sealed class AuthorizationGraphSnapshotTests
     {
         _fixture = fixture;
     }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // Authentication / authorisation enforcement
-    // ──────────────────────────────────────────────────────────────────────────
 
     [Fact]
     public async Task Get_AnonymousRequest_Returns401()
@@ -53,9 +48,9 @@ public sealed class AuthorizationGraphSnapshotTests
     {
         const string userId = "86000000-0000-0000-0000-000000000002";
 
+        await using var db = _fixture.CreateIdentityDbContext();
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
-        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IDistributedCache>();
         await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(userId), PermissionCodes.AuthorizationGraph.View);
 
         var client = _fixture.CreateAuthenticatedClient(userId);
@@ -65,18 +60,14 @@ public sealed class AuthorizationGraphSnapshotTests
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Response shape
-    // ──────────────────────────────────────────────────────────────────────────
-
     [Fact]
     public async Task Get_WithPermission_ReturnsGraphSnapshotShape()
     {
         const string userId = "86000000-0000-0000-0000-000000000003";
 
+        await using var db = _fixture.CreateIdentityDbContext();
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
-        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IDistributedCache>();
         await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(userId), PermissionCodes.AuthorizationGraph.View);
 
         var client = _fixture.CreateAuthenticatedClient(userId);
@@ -96,9 +87,9 @@ public sealed class AuthorizationGraphSnapshotTests
     {
         const string userId = "86000000-0000-0000-0000-000000000004";
 
+        await using var db = _fixture.CreateIdentityDbContext();
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
-        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IDistributedCache>();
         await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(userId), PermissionCodes.AuthorizationGraph.View);
 
         var client = _fixture.CreateAuthenticatedClient(userId);
@@ -125,9 +116,9 @@ public sealed class AuthorizationGraphSnapshotTests
     {
         const string userId = "86000000-0000-0000-0000-000000000005";
 
+        await using var db = _fixture.CreateIdentityDbContext();
         await using var scope = _fixture.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<LumenDbContext>();
-        var permissionCache = scope.ServiceProvider.GetRequiredService<IUserPermissionCache>();
+        var permissionCache = scope.ServiceProvider.GetRequiredService<IDistributedCache>();
         await AuthorizationSeeder.SeedUserWithPermissionAsync(db, permissionCache, Guid.Parse(userId), PermissionCodes.AuthorizationGraph.View);
 
         var client = _fixture.CreateAuthenticatedClient(userId);
@@ -137,9 +128,4 @@ public sealed class AuthorizationGraphSnapshotTests
         responseBody.Should().NotContain("\"color\"",
             "color is a presentation concern and must not appear in the API payload");
     }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // Helpers
-    // ──────────────────────────────────────────────────────────────────────────
-
 }

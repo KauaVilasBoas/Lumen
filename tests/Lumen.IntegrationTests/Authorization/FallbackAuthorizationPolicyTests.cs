@@ -1,6 +1,6 @@
 using System.Net;
-using Lumen.IntegrationTests.Infrastructure;
 using FluentAssertions;
+using Lumen.IntegrationTests.Infrastructure;
 
 namespace Lumen.IntegrationTests.Authorization;
 
