@@ -21,8 +21,8 @@ public sealed class PermissionPolicyProviderTests
         var policy = await provider.GetPolicyAsync("Users.List");
 
         policy.Should().NotBeNull();
-        policy!.Requirements.Should().ContainSingle(r =>
-            r is PermissionRequirement req && req.Code == "Users.List");
+        policy!.Requirements.OfType<PermissionRequirement>().Should()
+            .ContainSingle(req => req.Code == "Users.List");
     }
 
     [Fact]
@@ -33,8 +33,8 @@ public sealed class PermissionPolicyProviderTests
         var policy = await provider.GetPolicyAsync("Lumen:Users.List");
 
         policy.Should().NotBeNull();
-        policy!.Requirements.Should().ContainSingle(r =>
-            r is PermissionRequirement req && req.Code == "Users.List");
+        policy!.Requirements.OfType<PermissionRequirement>().Should()
+            .ContainSingle(req => req.Code == "Users.List");
     }
 
     [Fact]
@@ -55,7 +55,7 @@ public sealed class PermissionPolicyProviderTests
         var policy = await provider.GetPolicyAsync("Lumen:Profiles.Create");
 
         policy.Should().NotBeNull();
-        policy!.Requirements.Should().ContainSingle(r =>
-            r is PermissionRequirement req && req.Code == "Profiles.Create");
+        policy!.Requirements.OfType<PermissionRequirement>().Should()
+            .ContainSingle(req => req.Code == "Profiles.Create");
     }
 }
