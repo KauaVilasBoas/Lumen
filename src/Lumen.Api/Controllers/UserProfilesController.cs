@@ -1,6 +1,6 @@
-using Lumen.Modules.Identity.Application.Queries;
-using Lumen.Modules.Identity.Application.UserProfiles.Assign;
-using Lumen.Modules.Identity.Application.UserProfiles.Remove;
+using Lumen.Authorization.Application.Queries;
+using Lumen.Authorization.Application.UserProfiles.Assign;
+using Lumen.Authorization.Application.UserProfiles.Remove;
 using Lumen.SharedKernel.Authorization;
 using Lumen.SharedKernel.Constants;
 using MediatR;

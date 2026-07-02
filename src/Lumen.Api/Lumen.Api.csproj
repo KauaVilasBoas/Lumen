@@ -11,6 +11,8 @@
     <ProjectReference Include="..\Modules\Audit\Lumen.Modules.Audit.Migrations\Lumen.Modules.Audit.Migrations.csproj" />
     <ProjectReference Include="..\Modules\Identity\Lumen.Modules.Identity\Lumen.Modules.Identity.csproj" />
     <ProjectReference Include="..\Modules\Identity\Lumen.Modules.Identity.Migrations\Lumen.Modules.Identity.Migrations.csproj" />
+    <ProjectReference Include="..\Lumen.Authorization\Lumen.Authorization.csproj" />
+    <ProjectReference Include="..\Lumen.Authorization.Contracts\Lumen.Authorization.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

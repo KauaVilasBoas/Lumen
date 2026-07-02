@@ -1,4 +1,4 @@
-using Lumen.Modules.Identity.Application.Queries;
+using Lumen.Authorization.Application.Queries;
 using Lumen.SharedKernel.Authorization;
 using Lumen.SharedKernel.Constants;
 using MediatR;

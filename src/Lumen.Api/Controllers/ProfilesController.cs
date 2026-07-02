@@ -1,8 +1,8 @@
-using Lumen.Modules.Identity.Application.Profiles.Create;
-using Lumen.Modules.Identity.Application.Profiles.Delete;
-using Lumen.Modules.Identity.Application.Profiles.SetPermissions;
-using Lumen.Modules.Identity.Application.Profiles.Update;
-using Lumen.Modules.Identity.Application.Queries;
+using Lumen.Authorization.Application.Profiles.Create;
+using Lumen.Authorization.Application.Profiles.Delete;
+using Lumen.Authorization.Application.Profiles.SetPermissions;
+using Lumen.Authorization.Application.Profiles.Update;
+using Lumen.Authorization.Application.Queries;
 using Lumen.SharedKernel.Authorization;
 using Lumen.SharedKernel.Constants;
 using MediatR;

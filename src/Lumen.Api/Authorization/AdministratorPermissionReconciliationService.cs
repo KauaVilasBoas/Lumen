@@ -1,24 +1,24 @@
-using Lumen.Modules.Identity.Application.Permissions;
+using Lumen.Authorization.Application.Permissions;
 using Microsoft.Extensions.Logging;
 
 namespace Lumen.Api.Authorization;
 
 internal sealed class AdministratorPermissionReconciliationService
 {
-    private readonly IPermissionSyncService _identityPermissionSyncService;
+    private readonly IPermissionSyncService _authorizationPermissionSyncService;
     private readonly ILogger<AdministratorPermissionReconciliationService> _logger;
 
     public AdministratorPermissionReconciliationService(
-        IPermissionSyncService identityPermissionSyncService,
+        IPermissionSyncService authorizationPermissionSyncService,
         ILogger<AdministratorPermissionReconciliationService> logger)
     {
-        _identityPermissionSyncService = identityPermissionSyncService;
+        _authorizationPermissionSyncService = authorizationPermissionSyncService;
         _logger = logger;
     }
 
     public Task ReconcileAsync(CancellationToken ct = default)
     {
-        _logger.LogInformation("Running Administrator profile permission reconciliation via Identity module.");
-        return _identityPermissionSyncService.ReconcileAdministratorAsync(ct);
+        _logger.LogInformation("Running Administrator profile permission reconciliation via Authorization library.");
+        return _authorizationPermissionSyncService.ReconcileAdministratorAsync(ct);
     }
 }

@@ -1,6 +1,6 @@
+using Lumen.Authorization.Application.Queries;
+using Lumen.Authorization.Contracts.Events;
 using Lumen.Modularity;
-using Lumen.Modules.Identity.Application.Queries;
-using Lumen.Modules.Identity.Contracts.Events;
 using MediatR;
 using Microsoft.AspNetCore.SignalR;
 

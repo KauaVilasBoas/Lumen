@@ -1,24 +1,24 @@
-using Lumen.Modules.Identity.Application.Permissions;
+using Lumen.Authorization.Application.Permissions;
 using Microsoft.Extensions.Logging;
 
 namespace Lumen.Api.Authorization;
 
 internal sealed class PermissionSyncService
 {
-    private readonly IPermissionSyncService _identityPermissionSyncService;
+    private readonly IPermissionSyncService _authorizationPermissionSyncService;
     private readonly ILogger<PermissionSyncService> _logger;
 
     public PermissionSyncService(
-        IPermissionSyncService identityPermissionSyncService,
+        IPermissionSyncService authorizationPermissionSyncService,
         ILogger<PermissionSyncService> logger)
     {
-        _identityPermissionSyncService = identityPermissionSyncService;
+        _authorizationPermissionSyncService = authorizationPermissionSyncService;
         _logger = logger;
     }
 
     public Task SyncAsync(IReadOnlyList<DiscoveredPermission> discovered, CancellationToken ct = default)
     {
-        _logger.LogInformation("Syncing {Count} discovered permission(s) via Identity module.", discovered.Count);
+        _logger.LogInformation("Syncing {Count} discovered permission(s) via Authorization library.", discovered.Count);
 
         var entries = discovered
             .Select(d => new DiscoveredPermissionEntry(
@@ -29,6 +29,6 @@ internal sealed class PermissionSyncService
                 GroupName: d.GroupName))
             .ToList();
 
-        return _identityPermissionSyncService.SyncDiscoveredAsync(entries, ct);
+        return _authorizationPermissionSyncService.SyncDiscoveredAsync(entries, ct);
     }
 }
