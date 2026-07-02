@@ -63,6 +63,10 @@ tests/
 > **LIB-07 (concluído):** `Lumen.Authorization.AspNetCore` criado com `PermissionPolicyProvider`, `PermissionRequirement`, `PermissionAuthorizationHandler`, `RequirePermissionAttribute`, `PermissionGroupAttribute`, `ControllerNameNormalizer`. Máquina de enforcement movida do host; SharedKernel limpo dos atributos. Registro: `AddLumenAuthorizationEnforcement()`.
 >
 > **LIB-06 (concluído):** `RequirePermissionAttribute` implementa `IAuthorizationRequirementData` — atributo único declara E enforça. Code explícito ou convenção `controller.action` via `ControllerActionDescriptor` do endpoint. Controllers do host migrados para `[RequirePermission(PermissionCodes.X)]` sem `[Authorize]` redundante. Policy nomeada aceita formato `code.com.ponto` (compat) ou `Lumen:code`.
+>
+> **LIB-08 (concluído):** `LumenAuthorizationOptions.UserIdClaimType` (default `ClaimTypes.NameIdentifier`) torna o claim de userId configurável. `IUserIdAccessor` (em `Lumen.Authorization.Contracts`) abstrai a leitura do userId — implementação default `ClaimsUserIdAccessor` em `Lumen.Authorization.AspNetCore`, registrada via `TryAddSingleton` em `AddLumenAuthorizationEnforcement()`. `PermissionAuthorizationHandler` delega a extração ao `IUserIdAccessor`.
+>
+> **LIB-09 (concluído):** `PermissionDiscoveryScanner` e `PermissionDiscoveryAndReconciliationHostedService` movidos para `Lumen.Authorization.AspNetCore`. Hosted service unificado executa `descobrir → SyncDiscoveredAsync → ReconcileAdministratorAsync` em sequência usando `IPermissionSyncService` diretamente. Registro: `AddLumenAuthorizationDiscovery()`. Todos os wrappers intermediários e o record `DiscoveredPermission` do host foram removidos; `Lumen.Api/Program.cs` usa `AddLumenAuthorizationDiscovery()` no lugar de `AddPermissionDiscovery()`.
 
 ## Arquitetura modular
 

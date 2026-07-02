@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (LIB-08 — userId configurável + LIB-09 — discovery/seed como serviço da lib)
+- **`IUserIdAccessor`** (novo em `Lumen.Authorization.Contracts`): interface pública `bool TryGetUserId(ClaimsPrincipal, out Guid)` que abstrai a leitura do userId a partir de claims. Consumidor pode substituir via `services.Replace<IUserIdAccessor, ...>()`.
+- **`ClaimsUserIdAccessor`** (novo em `Lumen.Authorization.AspNetCore`): implementação default que lê o claim configurado em `LumenAuthorizationOptions.UserIdClaimType` e faz `Guid.TryParse`. Registrado via `TryAddSingleton` em `AddLumenAuthorizationEnforcement()`.
+- **`LumenAuthorizationOptions.UserIdClaimType`**: nova propriedade `string` com default `ClaimTypes.NameIdentifier`. Configurável via `configure` do `AddLumenAuthorization`. Propagada no `Configure<LumenAuthorizationOptions>`.
+- **`PermissionAuthorizationHandler`** agora injeta `IUserIdAccessor` e delega a ele a extração do userId — elimina o hardcode de `ClaimTypes.NameIdentifier` no handler.
+- **`PermissionDiscoveryScanner`** (movido de `Lumen.Api/Authorization` para `Lumen.Authorization.AspNetCore`): usa `IActionDescriptorCollectionProvider` para descobrir automaticamente os controllers do consumidor; retorna `IReadOnlyList<DiscoveredPermissionEntry>` (tipo da lib core, sem record intermediário).
+- **`PermissionDiscoveryAndReconciliationHostedService`** (novo em `Lumen.Authorization.AspNetCore`): hosted service unificado que executa o fluxo completo ordenado `descobrir → SyncDiscoveredAsync → ReconcileAdministratorAsync` usando diretamente `IPermissionSyncService` da lib core.
+- **`AddLumenAuthorizationDiscovery()`** (novo em `LumenAuthorizationAspNetCoreServiceCollectionExtensions`): registra `PermissionDiscoveryScanner` (singleton) e `PermissionDiscoveryAndReconciliationHostedService`. Substitui o antigo `AddPermissionDiscovery()` do host.
+- **Testes migrados/novos em `Lumen.Authorization.AspNetCore.Tests`**: `PermissionDiscoveryScannerTests` (7 casos, migrados de `Lumen.UnitTests`), `ClaimsUserIdAccessorTests` (5 casos: claim presente/ausente/inválido; claim customizado; assignable a `IUserIdAccessor`), `PermissionAuthorizationHandlerTests` (2 novos casos: custom claim type com sucesso; default claim ausente com claim custom configurado não passa).
+
+### Changed (LIB-08 + LIB-09)
+- **`Lumen.Api/Program.cs`**: `AddPermissionDiscovery()` substituído por `AddLumenAuthorizationDiscovery()`; `using Lumen.Api.Authorization` removido.
+- **Testes em `Lumen.UnitTests/Authorization`**: `ConventionPermissionRegressionTests` e `AuthorizationGraphPermissionDiscoveryTests` — `using Lumen.Api.Authorization` removido (scanner agora no namespace `Lumen.Authorization.AspNetCore`).
+
+### Removed (LIB-09)
+- **`Lumen.Api/Authorization/PermissionDiscoveryScanner.cs`**: movido para `Lumen.Authorization.AspNetCore`.
+- **`Lumen.Api/Authorization/DiscoveredPermission.cs`**: record intermediário eliminado — substituído por `DiscoveredPermissionEntry` da lib core.
+- **`Lumen.Api/Authorization/PermissionDiscoveryHostedService.cs`**: substituído por `PermissionDiscoveryAndReconciliationHostedService` na lib.
+- **`Lumen.Api/Authorization/PermissionSyncService.cs`**: wrapper de indireção eliminado — hosted service usa `IPermissionSyncService` diretamente.
+- **`Lumen.Api/Authorization/AdministratorPermissionReconciliationService.cs`**: wrapper de indireção eliminado — reconciliação executada diretamente pelo hosted service unificado.
+- **`Lumen.Api/Authorization/AdministratorPermissionReconciliationHostedService.cs`**: fluxo unificado no novo hosted service.
+- **`Lumen.Api/Authorization/PermissionDiscoveryServiceCollectionExtensions.cs`**: substituído por `AddLumenAuthorizationDiscovery()` na lib.
+- **`Lumen.UnitTests/Authorization/PermissionDiscoveryScannerTests.cs`**: migrado para `Lumen.Authorization.AspNetCore.Tests`.
+
 ### Added (LIB-07 + LIB-06 — `Lumen.Authorization.AspNetCore` e `[RequirePermission]` que enforça)
 - **`Lumen.Authorization.AspNetCore`** (novo projeto `Microsoft.NET.Sdk` + `FrameworkReference Microsoft.AspNetCore.App`): contém toda a máquina de enforcement ASP.NET — `PermissionRequirement`, `PermissionPolicyProvider`, `PermissionAuthorizationHandler`, `RequirePermissionAttribute`, `PermissionGroupAttribute`, `ControllerNameNormalizer`. ProjectReferences para `Lumen.Authorization` e `Lumen.Authorization.Contracts`.
 - **`RequirePermissionAttribute` implementa `IAuthorizationRequirementData`** (net8): `GetRequirements()` devolve um `PermissionRequirement(Code)`. Quando `Code` é `null` (atributo sem argumento), o `PermissionAuthorizationHandler` resolve o code via convenção `controller.action` lendo `ControllerActionDescriptor` do `Endpoint` metadata do `HttpContext`.
