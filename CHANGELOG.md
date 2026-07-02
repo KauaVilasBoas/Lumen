@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (LIB-10 — Backoffice montável como Razor Class Library)
+- **`Lumen.Authorization.Backoffice`** (novo projeto `Microsoft.NET.Sdk.Razor`, `AddRazorSupportForMvc`): RCL que empacota a gestão de Perfis e Permissões como UI montável pelo consumidor. ProjectReferences: `Lumen.Authorization`, `Lumen.Authorization.Contracts`, `Lumen.Authorization.AspNetCore`. PackageReference: `MediatR` (CPM).
+- **Area `Lumen`** com dois controllers in-process: `ProfilesController` (Index, Details, Create, Edit, Delete, SetPermissions) e `PermissionsController` (Index). Ambos usam `ISender` (MediatR) para despachar diretamente as Queries/Commands de `Lumen.Authorization.Application` — sem HTTP/AdminApiClient. Protegidos com `[RequirePermission]` e `[PermissionGroup]` do `Lumen.Authorization.AspNetCore`.
+- **ViewComponents separados**: `ProfileListViewComponent`, `ProfileDetailViewComponent`, `PermissionCatalogueViewComponent` — cada responsabilidade visual em seu próprio componente (CLAUDE.md regra). Views das controllers delegam ao ViewComponent; formulários de Create/Edit são PartialViews (telas burras).
+- **ViewModels próprios da RCL**: `ProfileListViewModel`, `ProfileDetailViewModel`, `CreateProfileFormModel`, `EditProfileFormModel`, `PermissionCatalogueViewModel`.
+- **Constantes internas** em `Internal/`: `BackofficeRouteDefaults` (prefixo `/lumen`, area `Lumen`, nomes de controller), `BackofficeErrorMessages`, `BackofficeDisplayTokens` (accent palette, labels de página), `PermissionDisplayHelper` (HTTP method + CSS color a partir do code).
+- **CSS próprio** em `wwwroot/css/lumen-authz.css`, servido via static web assets da RCL (`_content/Lumen.Authorization.Backoffice/css/lumen-authz.css`). Usa custom properties `--lumen-*` para não conflitar com o host.
+- **`AddLumenBackoffice()`** (`LumenBackofficeServiceCollectionExtensions`): registra o application part da RCL via `AddControllersWithViews().AddApplicationPart(...)`. Prerequisito: chamar `AddLumenAuthorization()` e `AddLumenAuthorizationEnforcement()` antes. Autenticação é responsabilidade do consumidor — documentado no XML do método.
+- **`MapLumenBackoffice(string prefix = "/lumen")`** (`LumenBackofficeEndpointRouteBuilderExtensions`): monta a Area `Lumen` via `MapAreaControllerRoute` sob o prefixo configurável. A rota deve ficar atrás do middleware de autenticação do host.
+- **`tests/Lumen.Authorization.Backoffice.Tests`**: 15 testes de unidade (xUnit + NSubstitute + FluentAssertions) cobrindo `ProfilesController` (Index, Details/404, Create GET, Create POST sucesso/conflito, Edit GET/sistema/sucesso, Delete sucesso/proibido, SetPermissions) e `PermissionsController` (Index com dados, query enviada, lista vazia). `FakeTempData` inline implementa `ITempDataDictionary` sem dependência de mocks de framework.
+- **`Lumen.ArchitectureTests`**: nova regra `AuthorizationBackoffice_MustNotDependOnIdentityOrAuditModules` (12→12 regras, agora 12 testes).
+
 ### Added (LIB-08 — userId configurável + LIB-09 — discovery/seed como serviço da lib)
 - **`IUserIdAccessor`** (novo em `Lumen.Authorization.Contracts`): interface pública `bool TryGetUserId(ClaimsPrincipal, out Guid)` que abstrai a leitura do userId a partir de claims. Consumidor pode substituir via `services.Replace<IUserIdAccessor, ...>()`.
 - **`ClaimsUserIdAccessor`** (novo em `Lumen.Authorization.AspNetCore`): implementação default que lê o claim configurado em `LumenAuthorizationOptions.UserIdClaimType` e faz `Guid.TryParse`. Registrado via `TryAddSingleton` em `AddLumenAuthorizationEnforcement()`.
