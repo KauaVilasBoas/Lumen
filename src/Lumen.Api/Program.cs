@@ -7,6 +7,7 @@ using Lumen.Jobs.Configuration;
 using Lumen.Jobs.Scheduling;
 using Lumen.Modularity;
 using Lumen.Modules.Audit;
+using Lumen.Authorization.Migrations;
 using Lumen.Modules.Audit.Migrations;
 using Lumen.Modules.Identity;
 using Lumen.Modules.Identity.Infrastructure.Security;
@@ -49,6 +50,7 @@ try
     // ── Module migrations applied on startup ─────────────────────────────────
     builder.Services.AddAuditMigrationsHostedService();
     builder.Services.AddIdentityMigrationsHostedService();
+    builder.Services.AddLumenAuthorizationMigrations();
 
     // ── Authentication & Authorization ────────────────────────────────────────
     builder.Services.AddIdentityJwtBearerAuthentication(HubRoutes.AuthorizationGraph);
