@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Lumen.Authorization.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -11,19 +10,21 @@ public sealed class PermissionAuthorizationHandler
     : AuthorizationHandler<PermissionRequirement>
 {
     private readonly IUserPermissionService _permissionService;
+    private readonly IUserIdAccessor _userIdAccessor;
 
-    public PermissionAuthorizationHandler(IUserPermissionService permissionService)
+    public PermissionAuthorizationHandler(
+        IUserPermissionService permissionService,
+        IUserIdAccessor userIdAccessor)
     {
         _permissionService = permissionService;
+        _userIdAccessor = userIdAccessor;
     }
 
     protected override async Task HandleRequirementAsync(
         AuthorizationHandlerContext context,
         PermissionRequirement requirement)
     {
-        var sub = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        if (!Guid.TryParse(sub, out var userId))
+        if (!_userIdAccessor.TryGetUserId(context.User, out var userId))
             return;
 
         var code = ResolvePermissionCode(context, requirement);

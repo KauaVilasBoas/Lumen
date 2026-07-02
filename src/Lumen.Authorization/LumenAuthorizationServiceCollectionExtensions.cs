@@ -59,6 +59,7 @@ public static class LumenAuthorizationServiceCollectionExtensions
         {
             o.RedisConnectionString = options.RedisConnectionString;
             o.ApplyMigrationsOnStartup = options.ApplyMigrationsOnStartup;
+            o.UserIdClaimType = options.UserIdClaimType;
         });
 
         services.AddDbContext<LumenAuthorizationDbContext>(dbOptions =>
