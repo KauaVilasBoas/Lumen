@@ -1,8 +1,8 @@
-using Lumen.Authorization.AspNetCore;
+using Lumen.Authorization.Application.Permissions;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 
-namespace Lumen.Api.Authorization;
+namespace Lumen.Authorization.AspNetCore;
 
 public sealed class PermissionDiscoveryScanner
 {
@@ -13,9 +13,9 @@ public sealed class PermissionDiscoveryScanner
         _actionDescriptorProvider = actionDescriptorProvider;
     }
 
-    public IReadOnlyList<DiscoveredPermission> Scan()
+    public IReadOnlyList<DiscoveredPermissionEntry> Scan()
     {
-        var results = new List<DiscoveredPermission>();
+        var results = new List<DiscoveredPermissionEntry>();
 
         foreach (var descriptor in _actionDescriptorProvider.ActionDescriptors.Items)
         {
@@ -54,15 +54,14 @@ public sealed class PermissionDiscoveryScanner
                 .FirstOrDefault();
 
             var groupName = groupAttribute?.Name ?? normalizedController;
-
             var displayName = $"{normalizedController} — {normalizedAction}";
 
-            results.Add(new DiscoveredPermission(
-                normalizedController,
-                normalizedAction,
-                code,
-                displayName,
-                groupName));
+            results.Add(new DiscoveredPermissionEntry(
+                Controller: normalizedController,
+                Action: normalizedAction,
+                DisplayName: displayName,
+                Code: code,
+                GroupName: groupName));
         }
 
         return results;

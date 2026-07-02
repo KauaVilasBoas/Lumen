@@ -1,19 +1,20 @@
+using Lumen.Authorization.Application.Permissions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace Lumen.Api.Authorization;
+namespace Lumen.Authorization.AspNetCore;
 
-public sealed class PermissionDiscoveryHostedService : IHostedService
+public sealed class PermissionDiscoveryAndReconciliationHostedService : IHostedService
 {
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly PermissionDiscoveryScanner _scanner;
-    private readonly ILogger<PermissionDiscoveryHostedService> _logger;
+    private readonly ILogger<PermissionDiscoveryAndReconciliationHostedService> _logger;
 
-    public PermissionDiscoveryHostedService(
+    public PermissionDiscoveryAndReconciliationHostedService(
         IServiceScopeFactory scopeFactory,
         PermissionDiscoveryScanner scanner,
-        ILogger<PermissionDiscoveryHostedService> logger)
+        ILogger<PermissionDiscoveryAndReconciliationHostedService> logger)
     {
         _scopeFactory = scopeFactory;
         _scanner = scanner;
@@ -29,11 +30,15 @@ public sealed class PermissionDiscoveryHostedService : IHostedService
         _logger.LogInformation("Discovered {Count} action(s) decorated with [RequirePermission].", discovered.Count);
 
         await using var scope = _scopeFactory.CreateAsyncScope();
-        var syncService = scope.ServiceProvider.GetRequiredService<PermissionSyncService>();
+        var syncService = scope.ServiceProvider.GetRequiredService<IPermissionSyncService>();
 
-        await syncService.SyncAsync(discovered, cancellationToken);
+        await syncService.SyncDiscoveredAsync(discovered, cancellationToken);
 
-        _logger.LogInformation("Permission discovery completed.");
+        _logger.LogInformation("Permission discovery and sync completed. Running Administrator reconciliation...");
+
+        await syncService.ReconcileAdministratorAsync(cancellationToken);
+
+        _logger.LogInformation("Permission discovery and reconciliation completed.");
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;

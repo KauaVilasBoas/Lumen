@@ -1,4 +1,3 @@
-using Lumen.Api.Authorization;
 using Lumen.Api.ExceptionHandlers;
 using Lumen.Api.Hubs;
 using Lumen.Api.Middleware;
@@ -57,7 +56,7 @@ try
     builder.Services.AddIdentityJwtBearerAuthentication(HubRoutes.AuthorizationGraph);
 
     // ── Permission discovery and Administrator reconciliation ────────────────
-    builder.Services.AddPermissionDiscovery();
+    builder.Services.AddLumenAuthorizationDiscovery();
     builder.Services.AddLumenAuthorizationEnforcement();
 
     // ── Background Jobs (Hangfire + SQL Server storage) ──────────────────────

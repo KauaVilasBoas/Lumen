@@ -1,5 +1,4 @@
 using System.Reflection;
-using Lumen.Api.Authorization;
 using Lumen.Api.Controllers;
 using Lumen.Authorization.AspNetCore;
 using Lumen.SharedKernel.Constants;
