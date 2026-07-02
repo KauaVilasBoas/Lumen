@@ -1,7 +1,7 @@
 using Lumen.Authorization;
+using Lumen.Authorization.Contracts;
+using Lumen.Authorization.Contracts.Events;
 using Lumen.Modularity;
-using Lumen.Modules.Identity.Contracts.Events;
-using Lumen.Modules.Identity.Domain.Authorization;
 using Lumen.Modules.Identity.Domain.Tokens;
 using Lumen.Modules.Identity.Domain.Users;
 using Lumen.SharedKernel.Constants;
@@ -17,22 +17,22 @@ internal sealed class DeleteUserCommandHandler
     : IRequestHandler<DeleteUserCommand>
 {
     private readonly IUserRepository _userRepository;
-    private readonly IUserProfileRepository _userProfileRepository;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IEventBus _eventBus;
+    private readonly IUserProfileGuard _userProfileGuard;
     private readonly ILogger<DeleteUserCommandHandler> _logger;
 
     public DeleteUserCommandHandler(
         IUserRepository userRepository,
-        IUserProfileRepository userProfileRepository,
         IRefreshTokenRepository refreshTokenRepository,
         IEventBus eventBus,
+        IUserProfileGuard userProfileGuard,
         ILogger<DeleteUserCommandHandler> logger)
     {
         _userRepository = userRepository;
-        _userProfileRepository = userProfileRepository;
         _refreshTokenRepository = refreshTokenRepository;
         _eventBus = eventBus;
+        _userProfileGuard = userProfileGuard;
         _logger = logger;
     }
 
@@ -60,13 +60,12 @@ internal sealed class DeleteUserCommandHandler
 
     private async Task GuardLastAdministratorAsync(Guid userId, CancellationToken ct)
     {
-        var isAdministrator = await _userProfileRepository.FindActiveAsync(
-            userId, SystemProfiles.AdministratorId, ct) is not null;
+        var isAdministrator = await _userProfileGuard.IsUserAdministratorAsync(userId, ct);
 
         if (!isAdministrator)
             return;
 
-        var activeAdminCount = await _userRepository.CountActiveAdministratorsAsync(
+        var activeAdminCount = await _userProfileGuard.CountActiveAdministratorsAsync(
             SystemProfiles.AdministratorId, ct);
 
         if (activeAdminCount <= 1)

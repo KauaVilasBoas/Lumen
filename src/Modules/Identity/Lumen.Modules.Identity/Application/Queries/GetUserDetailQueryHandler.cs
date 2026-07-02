@@ -1,4 +1,4 @@
-using Lumen.Modules.Identity.Domain.Authorization;
+using Lumen.Authorization.Domain;
 using Lumen.Modules.Identity.Domain.Users;
 using Lumen.SharedKernel.Exceptions;
 using MediatR;

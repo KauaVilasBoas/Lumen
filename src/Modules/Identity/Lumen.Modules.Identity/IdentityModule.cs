@@ -1,27 +1,25 @@
 using System.Net.Http.Headers;
 using FluentValidation;
+using Lumen.Authorization;
+using Lumen.Authorization.Contracts;
 using Lumen.Modularity;
-using Lumen.Modules.Identity.Application.Behaviors;
-using Lumen.Modules.Identity.Application.Permissions;
 using Lumen.Modules.Identity.Application.Tokens;
-using Lumen.Modules.Identity.Domain.Authorization;
 using Lumen.Modules.Identity.Domain.Configuration;
 using Lumen.Modules.Identity.Domain.Notifications;
 using Lumen.Modules.Identity.Domain.Security;
 using Lumen.Modules.Identity.Domain.Tokens;
 using Lumen.Modules.Identity.Domain.Users;
-using Lumen.Modules.Identity.Infrastructure.Cache;
+using Lumen.Modules.Identity.Infrastructure;
 using Lumen.Modules.Identity.Infrastructure.Configuration;
 using Lumen.Modules.Identity.Infrastructure.Notifications;
 using Lumen.Modules.Identity.Infrastructure.Security;
 using Lumen.Modules.Identity.Persistence;
 using Lumen.Modules.Identity.Persistence.Repositories;
 using Microsoft.AspNetCore.Routing;
-using IdentityDomainPermissionService = Lumen.Modules.Identity.Domain.Authorization.IUserPermissionService;
-using IdentityContractsPermissionService = Lumen.Modules.Identity.Contracts.IUserPermissionService;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
 namespace Lumen.Modules.Identity;
@@ -38,7 +36,7 @@ public sealed class IdentityModule : IModule
         RegisterRepositories(services);
         RegisterSecurity(services);
         RegisterNotifications(services, configuration);
-        RegisterCache(services, configuration);
+        RegisterAuthorization(services, configuration);
         RegisterApplication(services);
     }
 
@@ -83,10 +81,6 @@ public sealed class IdentityModule : IModule
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
         services.AddScoped<IEmailConfirmationTokenRepository, EmailConfirmationTokenRepository>();
-        services.AddScoped<IPermissionRepository, PermissionRepository>();
-        services.AddScoped<IGroupPermissionRepository, GroupPermissionRepository>();
-        services.AddScoped<IProfileRepository, ProfileRepository>();
-        services.AddScoped<IUserProfileRepository, UserProfileRepository>();
     }
 
     private static void RegisterSecurity(IServiceCollection services)
@@ -119,15 +113,15 @@ public sealed class IdentityModule : IModule
             });
     }
 
-    private static void RegisterCache(IServiceCollection services, IConfiguration configuration)
+    private static void RegisterAuthorization(IServiceCollection services, IConfiguration configuration)
     {
         services.AddStackExchangeRedisCache(options =>
             options.Configuration = configuration.GetConnectionString("Redis"));
 
-        services.AddScoped<IUserPermissionCache, UserPermissionCache>();
-        services.AddScoped<UserPermissionService>();
-        services.AddScoped<IdentityDomainPermissionService>(sp => sp.GetRequiredService<UserPermissionService>());
-        services.AddScoped<IdentityContractsPermissionService>(sp => sp.GetRequiredService<UserPermissionService>());
+        services.AddLumenAuthorization(configuration);
+
+        services.Replace(ServiceDescriptor.Scoped<IUserDirectory, IdentityUserDirectory>());
+        services.Replace(ServiceDescriptor.Scoped<IAuthorizationUserSource, IdentityAuthorizationUserSource>());
     }
 
     private static void RegisterApplication(IServiceCollection services)
@@ -137,10 +131,8 @@ public sealed class IdentityModule : IModule
         services.AddMediatR(cfg =>
         {
             cfg.RegisterServicesFromAssembly(assembly);
-            cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
         });
 
-        services.AddScoped<IPermissionSyncService, PermissionSyncService>();
         services.AddScoped<ITokenCleanupService, TokenCleanupService>();
 
         RegisterValidators(services, assembly);
