@@ -204,6 +204,10 @@ dotnet ef migrations add <Nome> \
 dotnet ef migrations add <Nome> \
   -p src/Modules/Audit/Lumen.Modules.Audit.Migrations \
   -s src/Modules/Audit/Lumen.Modules.Audit.Migrations          # nova migration do Audit
+
+dotnet ef migrations add <Nome> \
+  -p src/Lumen.Authorization.Migrations \
+  -s src/Lumen.Authorization.Migrations                        # nova migration do schema Lumen (lib de authz)
 ```
 
 > Decisões arquiteturais não cobertas aqui são definidas durante o desenvolvimento. Ao encontrar um caso novo, proponha uma abordagem com o trade-off (ganhos/perdas), confirme, e então atualize este documento.

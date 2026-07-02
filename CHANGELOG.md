@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (LIB-03 — Migration da lib: schema `Lumen` + tabelas singulares)
+- **`Lumen.Authorization.Migrations`** (novo projeto): projeto `Microsoft.NET.Sdk` com `ProjectReference` para `Lumen.Authorization`, empacota `Microsoft.EntityFrameworkCore.SqlServer` + `Design` (PrivateAssets). Adicionado à `Lumen.sln` sob o folder `src`.
+- **`LumenAuthorizationDbContextFactory`**: `IDesignTimeDbContextFactory<LumenAuthorizationDbContext>` para uso com `dotnet ef`; lê connection string de `appsettings.json` → env var → fallback local; configura `MigrationsAssembly` via `typeof(LumenAuthorizationDbContextFactory).Assembly.FullName`.
+- **`LumenAuthorizationMigrationsHostedService`**: `IHostedService` que verifica `GetPendingMigrationsAsync` e chama `MigrateAsync` no startup; loga migrations pendentes e resultado.
+- **`AddLumenAuthorizationMigrations()`** (`LumenAuthorizationMigrationsServiceCollectionExtensions`): extension method que registra o hosted service; chamado em `Lumen.Api/Program.cs`.
+- **`LumenAuthorizationMigrationsAssembly`** (novo, interno em `Lumen.Authorization`): marker com nome do assembly de migrations como string const — elimina referência circular sem hardcode solto.
+- **Migration `20260702090707_InitialLumenAuthorizationSchema`**: cria schema `Lumen`, 5 tabelas singulares (`PermissionGroup`, `Permission`, `Profile`, `UserProfile`, `PermissionProfile`) com todos os índices `ix_lumen_*` (unique com filtro `[IsDeleted] = 0` onde aplicável) e relações (FK `Permission → PermissionGroup` SetNull, `UserProfile → Profile` Restrict, `PermissionProfile → Permission/Profile` Restrict). Sem FK de `UserProfile` para User (Guid opaco).
+- **Migration `20260702090836_SeedLumenSystemProfiles`**: semeia os 2 perfis de sistema consumer-agnósticos — `Administrator` (`20000000-...-0001`, `IsSystem=true`) e `User` (`20000000-...-0002`, `IsSystem=true`). Sem permissões de aplicação (LIB-09) nem usuários (módulo Identity).
+- **`InternalsVisibleTo`** em `Lumen.Authorization.csproj`: adiciona `Lumen.Authorization.Migrations` para que o factory/hosted service acessem `LumenAuthorizationDbContext` (internal).
+
+### Changed (LIB-03)
+- **`AddLumenAuthorization`**: configura `sql.MigrationsAssembly(LumenAuthorizationMigrationsAssembly.Name)` no `UseSqlServer` — necessário para que `MigrateAsync` runtime encontre as migrations no assembly correto.
+- **`Lumen.Api/Program.cs`**: adiciona `using Lumen.Authorization.Migrations` e chama `builder.Services.AddLumenAuthorizationMigrations()` junto com as demais migrations de módulo.
+- **`Lumen.Api.csproj`**: adiciona `ProjectReference` para `Lumen.Authorization.Migrations`.
+- **`CLAUDE.md`**: seção Comandos atualizada com o `dotnet ef migrations add` do `Lumen.Authorization.Migrations`.
+
 ### Added (LIB-02 — Extração do núcleo de autorização para `Lumen.Authorization`)
 - **`Lumen.Authorization.Contracts`** (novo projeto): superfície pública da lib — `IUserPermissionService`, `IUserDirectory`, `IUserProfileGuard`, `IAuthorizationUserSource`, `AuthorizationUserDto` e os 4 integration events de authz (`UserPermissionsChangedEvent`, `ProfilePermissionsSetEvent`, `UserProfileAssignedEvent`, `UserProfileRemovedEvent`). Depende apenas de `Lumen.Modularity`.
 - **`Lumen.Authorization`** (núcleo): entidades (`Permission`, `GroupPermission`, `Profile`, `PermissionProfile`, `UserProfile`), repositórios, `LumenAuthorizationDbContext` (schema `Lumen`, tabelas singulares, sem FK cross-domínio em `UserProfile`), `UserPermissionCache`, `UserPermissionService`, `PermissionSyncService`, handlers CQRS de Profiles/UserProfiles/Queries/EventHandlers, `ValidationBehavior`, constantes internas (`AuthorizationErrorMessages`, `AuthorizationActorNames`, `AuthorizationCacheKeys`), exceções próprias (`AuthorizationException`, `AuthorizationNotFoundException`, `AuthorizationConflictException`, `AuthorizationForbiddenException`), `UserProfileGuard`, `NoOpUserDirectory`, `EmptyAuthorizationUserSource`. Extension `AddLumenAuthorization(configuration)`.
