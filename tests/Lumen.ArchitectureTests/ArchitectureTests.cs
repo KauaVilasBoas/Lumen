@@ -29,6 +29,9 @@ public sealed class ArchitectureTests
     private static readonly System.Reflection.Assembly AuthorizationAspNetCoreAssembly =
         typeof(Lumen.Authorization.AspNetCore.RequirePermissionAttribute).Assembly;
 
+    private static readonly System.Reflection.Assembly AuthorizationBackofficeAssembly =
+        typeof(Lumen.Authorization.Backoffice.LumenBackofficeServiceCollectionExtensions).Assembly;
+
     private const string SharedKernelNamespace      = "Lumen.SharedKernel";
     private const string ModularityNamespace        = "Lumen.Modularity";
     private const string IdentityModuleNamespace    = "Lumen.Modules.Identity";
@@ -38,6 +41,7 @@ public sealed class ArchitectureTests
     private const string AuthorizationNamespace          = "Lumen.Authorization";
     private const string AuthorizationContractsNamespace = "Lumen.Authorization.Contracts";
     private const string AuthorizationAspNetCoreNamespace = "Lumen.Authorization.AspNetCore";
+    private const string AuthorizationBackofficeNamespace = "Lumen.Authorization.Backoffice";
 
     [Fact]
     public void SharedKernel_MustNotDependOnAnyModule()
@@ -201,6 +205,22 @@ public sealed class ArchitectureTests
 
         result.IsSuccessful.Should().BeTrue(
             because: "Lumen.Authorization.AspNetCore must not depend on business modules or SharedKernel. " +
+                     $"Failing types: {FailingTypes(result)}");
+    }
+
+    [Fact]
+    public void AuthorizationBackoffice_MustNotDependOnIdentityOrAuditModules()
+    {
+        var result = Types.InAssembly(AuthorizationBackofficeAssembly)
+            .ShouldNot()
+            .HaveDependencyOnAny(
+                IdentityModuleNamespace,
+                AuditModuleNamespace,
+                SharedKernelNamespace)
+            .GetResult();
+
+        result.IsSuccessful.Should().BeTrue(
+            because: "Lumen.Authorization.Backoffice must not depend on business modules or SharedKernel. " +
                      $"Failing types: {FailingTypes(result)}");
     }
 

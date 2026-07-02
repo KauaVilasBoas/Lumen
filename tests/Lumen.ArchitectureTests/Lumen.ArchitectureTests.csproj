@@ -31,6 +31,7 @@
     <ProjectReference Include="..\..\src\Lumen.Authorization\Lumen.Authorization.csproj" />
     <ProjectReference Include="..\..\src\Lumen.Authorization.Contracts\Lumen.Authorization.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Lumen.Authorization.AspNetCore\Lumen.Authorization.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\src\Lumen.Authorization.Backoffice\Lumen.Authorization.Backoffice.csproj" />
   </ItemGroup>
 
 </Project>
