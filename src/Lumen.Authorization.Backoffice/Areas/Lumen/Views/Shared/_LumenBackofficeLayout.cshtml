@@ -1,0 +1,42 @@
+@{
+    var title = ViewData["Title"]?.ToString() ?? "Lumen Authorization";
+    var subtitle = ViewData["Subtitle"]?.ToString() ?? "";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@title — Lumen Authorization</title>
+    <link rel="stylesheet" href="~/_content/Lumen.Authorization.Backoffice/css/lumen-authz.css" asp-append-version="true" />
+</head>
+<body class="lumen-authz">
+    <div class="lz-app">
+        <aside class="lz-sidebar">
+            <div class="lz-brand">
+                <span class="lz-brand-name">Lumen</span>
+                <span class="lz-brand-sub">Authorization</span>
+            </div>
+            <nav class="lz-nav">
+                <a class="lz-navitem" asp-area="Lumen" asp-controller="Profiles" asp-action="Index">Profiles</a>
+                <a class="lz-navitem" asp-area="Lumen" asp-controller="Permissions" asp-action="Index">Permissions</a>
+            </nav>
+        </aside>
+        <div class="lz-main">
+            <header class="lz-topbar">
+                <div>
+                    <h1 class="lz-title">@title</h1>
+                    @if (!string.IsNullOrEmpty(subtitle))
+                    {
+                        <span class="lz-subtitle">@subtitle</span>
+                    }
+                </div>
+            </header>
+            <div class="lz-content">
+                @RenderBody()
+            </div>
+        </div>
+    </div>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
