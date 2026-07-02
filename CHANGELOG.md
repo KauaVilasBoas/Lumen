@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (LIB-04 + LIB-05 — Redis opcional e entry point único com options)
+- **`LumenAuthorizationOptions`** (novo em `Lumen.Authorization`): `public sealed class` com `RedisConnectionString?` (default `null` → cache em memória) e `ApplyMigrationsOnStartup` (default `true`).
+- **Overload `AddLumenAuthorization(string connectionString, Action<LumenAuthorizationOptions>? configure = null)`**: entry point mínimo — basta a connection string do banco; sem seção de `IConfiguration`, sem Redis obrigatório. Cache provider decidido internamente.
+- **`Lumen.Authorization.Tests`** (novo projeto): 4 testes de registro DI — sem Redis registra `IDistributedCache` em memória; com `RedisConnectionString` registra provider Redis; não sobrescreve `IDistributedCache` pré-registrado pelo consumidor; overload `IConfiguration` mapeia `DefaultConnection`/`Redis` corretamente.
+- **`Microsoft.Extensions.Options` versão `8.0.2`** em `Directory.Packages.props` (atualizado de `8.0.0` para resolver conflito de downgrade com dependências transitivas de Redis/EF Core).
+
+### Changed (LIB-04 + LIB-05)
+- **`AddLumenAuthorization`** refatorado: dois overloads públicos delegam a método core `RegisterCore(connectionString, options)`; lógica de cache consolidada em `RegisterCacheProvider` — se `IDistributedCache` já registrado pelo consumidor: skip; se `RedisConnectionString` preenchido: `AddStackExchangeRedisCache`; senão: `AddDistributedMemoryCache()`. Provider registrado com `services.Configure<LumenAuthorizationOptions>` para consumo pelo hosted service.
+- **Overload `AddLumenAuthorization(IConfiguration, ...)` mantido para compat**: lê `GetConnectionString("DefaultConnection")` e usa `GetConnectionString("Redis")` como default de `RedisConnectionString` — comportamento do `IdentityModule` preservado.
+- **`LumenAuthorizationMigrationsHostedService`**: passa a injetar `IOptions<LumenAuthorizationOptions>` e pula `MigrateAsync` quando `ApplyMigrationsOnStartup == false` — toggle de auto-migração sem referência circular (a lib NÃO referencia `.Migrations`; o `.Migrations` referencia a lib e lê as options).
+- **`IdentityModule.RegisterAuthorization`**: remove chamada explícita a `AddStackExchangeRedisCache` — o registro agora é responsabilidade de `AddLumenAuthorization(configuration)` via overload de compat (que lê `ConnectionStrings:Redis` e decide o provider).
+
 ### Added (LIB-03 — Migration da lib: schema `Lumen` + tabelas singulares)
 - **`Lumen.Authorization.Migrations`** (novo projeto): projeto `Microsoft.NET.Sdk` com `ProjectReference` para `Lumen.Authorization`, empacota `Microsoft.EntityFrameworkCore.SqlServer` + `Design` (PrivateAssets). Adicionado à `Lumen.sln` sob o folder `src`.
 - **`LumenAuthorizationDbContextFactory`**: `IDesignTimeDbContextFactory<LumenAuthorizationDbContext>` para uso com `dotnet ef`; lê connection string de `appsettings.json` → env var → fallback local; configura `MigrationsAssembly` via `typeof(LumenAuthorizationDbContextFactory).Assembly.FullName`.
