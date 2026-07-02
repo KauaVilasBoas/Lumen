@@ -1,32 +1,15 @@
 using System.Security.Claims;
 
+using Lumen.Authorization.AspNetCore;
 using Lumen.Authorization.Contracts;
-using Lumen.SharedKernel.Authorization;
 
 using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace Lumen.Backoffice.Helpers;
 
-/// <summary>
-/// Extension methods on <see cref="IHtmlHelper"/> that expose permission checks to Razor views.
-///
-/// Usage:
-/// <code>
-/// @if (await Html.HasPermissionAsync("Users", "Delete")) { ... }
-/// </code>
-///
-/// The method normalizes the controller name via <see cref="ControllerNameNormalizer"/>
-/// and builds the canonical permission code with <see cref="Permission.BuildCode"/> —
-/// the same path followed by AUTH-09/AUTH-11 on the API side.
-/// </summary>
 public static class HasPermissionHtmlHelperExtensions
 {
-    /// <summary>
-    /// Returns <c>true</c> when the authenticated user has the permission derived from
-    /// <paramref name="controller"/> and <paramref name="action"/>; <c>false</c> for
-    /// anonymous users or when the permission is absent.
-    /// </summary>
     public static async Task<bool> HasPermissionAsync(
         this IHtmlHelper html,
         string controller,
@@ -48,10 +31,6 @@ public static class HasPermissionHtmlHelperExtensions
         return await permissionService.HasPermissionAsync(userId, permissionCode, cancellationToken);
     }
 
-    /// <summary>
-    /// Returns <see cref="HtmlString.Empty"/> so callers may use the return value
-    /// in Razor expressions, but the primary use case is the boolean overload above.
-    /// </summary>
     public static async Task<IHtmlContent> RenderIfPermittedAsync(
         this IHtmlHelper html,
         string controller,

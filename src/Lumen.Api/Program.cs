@@ -2,12 +2,13 @@ using Lumen.Api.Authorization;
 using Lumen.Api.ExceptionHandlers;
 using Lumen.Api.Hubs;
 using Lumen.Api.Middleware;
+using Lumen.Authorization.AspNetCore;
+using Lumen.Authorization.Migrations;
 using Lumen.Infrastructure.Configuration;
 using Lumen.Jobs.Configuration;
 using Lumen.Jobs.Scheduling;
 using Lumen.Modularity;
 using Lumen.Modules.Audit;
-using Lumen.Authorization.Migrations;
 using Lumen.Modules.Audit.Migrations;
 using Lumen.Modules.Identity;
 using Lumen.Modules.Identity.Infrastructure.Security;
@@ -57,7 +58,7 @@ try
 
     // ── Permission discovery and Administrator reconciliation ────────────────
     builder.Services.AddPermissionDiscovery();
-    builder.Services.AddPermissionEnforcement();
+    builder.Services.AddLumenAuthorizationEnforcement();
 
     // ── Background Jobs (Hangfire + SQL Server storage) ──────────────────────
     builder.Services.AddAegisHangfire(builder.Configuration);

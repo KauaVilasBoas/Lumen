@@ -1,7 +1,8 @@
+using Lumen.Authorization.AspNetCore.Internal;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 
-namespace Lumen.Api.Authorization;
+namespace Lumen.Authorization.AspNetCore;
 
 public sealed class PermissionPolicyProvider : IAuthorizationPolicyProvider
 {
@@ -25,15 +26,25 @@ public sealed class PermissionPolicyProvider : IAuthorizationPolicyProvider
         if (existing is not null)
             return existing;
 
-        if (!LooksLikePermissionCode(policyName))
+        var code = ResolvePermissionCode(policyName);
+
+        if (code is null)
             return null;
 
         return new AuthorizationPolicyBuilder()
             .RequireAuthenticatedUser()
-            .AddRequirements(new PermissionRequirement(policyName))
+            .AddRequirements(new PermissionRequirement(code))
             .Build();
     }
 
-    private static bool LooksLikePermissionCode(string name)
-        => name.Contains('.', StringComparison.Ordinal);
+    private static string? ResolvePermissionCode(string policyName)
+    {
+        if (policyName.StartsWith(AuthorizationPolicyPrefixes.Lumen, StringComparison.Ordinal))
+            return policyName[AuthorizationPolicyPrefixes.Lumen.Length..];
+
+        if (policyName.Contains('.', StringComparison.Ordinal))
+            return policyName;
+
+        return null;
+    }
 }

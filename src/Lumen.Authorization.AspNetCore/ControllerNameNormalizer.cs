@@ -1,4 +1,4 @@
-namespace Lumen.SharedKernel.Authorization;
+namespace Lumen.Authorization.AspNetCore;
 
 public static class ControllerNameNormalizer
 {

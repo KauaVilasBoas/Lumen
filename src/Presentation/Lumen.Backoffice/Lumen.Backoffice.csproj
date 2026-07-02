@@ -13,6 +13,7 @@
     <ProjectReference Include="..\..\Modules\Identity\Lumen.Modules.Identity\Lumen.Modules.Identity.csproj" />
     <ProjectReference Include="..\..\Lumen.Authorization\Lumen.Authorization.csproj" />
     <ProjectReference Include="..\..\Lumen.Authorization.Contracts\Lumen.Authorization.Contracts.csproj" />
+    <ProjectReference Include="..\..\Lumen.Authorization.AspNetCore\Lumen.Authorization.AspNetCore.csproj" />
   </ItemGroup>
 
   <ItemGroup>

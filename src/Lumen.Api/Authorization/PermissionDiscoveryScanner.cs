@@ -1,4 +1,4 @@
-using Lumen.SharedKernel.Authorization;
+using Lumen.Authorization.AspNetCore;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 
