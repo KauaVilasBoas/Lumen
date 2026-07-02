@@ -9,6 +9,7 @@
     <ProjectReference Include="..\Lumen.Modules.Identity.Contracts\Lumen.Modules.Identity.Contracts.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\Lumen.Modularity\Lumen.Modularity.csproj" />
     <ProjectReference Include="..\..\..\SharedKernel\Lumen.SharedKernel\Lumen.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\..\Lumen.Authorization\Lumen.Authorization.csproj" />
   </ItemGroup>
 
   <ItemGroup>

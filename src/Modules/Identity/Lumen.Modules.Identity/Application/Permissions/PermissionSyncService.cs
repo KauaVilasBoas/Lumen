@@ -1,3 +1,4 @@
+using Lumen.Authorization;
 using Lumen.Modules.Identity.Domain.Authorization;
 using Lumen.SharedKernel.Constants;
 using Microsoft.Extensions.Logging;

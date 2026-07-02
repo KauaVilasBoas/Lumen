@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Lumen.Authorization;
 using Lumen.Modularity;
 using Lumen.Modules.Identity.Application.Users.Delete;
 using Lumen.Modules.Identity.Contracts.Events;

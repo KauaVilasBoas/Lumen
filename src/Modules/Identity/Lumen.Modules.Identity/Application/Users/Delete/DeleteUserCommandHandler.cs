@@ -1,3 +1,4 @@
+using Lumen.Authorization;
 using Lumen.Modularity;
 using Lumen.Modules.Identity.Contracts.Events;
 using Lumen.Modules.Identity.Domain.Authorization;
