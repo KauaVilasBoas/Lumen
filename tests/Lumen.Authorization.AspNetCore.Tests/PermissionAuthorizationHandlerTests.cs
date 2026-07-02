@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Options;
 using NSubstitute;
 
 namespace Lumen.Authorization.AspNetCore.Tests;
@@ -19,7 +20,8 @@ public sealed class PermissionAuthorizationHandlerTests
     public PermissionAuthorizationHandlerTests()
     {
         _permissionService = Substitute.For<IUserPermissionService>();
-        _handler = new PermissionAuthorizationHandler(_permissionService);
+        var accessor = new ClaimsUserIdAccessor(Options.Create(new LumenAuthorizationOptions()));
+        _handler = new PermissionAuthorizationHandler(_permissionService, accessor);
     }
 
     [Fact]
@@ -123,6 +125,52 @@ public sealed class PermissionAuthorizationHandlerTests
 
         context.HasSucceeded.Should().BeFalse();
         await _permissionService.DidNotReceive()
+            .HasPermissionAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleRequirement_CustomClaimType_ValidId_Succeeds()
+    {
+        const string customClaimType = "uid";
+        var options = Options.Create(new LumenAuthorizationOptions { UserIdClaimType = customClaimType });
+        var accessor = new ClaimsUserIdAccessor(options);
+        var permissionService = Substitute.For<IUserPermissionService>();
+        var handler = new PermissionAuthorizationHandler(permissionService, accessor);
+
+        var userId = Guid.NewGuid();
+        var identity = new ClaimsIdentity([new Claim(customClaimType, userId.ToString())]);
+        var user = new ClaimsPrincipal(identity);
+        var requirement = new PermissionRequirement("Users.List");
+        var context = new AuthorizationHandlerContext([requirement], user, resource: null);
+
+        permissionService.HasPermissionAsync(userId, "Users.List", Arg.Any<CancellationToken>())
+            .Returns(true);
+
+        await handler.HandleAsync(context);
+
+        context.HasSucceeded.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task HandleRequirement_DefaultClaimAbsent_WhenCustomClaimConfigured_DoesNotSucceed()
+    {
+        const string customClaimType = "uid";
+        var options = Options.Create(new LumenAuthorizationOptions { UserIdClaimType = customClaimType });
+        var accessor = new ClaimsUserIdAccessor(options);
+        var permissionService = Substitute.For<IUserPermissionService>();
+        var handler = new PermissionAuthorizationHandler(permissionService, accessor);
+
+        var userId = Guid.NewGuid();
+        var identity = new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, userId.ToString())]);
+        var user = new ClaimsPrincipal(identity);
+        var requirement = new PermissionRequirement("Users.List");
+        var context = new AuthorizationHandlerContext([requirement], user, resource: null);
+
+        await handler.HandleAsync(context);
+
+        context.HasSucceeded.Should().BeFalse(
+            because: "the handler must read from the configured claim type only");
+        await permissionService.DidNotReceive()
             .HasPermissionAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
