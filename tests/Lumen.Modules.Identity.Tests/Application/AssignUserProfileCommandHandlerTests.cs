@@ -1,33 +1,32 @@
 using FluentAssertions;
+using Lumen.Authorization.Application.UserProfiles.Assign;
+using Lumen.Authorization.Contracts;
+using Lumen.Authorization.Contracts.Events;
+using Lumen.Authorization.Domain;
+using Lumen.Authorization.Exceptions;
 using Lumen.Modularity;
-using Lumen.Modules.Identity.Application.UserProfiles.Assign;
-using Lumen.Modules.Identity.Contracts.Events;
-using Lumen.Modules.Identity.Domain.Authorization;
-using Lumen.Modules.Identity.Domain.Users;
-using Lumen.SharedKernel.Exceptions;
 using NSubstitute;
 
 namespace Lumen.Modules.Identity.Tests.Application;
 
 public sealed class AssignUserProfileCommandHandlerTests
 {
-    private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
+    private readonly IUserDirectory _userDirectory = Substitute.For<IUserDirectory>();
     private readonly IProfileRepository _profileRepository = Substitute.For<IProfileRepository>();
     private readonly IUserProfileRepository _userProfileRepository = Substitute.For<IUserProfileRepository>();
     private readonly IEventBus _eventBus = Substitute.For<IEventBus>();
 
     private AssignUserProfileCommandHandler CreateHandler()
-        => new(_userRepository, _profileRepository, _userProfileRepository, _eventBus);
+        => new(_userDirectory, _profileRepository, _userProfileRepository, _eventBus);
 
     [Fact]
     public async Task Handle_ValidAssignment_InsertsAndPublishesBothEvents()
     {
         var userId = Guid.NewGuid();
         var profileId = Guid.NewGuid();
-        var user = User.Create("user@test.com", "user", "hash");
         var profile = Profile.Create("Admin", "Administrator profile");
 
-        _userRepository.FindByIdAsync(userId, Arg.Any<CancellationToken>()).Returns(user);
+        _userDirectory.GetDisplayNameAsync(userId, Arg.Any<CancellationToken>()).Returns("user");
         _profileRepository.FindByIdAsync(profileId, Arg.Any<CancellationToken>()).Returns(profile);
         _userProfileRepository.FindActiveAsync(userId, profileId, Arg.Any<CancellationToken>()).Returns((UserProfile?)null);
 
@@ -53,11 +52,9 @@ public sealed class AssignUserProfileCommandHandlerTests
     {
         var userId = Guid.NewGuid();
         var profileId = Guid.NewGuid();
-        var user = User.Create("user@test.com", "user", "hash");
         var profile = Profile.Create("Admin", "desc");
         var existingAssignment = UserProfile.Create(userId, profileId);
 
-        _userRepository.FindByIdAsync(userId, Arg.Any<CancellationToken>()).Returns(user);
         _profileRepository.FindByIdAsync(profileId, Arg.Any<CancellationToken>()).Returns(profile);
         _userProfileRepository.FindActiveAsync(userId, profileId, Arg.Any<CancellationToken>()).Returns(existingAssignment);
 
@@ -69,15 +66,15 @@ public sealed class AssignUserProfileCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_UserNotFound_ThrowsNotFoundException()
+    public async Task Handle_ProfileNotFound_ThrowsNotFoundException()
     {
-        _userRepository.FindByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((User?)null);
+        _profileRepository.FindByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((Profile?)null);
 
         var handler = CreateHandler();
         var act = async () => await handler.Handle(
             new AssignUserProfileCommand(Guid.NewGuid(), Guid.NewGuid()),
             CancellationToken.None);
 
-        await act.Should().ThrowAsync<NotFoundException>();
+        await act.Should().ThrowAsync<AuthorizationNotFoundException>();
     }
 }

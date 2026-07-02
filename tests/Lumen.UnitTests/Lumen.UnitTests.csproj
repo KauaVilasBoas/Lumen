@@ -29,6 +29,7 @@
     <ProjectReference Include="..\..\src\Lumen.Api\Lumen.Api.csproj" />
     <ProjectReference Include="..\..\src\Presentation\Lumen.Backoffice\Lumen.Backoffice.csproj" />
     <ProjectReference Include="..\..\src\Jobs\Lumen.Jobs\Lumen.Jobs.csproj" />
+    <ProjectReference Include="..\..\src\Lumen.Authorization.Contracts\Lumen.Authorization.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

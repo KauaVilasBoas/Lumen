@@ -13,6 +13,7 @@
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="NSubstitute" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="FluentValidation" />
   </ItemGroup>
 
   <ItemGroup>
@@ -23,6 +24,8 @@
     <ProjectReference Include="..\..\src\Modules\Identity\Lumen.Modules.Identity\Lumen.Modules.Identity.csproj" />
     <ProjectReference Include="..\..\src\Modules\Identity\Lumen.Modules.Identity.Contracts\Lumen.Modules.Identity.Contracts.csproj" />
     <ProjectReference Include="..\..\src\SharedKernel\Lumen.SharedKernel\Lumen.SharedKernel.csproj" />
+    <ProjectReference Include="..\..\src\Lumen.Authorization\Lumen.Authorization.csproj" />
+    <ProjectReference Include="..\..\src\Lumen.Authorization.Contracts\Lumen.Authorization.Contracts.csproj" />
   </ItemGroup>
 
 </Project>
