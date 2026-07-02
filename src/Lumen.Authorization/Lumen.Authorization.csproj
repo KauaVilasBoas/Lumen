@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Lumen.Authorization.Tests" />
+    <InternalsVisibleTo Include="Lumen.Authorization.Migrations" />
     <InternalsVisibleTo Include="Lumen.Modules.Identity.Tests" />
     <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
   </ItemGroup>

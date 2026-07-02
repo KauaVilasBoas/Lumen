@@ -24,7 +24,9 @@ public static class LumenAuthorizationServiceCollectionExtensions
         var assembly = typeof(LumenAuthorizationServiceCollectionExtensions).Assembly;
 
         services.AddDbContext<LumenAuthorizationDbContext>(options =>
-            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+            options.UseSqlServer(
+                configuration.GetConnectionString("DefaultConnection"),
+                sql => sql.MigrationsAssembly(LumenAuthorizationMigrationsAssembly.Name)));
 
         services.AddScoped<IPermissionRepository, PermissionRepository>();
         services.AddScoped<IGroupPermissionRepository, GroupPermissionRepository>();
