@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (LIB-07 + LIB-06 — `Lumen.Authorization.AspNetCore` e `[RequirePermission]` que enforça)
+- **`Lumen.Authorization.AspNetCore`** (novo projeto `Microsoft.NET.Sdk` + `FrameworkReference Microsoft.AspNetCore.App`): contém toda a máquina de enforcement ASP.NET — `PermissionRequirement`, `PermissionPolicyProvider`, `PermissionAuthorizationHandler`, `RequirePermissionAttribute`, `PermissionGroupAttribute`, `ControllerNameNormalizer`. ProjectReferences para `Lumen.Authorization` e `Lumen.Authorization.Contracts`.
+- **`RequirePermissionAttribute` implementa `IAuthorizationRequirementData`** (net8): `GetRequirements()` devolve um `PermissionRequirement(Code)`. Quando `Code` é `null` (atributo sem argumento), o `PermissionAuthorizationHandler` resolve o code via convenção `controller.action` lendo `ControllerActionDescriptor` do `Endpoint` metadata do `HttpContext`.
+- **`AddLumenAuthorizationEnforcement()`** (`LumenAuthorizationAspNetCoreServiceCollectionExtensions`): registra `IAuthorizationPolicyProvider → PermissionPolicyProvider` (singleton) e `IAuthorizationHandler → PermissionAuthorizationHandler` (scoped) — equivalente ao antigo `AddPermissionEnforcement()`.
+- **`PermissionPolicyProvider`** suporta dois formatos de policy nomeada: code com `.` (compat com o formato anterior, ex.: `"Users.List"`) e prefixo `Lumen:` (ex.: `"Lumen:Users.List"`) — constante `AuthorizationPolicyPrefixes.Lumen` (interna).
+- **`Lumen.Authorization.AspNetCore.Tests`** (novo projeto de testes): testa `RequirePermissionAttribute.GetRequirements()` (code explícito / sem code / `IAuthorizationRequirementData`), `PermissionAuthorizationHandler` (code explícito permitido/negado; convenção via `ControllerActionDescriptor`; sub ausente/inválido; sem HttpContext), `PermissionPolicyProvider` (dot-notation; prefixo `Lumen:`; name sem reconhecimento).
+- **`Lumen.ArchitectureTests`**: 2 novas regras — `Authorization_MustNotDependOnAspNetCoreFramework` (core agnóstico de web) e `AuthorizationAspNetCore_MustNotDependOnIdentityOrAuditModules`.
+
+### Changed (LIB-07 + LIB-06)
+- **Controllers do `Lumen.Api`** migrados para atributo único: par `[RequirePermission] + [Authorize(Policy = PermissionCodes.X)]` substituído por `[RequirePermission(PermissionCodes.X)]` em todos os 7 controllers (`Users`, `Profiles`, `UserProfiles`, `Permissions`, `Audit`, `Diagnostics`, `AuthorizationGraph`). `using Lumen.SharedKernel.Authorization` → `using Lumen.Authorization.AspNetCore`. `using Microsoft.AspNetCore.Authorization` removido dos controllers onde era exclusivamente para enforcement.
+- **`RequirePermissionTagHelper` e `HasPermissionHtmlHelperExtensions`** (Backoffice): `using Lumen.SharedKernel.Authorization` → `using Lumen.Authorization.AspNetCore`; comentários XML legados removidos.
+- **`PermissionDiscoveryScanner`** (Lumen.Api): `using Lumen.SharedKernel.Authorization` → `using Lumen.Authorization.AspNetCore`.
+- **`Lumen.Api/Program.cs`**: troca `AddPermissionEnforcement()` por `AddLumenAuthorizationEnforcement()`; adiciona `using Lumen.Authorization.AspNetCore`.
+- **`Lumen.Api.csproj`**: adiciona `ProjectReference` para `Lumen.Authorization.AspNetCore`.
+- **`Lumen.Backoffice.csproj`**: adiciona `ProjectReference` para `Lumen.Authorization.AspNetCore`.
+- **`Lumen.UnitTests.csproj`**: adiciona `ProjectReference` para `Lumen.Authorization.AspNetCore` (acesso direto a `ControllerNameNormalizer` e tipos movidos).
+- **`tests/Lumen.UnitTests/Authorization`**: atualiza `using` de `ControllerNameNormalizerTests`, `PermissionDiscoveryScannerTests`, `ConventionPermissionRegressionTests`, `AuthorizationGraphPermissionDiscoveryTests` para `Lumen.Authorization.AspNetCore`.
+
+### Removed (LIB-07)
+- **`src/Lumen.Api/Authorization/PermissionPolicyProvider.cs`**, **`PermissionRequirement.cs`**, **`PermissionAuthorizationHandler.cs`**, **`PermissionEnforcementServiceCollectionExtensions.cs`**: movidos para `Lumen.Authorization.AspNetCore`.
+- **`src/SharedKernel/Lumen.SharedKernel/Authorization/RequirePermissionAttribute.cs`**, **`PermissionGroupAttribute.cs`**, **`ControllerNameNormalizer.cs`**: movidos para `Lumen.Authorization.AspNetCore`.
+
 ### Added (LIB-04 + LIB-05 — Redis opcional e entry point único com options)
 - **`LumenAuthorizationOptions`** (novo em `Lumen.Authorization`): `public sealed class` com `RedisConnectionString?` (default `null` → cache em memória) e `ApplyMigrationsOnStartup` (default `true`).
 - **Overload `AddLumenAuthorization(string connectionString, Action<LumenAuthorizationOptions>? configure = null)`**: entry point mínimo — basta a connection string do banco; sem seção de `IConfiguration`, sem Redis obrigatório. Cache provider decidido internamente.
