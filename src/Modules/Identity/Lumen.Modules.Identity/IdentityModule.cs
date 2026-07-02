@@ -115,9 +115,6 @@ public sealed class IdentityModule : IModule
 
     private static void RegisterAuthorization(IServiceCollection services, IConfiguration configuration)
     {
-        services.AddStackExchangeRedisCache(options =>
-            options.Configuration = configuration.GetConnectionString("Redis"));
-
         services.AddLumenAuthorization(configuration);
 
         services.Replace(ServiceDescriptor.Scoped<IUserDirectory, IdentityUserDirectory>());

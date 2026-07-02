@@ -9,9 +9,11 @@ using Lumen.Authorization.Infrastructure.Cache;
 using Lumen.Authorization.Persistence;
 using Lumen.Authorization.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 
 namespace Lumen.Authorization;
 
@@ -19,14 +21,52 @@ public static class LumenAuthorizationServiceCollectionExtensions
 {
     public static IServiceCollection AddLumenAuthorization(
         this IServiceCollection services,
-        IConfiguration configuration)
+        string connectionString,
+        Action<LumenAuthorizationOptions>? configure = null)
+    {
+        var options = new LumenAuthorizationOptions();
+        configure?.Invoke(options);
+
+        return services.RegisterCore(connectionString, options);
+    }
+
+    public static IServiceCollection AddLumenAuthorization(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        Action<LumenAuthorizationOptions>? configure = null)
+    {
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        var redisConnectionString = configuration.GetConnectionString("Redis");
+
+        var options = new LumenAuthorizationOptions
+        {
+            RedisConnectionString = redisConnectionString
+        };
+
+        configure?.Invoke(options);
+
+        return services.RegisterCore(connectionString!, options);
+    }
+
+    private static IServiceCollection RegisterCore(
+        this IServiceCollection services,
+        string connectionString,
+        LumenAuthorizationOptions options)
     {
         var assembly = typeof(LumenAuthorizationServiceCollectionExtensions).Assembly;
 
-        services.AddDbContext<LumenAuthorizationDbContext>(options =>
-            options.UseSqlServer(
-                configuration.GetConnectionString("DefaultConnection"),
+        services.Configure<LumenAuthorizationOptions>(o =>
+        {
+            o.RedisConnectionString = options.RedisConnectionString;
+            o.ApplyMigrationsOnStartup = options.ApplyMigrationsOnStartup;
+        });
+
+        services.AddDbContext<LumenAuthorizationDbContext>(dbOptions =>
+            dbOptions.UseSqlServer(
+                connectionString,
                 sql => sql.MigrationsAssembly(LumenAuthorizationMigrationsAssembly.Name)));
+
+        RegisterCacheProvider(services, options);
 
         services.AddScoped<IPermissionRepository, PermissionRepository>();
         services.AddScoped<IGroupPermissionRepository, GroupPermissionRepository>();
@@ -53,6 +93,20 @@ public static class LumenAuthorizationServiceCollectionExtensions
         RegisterValidators(services, assembly);
 
         return services;
+    }
+
+    private static void RegisterCacheProvider(IServiceCollection services, LumenAuthorizationOptions options)
+    {
+        if (services.Any(d => d.ServiceType == typeof(IDistributedCache)))
+            return;
+
+        if (!string.IsNullOrWhiteSpace(options.RedisConnectionString))
+        {
+            services.AddStackExchangeRedisCache(o => o.Configuration = options.RedisConnectionString);
+            return;
+        }
+
+        services.AddDistributedMemoryCache();
     }
 
     private static void RegisterValidators(IServiceCollection services, System.Reflection.Assembly assembly)
