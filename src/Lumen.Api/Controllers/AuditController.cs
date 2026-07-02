@@ -1,8 +1,7 @@
+using Lumen.Authorization.AspNetCore;
 using Lumen.Modules.Audit.Application;
-using Lumen.SharedKernel.Authorization;
 using Lumen.SharedKernel.Constants;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Lumen.Api.Controllers;
@@ -19,8 +18,7 @@ public sealed class AuditController : ApiBaseController
     }
 
     [HttpGet("recent")]
-    [RequirePermission]
-    [Authorize(Policy = PermissionCodes.Audit.Read)]
+    [RequirePermission(PermissionCodes.Audit.Read)]
     [ProducesResponseType(typeof(IReadOnlyList<AuditEntryResult>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

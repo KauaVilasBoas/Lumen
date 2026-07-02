@@ -1,10 +1,9 @@
 using Lumen.Authorization.Application.Queries;
 using Lumen.Authorization.Application.UserProfiles.Assign;
 using Lumen.Authorization.Application.UserProfiles.Remove;
-using Lumen.SharedKernel.Authorization;
+using Lumen.Authorization.AspNetCore;
 using Lumen.SharedKernel.Constants;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Lumen.Api.Controllers;
@@ -21,8 +20,7 @@ public sealed class UserProfilesController : ApiBaseController
     }
 
     [HttpGet]
-    [RequirePermission]
-    [Authorize(Policy = PermissionCodes.UserProfiles.List)]
+    [RequirePermission(PermissionCodes.UserProfiles.List)]
     [ProducesResponseType(typeof(IReadOnlyList<ListUserProfilesResult>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -33,8 +31,7 @@ public sealed class UserProfilesController : ApiBaseController
     }
 
     [HttpPost("{profileId:guid}")]
-    [RequirePermission]
-    [Authorize(Policy = PermissionCodes.UserProfiles.Assign)]
+    [RequirePermission(PermissionCodes.UserProfiles.Assign)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -47,8 +44,7 @@ public sealed class UserProfilesController : ApiBaseController
     }
 
     [HttpDelete("{profileId:guid}")]
-    [RequirePermission]
-    [Authorize(Policy = PermissionCodes.UserProfiles.Remove)]
+    [RequirePermission(PermissionCodes.UserProfiles.Remove)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

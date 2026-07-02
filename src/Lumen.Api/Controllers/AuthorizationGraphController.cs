@@ -1,8 +1,7 @@
 using Lumen.Authorization.Application.Queries;
-using Lumen.SharedKernel.Authorization;
+using Lumen.Authorization.AspNetCore;
 using Lumen.SharedKernel.Constants;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Lumen.Api.Controllers;
@@ -19,8 +18,7 @@ public sealed class AuthorizationGraphController : ApiBaseController
     }
 
     [HttpGet]
-    [RequirePermission]
-    [Authorize(Policy = PermissionCodes.AuthorizationGraph.View)]
+    [RequirePermission(PermissionCodes.AuthorizationGraph.View)]
     [ProducesResponseType(typeof(AuthorizationGraphSnapshot), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
