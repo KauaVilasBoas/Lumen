@@ -1,7 +1,7 @@
+using Lumen.Authorization.Contracts.Events;
 using Lumen.Modules.Audit.Domain;
 using Lumen.Modules.Audit.Persistence;
 using Lumen.Modularity;
-using Lumen.Modules.Identity.Contracts.Events;
 using Lumen.SharedKernel.Constants;
 using Microsoft.Extensions.Logging;
 
