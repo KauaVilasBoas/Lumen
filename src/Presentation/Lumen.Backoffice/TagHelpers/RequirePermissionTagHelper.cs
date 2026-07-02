@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using Lumen.Modules.Identity.Contracts;
+using Lumen.Authorization.Contracts;
 using Lumen.SharedKernel.Authorization;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 

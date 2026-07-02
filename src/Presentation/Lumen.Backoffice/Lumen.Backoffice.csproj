@@ -12,6 +12,7 @@
     <ProjectReference Include="..\..\Lumen.Infrastructure\Lumen.Infrastructure.csproj" />
     <ProjectReference Include="..\..\Modules\Identity\Lumen.Modules.Identity\Lumen.Modules.Identity.csproj" />
     <ProjectReference Include="..\..\Lumen.Authorization\Lumen.Authorization.csproj" />
+    <ProjectReference Include="..\..\Lumen.Authorization.Contracts\Lumen.Authorization.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

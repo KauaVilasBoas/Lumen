@@ -1,6 +1,6 @@
 using System.Text.Json;
 using Lumen.Backoffice.Services;
-using Lumen.Modules.Identity.Contracts;
+using Lumen.Authorization.Contracts;
 using Lumen.SharedKernel.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
