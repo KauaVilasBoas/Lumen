@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Docs
+- **[ADR-0004](docs/adr/0004-authorization-as-library.md)** (novo): decisão de extrair a autorização do módulo Identity para a família de pacotes `Lumen.Authorization*` (núcleo agnóstico de ASP.NET, `.Migrations`, `.AspNetCore`, `.Backoffice` como RCL montável), tornando-a instalável por qualquer app ASP.NET Core — `AddLumenAuthorization(connectionString)` com auto-migração do schema `Lumen`, `[RequirePermission]` que declara e enforça, e `MapLumenBackoffice`. Define a fronteira da extração (o que migra vs. o que fica no Identity), o contrato com o consumidor (traz o próprio login; Redis opcional; `UserProfile.UserId` como Guid opaco) e o naming schema `Lumen`/tabelas singulares. Abre o épico "Lumen Authz Lib" (cards LIB-00…LIB-14).
+
 ## [0.4.0] - 2026-06-30
 
 > Migração da Clean Architecture em camadas para **monolito modular** (épicos E0–E4): building block `Lumen.Modularity` (`[Module]`/`IModule`, auto-discovery, event bus in-process), módulos verticais `Identity` e `Audit` com schema/DbContext/migrations próprios, composition root via auto-discovery e fronteiras de módulo verificadas por testes. Ver [ADR-0003](docs/adr/0003-layered-to-modular-monolith.md).

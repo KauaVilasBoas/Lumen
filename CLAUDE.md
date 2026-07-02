@@ -58,6 +58,8 @@ tests/
 
 > `tests/Lumen.IntegrationTests` foi removida temporariamente da solução — exige reescrita para usar `IdentityDbContext` em vez do legado `LumenDbContext`.
 
+> **Em andamento — autorização como biblioteca plugável ([ADR-0004](docs/adr/0004-authorization-as-library.md)):** a capacidade de autorização (Permissions, Profiles, UserProfiles, `IUserPermissionService`, enforcement, discovery, backoffice) será extraída do módulo Identity para a família de pacotes `Lumen.Authorization*` — núcleo agnóstico de ASP.NET (`Lumen.Authorization`), migrations (`.Migrations`), cola web com `[RequirePermission]`/policy provider (`.AspNetCore`) e backoffice montável como Razor Class Library (`.Backoffice`). Alvo: qualquer app ASP.NET Core faz `AddLumenAuthorization(connectionString)` (auto-migração do schema `Lumen`, tabelas singulares) + `[RequirePermission]` (declara e enforça) + `MapLumenBackoffice("/lumen")`, trazendo o próprio login. Épico "Lumen Authz Lib" (cards LIB-00…LIB-14).
+
 ## Arquitetura modular
 
 ### Building block: `Lumen.Modularity`
