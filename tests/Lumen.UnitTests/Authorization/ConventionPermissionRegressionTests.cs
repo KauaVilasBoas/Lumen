@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using NSubstitute;
+using Lumen.Authorization.AspNetCore;
 
 namespace Lumen.UnitTests.Authorization;
 

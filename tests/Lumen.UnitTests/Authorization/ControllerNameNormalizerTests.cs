@@ -1,4 +1,4 @@
-using Lumen.SharedKernel.Authorization;
+using Lumen.Authorization.AspNetCore;
 using FluentAssertions;
 
 namespace Lumen.UnitTests.Authorization;

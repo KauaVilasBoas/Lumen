@@ -1,6 +1,6 @@
 using System.Reflection;
 using Lumen.Api.Authorization;
-using Lumen.SharedKernel.Authorization;
+using Lumen.Authorization.AspNetCore;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.Controllers;

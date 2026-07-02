@@ -26,14 +26,18 @@ public sealed class ArchitectureTests
     private static readonly System.Reflection.Assembly AuthorizationContractsAssembly =
         typeof(Lumen.Authorization.Contracts.IUserPermissionService).Assembly;
 
+    private static readonly System.Reflection.Assembly AuthorizationAspNetCoreAssembly =
+        typeof(Lumen.Authorization.AspNetCore.RequirePermissionAttribute).Assembly;
+
     private const string SharedKernelNamespace      = "Lumen.SharedKernel";
     private const string ModularityNamespace        = "Lumen.Modularity";
     private const string IdentityModuleNamespace    = "Lumen.Modules.Identity";
     private const string AuditModuleNamespace       = "Lumen.Modules.Audit";
     private const string IdentityContractsNamespace = "Lumen.Modules.Identity.Contracts";
     private const string AuditContractsNamespace    = "Lumen.Modules.Audit.Contracts";
-    private const string AuthorizationNamespace     = "Lumen.Authorization";
+    private const string AuthorizationNamespace          = "Lumen.Authorization";
     private const string AuthorizationContractsNamespace = "Lumen.Authorization.Contracts";
+    private const string AuthorizationAspNetCoreNamespace = "Lumen.Authorization.AspNetCore";
 
     [Fact]
     public void SharedKernel_MustNotDependOnAnyModule()
@@ -164,6 +168,39 @@ public sealed class ArchitectureTests
 
         result.IsSuccessful.Should().BeTrue(
             because: "Lumen.Authorization is a standalone library — it must not depend on any Lumen module or SharedKernel. " +
+                     $"Failing types: {FailingTypes(result)}");
+    }
+
+    [Fact]
+    public void Authorization_MustNotDependOnAspNetCoreFramework()
+    {
+        var result = Types.InAssembly(AuthorizationAssembly)
+            .ShouldNot()
+            .HaveDependencyOnAny(
+                AuthorizationAspNetCoreNamespace,
+                "Microsoft.AspNetCore.Authorization",
+                "Microsoft.AspNetCore.Http",
+                "Microsoft.AspNetCore.Mvc")
+            .GetResult();
+
+        result.IsSuccessful.Should().BeTrue(
+            because: "Lumen.Authorization core must remain framework-agnostic — ASP.NET enforcement lives in Lumen.Authorization.AspNetCore. " +
+                     $"Failing types: {FailingTypes(result)}");
+    }
+
+    [Fact]
+    public void AuthorizationAspNetCore_MustNotDependOnIdentityOrAuditModules()
+    {
+        var result = Types.InAssembly(AuthorizationAspNetCoreAssembly)
+            .ShouldNot()
+            .HaveDependencyOnAny(
+                IdentityModuleNamespace,
+                AuditModuleNamespace,
+                SharedKernelNamespace)
+            .GetResult();
+
+        result.IsSuccessful.Should().BeTrue(
+            because: "Lumen.Authorization.AspNetCore must not depend on business modules or SharedKernel. " +
                      $"Failing types: {FailingTypes(result)}");
     }
 
