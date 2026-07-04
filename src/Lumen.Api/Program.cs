@@ -2,7 +2,6 @@ using Lumen.Api.ExceptionHandlers;
 using Lumen.Api.Hubs;
 using Lumen.Api.Middleware;
 using Lumen.Authorization.AspNetCore;
-using Lumen.Authorization.Migrations;
 using Lumen.Infrastructure.Configuration;
 using Lumen.Jobs.Configuration;
 using Lumen.Jobs.Scheduling;
@@ -36,6 +35,9 @@ try
     // ── SQL Server options for Hangfire storage ───────────────────────────────
     builder.Services.AddSqlServerOptions(builder.Configuration);
 
+    // ── Authorization library (core + migrations + enforcement + discovery) ──
+    builder.Services.AddLumenAuthorization(builder.Configuration);
+
     // ── Modules (auto-discovery via [Module] annotation) ─────────────────────
     builder.Services.AddModules(builder.Configuration,
         typeof(AuditModule).Assembly,
@@ -50,14 +52,9 @@ try
     // ── Module migrations applied on startup ─────────────────────────────────
     builder.Services.AddAuditMigrationsHostedService();
     builder.Services.AddIdentityMigrationsHostedService();
-    builder.Services.AddLumenAuthorizationMigrations();
 
     // ── Authentication & Authorization ────────────────────────────────────────
     builder.Services.AddIdentityJwtBearerAuthentication(HubRoutes.AuthorizationGraph);
-
-    // ── Permission discovery and Administrator reconciliation ────────────────
-    builder.Services.AddLumenAuthorizationDiscovery();
-    builder.Services.AddLumenAuthorizationEnforcement();
 
     // ── Background Jobs (Hangfire + SQL Server storage) ──────────────────────
     builder.Services.AddAegisHangfire(builder.Configuration);
