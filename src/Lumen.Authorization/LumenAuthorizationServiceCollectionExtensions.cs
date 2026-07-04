@@ -6,8 +6,10 @@ using Lumen.Authorization.Contracts;
 using Lumen.Authorization.Domain;
 using Lumen.Authorization.Infrastructure;
 using Lumen.Authorization.Infrastructure.Cache;
+using Lumen.Authorization.Internal;
 using Lumen.Authorization.Persistence;
 using Lumen.Authorization.Persistence.Repositories;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
@@ -19,6 +21,18 @@ namespace Lumen.Authorization;
 
 public static class LumenAuthorizationServiceCollectionExtensions
 {
+    /// <summary>
+    /// Registra os serviços do núcleo de autorização Lumen.
+    /// </summary>
+    /// <remarks>
+    /// Requer SQL Server: a lib utiliza <c>UseSqlServer</c> e as migrations em
+    /// <c>Lumen.Authorization.Migrations</c> são SQL-Server-específicas.
+    /// Quando <see cref="LumenAuthorizationOptions.ApplyMigrationsOnStartup"/> é <c>true</c>
+    /// (padrão), o schema <c>Lumen</c> é criado/atualizado na inicialização da aplicação.
+    /// </remarks>
+    /// <param name="services">A coleção de serviços.</param>
+    /// <param name="connectionString">Connection string SQL Server não vazia.</param>
+    /// <param name="configure">Configuração opcional de <see cref="LumenAuthorizationOptions"/>.</param>
     public static IServiceCollection AddLumenAuthorization(
         this IServiceCollection services,
         string connectionString,
@@ -30,6 +44,21 @@ public static class LumenAuthorizationServiceCollectionExtensions
         return services.RegisterCore(connectionString, options);
     }
 
+    /// <summary>
+    /// Registra os serviços do núcleo de autorização Lumen lendo a configuração de
+    /// <see cref="IConfiguration"/>.
+    /// </summary>
+    /// <remarks>
+    /// Requer SQL Server: a lib utiliza <c>UseSqlServer</c> e as migrations em
+    /// <c>Lumen.Authorization.Migrations</c> são SQL-Server-específicas.
+    /// A connection string SQL Server é lida de <c>ConnectionStrings:DefaultConnection</c>.
+    /// A connection string Redis (opcional) é lida de <c>ConnectionStrings:Redis</c>.
+    /// Quando <see cref="LumenAuthorizationOptions.ApplyMigrationsOnStartup"/> é <c>true</c>
+    /// (padrão), o schema <c>Lumen</c> é criado/atualizado na inicialização da aplicação.
+    /// </remarks>
+    /// <param name="services">A coleção de serviços.</param>
+    /// <param name="configuration">Configuração da aplicação.</param>
+    /// <param name="configure">Configuração opcional de <see cref="LumenAuthorizationOptions"/>.</param>
     public static IServiceCollection AddLumenAuthorization(
         this IServiceCollection services,
         IConfiguration configuration,
@@ -53,6 +82,8 @@ public static class LumenAuthorizationServiceCollectionExtensions
         string connectionString,
         LumenAuthorizationOptions options)
     {
+        ValidateSqlServerConnectionString(connectionString);
+
         var assembly = typeof(LumenAuthorizationServiceCollectionExtensions).Assembly;
 
         services.Configure<LumenAuthorizationOptions>(o =>
@@ -94,6 +125,21 @@ public static class LumenAuthorizationServiceCollectionExtensions
         RegisterValidators(services, assembly);
 
         return services;
+    }
+
+    private static void ValidateSqlServerConnectionString(string connectionString)
+    {
+        if (string.IsNullOrWhiteSpace(connectionString))
+            throw new ArgumentException(AuthorizationErrorMessages.ConnectionStringNullOrEmpty, nameof(connectionString));
+
+        try
+        {
+            _ = new SqlConnectionStringBuilder(connectionString);
+        }
+        catch (Exception ex)
+        {
+            throw new ArgumentException(AuthorizationErrorMessages.ConnectionStringNotSqlServer, nameof(connectionString), ex);
+        }
     }
 
     private static void RegisterCacheProvider(IServiceCollection services, LumenAuthorizationOptions options)
