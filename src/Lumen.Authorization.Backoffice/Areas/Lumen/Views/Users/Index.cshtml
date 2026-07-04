@@ -1,0 +1,7 @@
+@model UserListViewModel
+@{
+    ViewData["Title"] = BackofficeDisplayTokens.PageTitleUsers;
+    ViewData["Subtitle"] = BackofficeDisplayTokens.PageSubtitleUsers;
+}
+
+@await Component.InvokeAsync("UserList", new { model = Model })

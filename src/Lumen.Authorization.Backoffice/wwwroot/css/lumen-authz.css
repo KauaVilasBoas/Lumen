@@ -230,3 +230,51 @@ a:hover { text-decoration: underline; }
 .lz-perm-code-wrap { flex: 1; min-width: 0; }
 .lz-perm-code { font-size: 12px; }
 .lz-perm-name { font-size: 12px; color: var(--lumen-muted); min-width: 160px; }
+
+/* User list */
+.lz-urow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  transition: background .12s, border-color .12s;
+  color: var(--lumen-text);
+}
+.lz-urow:hover { background: rgba(255,255,255,.04); border-color: var(--lumen-border); text-decoration: none; }
+.lz-urow-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px; color: #fff; flex-shrink: 0;
+}
+.lz-urow-main { flex: 1; min-width: 0; }
+.lz-urow-name { font-weight: 600; font-size: 14px; }
+.lz-urow-email { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lz-urow-meta { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.lz-urow-profiles { font-size: 11px; color: var(--lumen-muted); }
+.lz-badge-state { background: rgba(43,212,160,.12); color: var(--lumen-ok); }
+
+/* User empty state */
+.lz-user-empty {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 10px; padding: 48px 28px; text-align: center;
+}
+.lz-user-empty-icon { font-size: 40px; }
+.lz-user-empty-title { font-size: 15px; font-weight: 600; }
+.lz-user-empty-hint { font-size: 12px; color: var(--lumen-muted); max-width: 480px; line-height: 1.7; white-space: pre-wrap; }
+
+/* User profile assignment */
+.lz-uprofile-section { padding: 16px 24px; border-top: 1px solid var(--lumen-border); }
+.lz-uprofile-section:first-of-type { border-top: none; }
+.lz-uprofile-section-head { margin-bottom: 10px; }
+.lz-uprofile-section-assign { background: rgba(255,255,255,.015); }
+.lz-uprofile-list { display: flex; flex-direction: column; gap: 4px; }
+.lz-uprofile-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 12px; border-radius: 6px;
+  border: 1px solid transparent;
+  background: rgba(255,255,255,.02);
+}
+.lz-uprofile-name { flex: 1; font-size: 13px; font-weight: 500; }
+.lz-uprofile-empty { padding: 12px 0; font-size: 13px; }

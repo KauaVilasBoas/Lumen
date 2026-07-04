@@ -25,4 +25,14 @@ internal static class BackofficeDisplayTokens
     internal const string PageTitleEdit = "Edit profile";
     internal const string PageSubtitleEdit = "Update a role-like container";
     internal const string PageSubtitleDetails = "Permission assignment matrix";
+
+    internal const string PageTitleUsers = "Users";
+    internal const string PageSubtitleUsers = "Active users · profile assignment";
+    internal const string PageSubtitleUserDetail = "Profile membership";
+
+    internal static string UserAvatar(string username)
+    {
+        var colors = new[] { "#4c8dff", "#2bd4a0", "#f5a623", "#f25fa6", "#a78bfa", "#8b6dff", "#5b6478" };
+        return colors[Math.Abs(username.GetHashCode()) % colors.Length];
+    }
 }
