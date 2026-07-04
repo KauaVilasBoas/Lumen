@@ -1,4 +1,4 @@
-# Changelog
+﻿# Changelog
 
 All notable changes to this project will be documented in this file.
 
@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Added (LIB-15 — Policy nomeada por convenção `[Authorize(Policy = LumenPolicy.Default)]`)
+- **`LumenPolicy`** (novo tipo público em `Lumen.Authorization.AspNetCore`): constante `Default = "Lumen"` — fonte de verdade única para o nome bem-conhecido da policy de convenção. Elimina a necessidade de string literal nos atributos `[Authorize]` do consumidor.
+- **`PermissionPolicyProvider`**: reconhece `LumenPolicy.Default` via método `IsDefaultConventionalPolicy` (extrai a decisão do nome bem-conhecido de forma isolada e testável) e devolve policy com `RequireAuthenticatedUser()` + `PermissionRequirement(code: null)`. O handler resolve `controller.action` por convenção, exatamente como já faz para `[RequirePermission]` sem argumento. Formatos existentes (`Lumen:<code>` e `<code.com.ponto>`) continuam funcionando sem alteração via `ResolvePermissionCode`.
+- **Testes em `PermissionPolicyProviderTests`**: 2 novos casos — `GetPolicyAsync_WithLumenDefault_ReturnsConventionalPolicyWithNullCode` e `GetPolicyAsync_WithLumenDefault_PolicyRequiresAuthenticatedUser`.
+- **`LumenDefaultPolicyConventionTests`** (novo arquivo de testes): 4 casos exercitando o caminho completo — constante com valor correto; provider resolve policy convencional; handler permite quando usuário tem permissão; handler nega quando usuário não tem permissão.
 
 ### Added (LIB-10 — Backoffice montável como Razor Class Library)
 - **`Lumen.Authorization.Backoffice`** (novo projeto `Microsoft.NET.Sdk.Razor`, `AddRazorSupportForMvc`): RCL que empacota a gestão de Perfis e Permissões como UI montável pelo consumidor. ProjectReferences: `Lumen.Authorization`, `Lumen.Authorization.Contracts`, `Lumen.Authorization.AspNetCore`. PackageReference: `MediatR` (CPM).
