@@ -2,7 +2,27 @@
 
   <PropertyGroup>
     <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+    <IsPackable>true</IsPackable>
+    <Version>$(LumenAuthorizationVersion)</Version>
+    <PackageId>Lumen.Authorization.Backoffice</PackageId>
+    <Authors>$(LumenPackageAuthors)</Authors>
+    <Company>$(LumenPackageCompany)</Company>
+    <Product>$(LumenPackageProduct)</Product>
+    <Description>Razor Class Library providing a mountable Backoffice UI for Lumen.Authorization. Includes controllers, ViewComponents, and CSS for managing Permissions, Profiles, and User↔Profile assignments. Mount via AddLumenBackoffice() + MapLumenBackoffice("/lumen").</Description>
+    <PackageTags>authorization;permissions;aspnetcore;rbac;lumen;backoffice;razor;rcl;ui;mvc</PackageTags>
+    <PackageLicenseExpression>$(LumenPackageLicenseExpression)</PackageLicenseExpression>
+    <PackageProjectUrl>$(LumenPackageProjectUrl)</PackageProjectUrl>
+    <RepositoryUrl>$(LumenRepositoryUrl)</RepositoryUrl>
+    <RepositoryType>$(LumenRepositoryType)</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>images/lumen-mark.png</PackageIcon>
+    <EnablePackageValidation>true</EnablePackageValidation>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\docs\nuget-readme.md" Pack="true" PackagePath="\README.md" />
+    <None Include="..\Presentation\Lumen.Backoffice\wwwroot\img\brand\lumen-mark.png" Pack="true" PackagePath="images\lumen-mark.png" />
+  </ItemGroup>
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />

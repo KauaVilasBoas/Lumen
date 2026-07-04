@@ -1,5 +1,28 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <Version>$(LumenAuthorizationVersion)</Version>
+    <PackageId>Lumen.Authorization</PackageId>
+    <Authors>$(LumenPackageAuthors)</Authors>
+    <Company>$(LumenPackageCompany)</Company>
+    <Product>$(LumenPackageProduct)</Product>
+    <Description>Core of Lumen.Authorization: domain entities (Permission, Profile, UserProfile), CQRS command/query handlers, EF Core persistence against SQL Server, and DI registration via AddLumenAuthorization(). SQL Server is required.</Description>
+    <PackageTags>authorization;permissions;aspnetcore;rbac;lumen;efcore;sqlserver;cqrs</PackageTags>
+    <PackageLicenseExpression>$(LumenPackageLicenseExpression)</PackageLicenseExpression>
+    <PackageProjectUrl>$(LumenPackageProjectUrl)</PackageProjectUrl>
+    <RepositoryUrl>$(LumenRepositoryUrl)</RepositoryUrl>
+    <RepositoryType>$(LumenRepositoryType)</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>images/lumen-mark.png</PackageIcon>
+    <EnablePackageValidation>true</EnablePackageValidation>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\docs\nuget-readme.md" Pack="true" PackagePath="\README.md" />
+    <None Include="..\Presentation\Lumen.Backoffice\wwwroot\img\brand\lumen-mark.png" Pack="true" PackagePath="images\lumen-mark.png" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\BuildingBlocks\Lumen.Modularity\Lumen.Modularity.csproj" />
     <ProjectReference Include="..\Lumen.Authorization.Contracts\Lumen.Authorization.Contracts.csproj" />
