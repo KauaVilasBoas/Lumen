@@ -1,6 +1,5 @@
 using System.Net.Http.Headers;
 using FluentValidation;
-using Lumen.Authorization;
 using Lumen.Authorization.Contracts;
 using Lumen.Modularity;
 using Lumen.Modules.Identity.Application.Tokens;
@@ -36,7 +35,7 @@ public sealed class IdentityModule : IModule
         RegisterRepositories(services);
         RegisterSecurity(services);
         RegisterNotifications(services, configuration);
-        RegisterAuthorization(services, configuration);
+        RegisterAuthorization(services);
         RegisterApplication(services);
     }
 
@@ -113,10 +112,8 @@ public sealed class IdentityModule : IModule
             });
     }
 
-    private static void RegisterAuthorization(IServiceCollection services, IConfiguration configuration)
+    private static void RegisterAuthorization(IServiceCollection services)
     {
-        services.AddLumenAuthorization(configuration);
-
         services.Replace(ServiceDescriptor.Scoped<IUserDirectory, IdentityUserDirectory>());
         services.Replace(ServiceDescriptor.Scoped<IAuthorizationUserSource, IdentityAuthorizationUserSource>());
     }
