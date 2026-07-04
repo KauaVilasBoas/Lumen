@@ -26,6 +26,9 @@ public sealed class PermissionPolicyProvider : IAuthorizationPolicyProvider
         if (existing is not null)
             return existing;
 
+        if (IsDefaultConventionalPolicy(policyName))
+            return BuildConventionalPolicy();
+
         var code = ResolvePermissionCode(policyName);
 
         if (code is null)
@@ -36,6 +39,15 @@ public sealed class PermissionPolicyProvider : IAuthorizationPolicyProvider
             .AddRequirements(new PermissionRequirement(code))
             .Build();
     }
+
+    private static bool IsDefaultConventionalPolicy(string policyName)
+        => string.Equals(policyName, LumenPolicy.Default, StringComparison.Ordinal);
+
+    private static AuthorizationPolicy BuildConventionalPolicy()
+        => new AuthorizationPolicyBuilder()
+            .RequireAuthenticatedUser()
+            .AddRequirements(new PermissionRequirement(code: null))
+            .Build();
 
     private static string? ResolvePermissionCode(string policyName)
     {
