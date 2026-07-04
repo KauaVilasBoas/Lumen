@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Lumen.Authorization.AspNetCore;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.Extensions.Options;
 
 namespace Lumen.Authorization.AspNetCore.Tests;
@@ -57,5 +58,29 @@ public sealed class PermissionPolicyProviderTests
         policy.Should().NotBeNull();
         policy!.Requirements.OfType<PermissionRequirement>().Should()
             .ContainSingle(req => req.Code == "Profiles.Create");
+    }
+
+    [Fact]
+    public async Task GetPolicyAsync_WithLumenDefault_ReturnsConventionalPolicyWithNullCode()
+    {
+        var provider = BuildProvider();
+
+        var policy = await provider.GetPolicyAsync(LumenPolicy.Default);
+
+        policy.Should().NotBeNull();
+        policy!.Requirements.OfType<PermissionRequirement>().Should()
+            .ContainSingle(req => req.Code == null);
+    }
+
+    [Fact]
+    public async Task GetPolicyAsync_WithLumenDefault_PolicyRequiresAuthenticatedUser()
+    {
+        var provider = BuildProvider();
+
+        var policy = await provider.GetPolicyAsync(LumenPolicy.Default);
+
+        policy.Should().NotBeNull();
+        policy!.Requirements.Should().Contain(req =>
+            req is DenyAnonymousAuthorizationRequirement);
     }
 }
