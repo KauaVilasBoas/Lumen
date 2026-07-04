@@ -13,6 +13,52 @@ public sealed class AddLumenAuthorizationTests
     private const string FakeSqlConnectionString = "Server=localhost;Database=TestDb;Trusted_Connection=True;";
     private const string FakeRedisConnectionString = "localhost:6379";
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void NullOrWhitespaceConnectionString_ThrowsArgumentException(string? connectionString)
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        var act = () => services.AddLumenAuthorization(connectionString!);
+
+        act.Should().Throw<ArgumentException>()
+            .WithMessage("*Lumen.Authorization requer uma connection string SQL Server*",
+                because: "a null or whitespace connection string must be rejected early with a clear message");
+    }
+
+    [Fact]
+    public void ConnectionStringWithUnknownKeyword_ThrowsArgumentException()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        var act = () => services.AddLumenAuthorization("provider=postgresql;host=localhost;database=TestDb");
+
+        act.Should().Throw<ArgumentException>()
+            .WithMessage("*Lumen.Authorization requer uma connection string SQL Server válida*",
+                because: "a connection string with keywords unknown to SQL Server must be rejected early");
+    }
+
+    [Fact]
+    public void IConfigurationOverload_NullDefaultConnection_ThrowsArgumentException()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>())
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        var act = () => services.AddLumenAuthorization(configuration);
+
+        act.Should().Throw<ArgumentException>()
+            .WithMessage("*Lumen.Authorization requer uma connection string SQL Server*",
+                because: "a missing ConnectionStrings:DefaultConnection must be rejected with a clear message");
+    }
+
     [Fact]
     public void WithoutRedis_RegistersDistributedMemoryCache()
     {
