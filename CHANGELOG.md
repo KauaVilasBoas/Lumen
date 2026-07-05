@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (#146 — Suporte a PostgreSQL: persistência multi-provider)
+- **`DatabaseProvider`** (novo enum público em `Lumen.Authorization`): `SqlServer` e `PostgreSQL` — tipagem segura para seleção de provider de banco de dados.
+- **`LumenAuthorizationOptions.Provider`**: nova propriedade com padrão `DatabaseProvider.SqlServer` — retrocompatível; consumidores existentes não precisam de mudança.
+- **`AddLumenAuthorization` provider-aware**: o overload de `string` aceita a propriedade `Provider` via delegate `configure`; o overload de `IConfiguration` lê `Database:Provider` (case-insensitive) de qualquer fonte de configuração.
+- **Guard condicional por provider**: `ValidateConnectionString` despacha para `SqlConnectionStringBuilder` (SQL Server) ou `NpgsqlConnectionStringBuilder` (PostgreSQL), com mensagem de erro específica por dialeto. String nula/vazia é rejeitada antes do parse com mensagem unificada.
+- **`RegisterDbContext` provider-aware**: `UseSqlServer` ou `UseNpgsql` são chamados com o assembly de migrations correto (`LumenAuthorizationMigrationsAssembly.SqlServer` / `.PostgreSQL`).
+- **Filtros de índice provider-aware em `LumenAuthorizationDbContext`**: `HasFilter(...)` SQL-Server-específicos (`[IsDeleted] = 0`) removidos das classes `IEntityTypeConfiguration<T>` e centralizados em `ApplyProviderAwareConfigurations`, que escolhe `[IsDeleted] = 0` (SQL Server) ou `is_deleted = false` (PostgreSQL) via `Database.ProviderName`.
+- **`Lumen.Authorization.Migrations.PostgreSQL`** (novo assembly/pacote): migrations idiomáticas para PostgreSQL com tipos nativos (`uuid`, `character varying`, `timestamp with time zone`, `boolean`), filtros de índice com sintaxe PostgreSQL correta e seed de perfis de sistema. Inclui `IDesignTimeDbContextFactory`, `ModelSnapshot` e `LumenAuthorizationPostgresMigrationsHostedService`. Consumidor referencia apenas o pacote compatível com seu provider.
+- **`LumenAuthorizationMigrationsAssembly`**: constantes `SqlServer` e `PostgreSQL` substituem a constante `Name` anterior (mudança interna, `internal`).
+- **`Lumen.Authorization.Migrations`**: **sem mudanças** — mantido intacto e 100% funcional.
+- **ADR-0005** (`docs/adr/0005-multi-provider-database-support.md`): documenta a decisão multi-provider, alternativas rejeitadas, consequências e guia de uso.
+- **Testes**: `Lumen.Authorization.Tests` atualizado com 8 casos novos cobrindo guard PostgreSQL, leitura de `Database:Provider` via `IConfiguration` (case-insensitive), provider padrão SQL Server e registro de DbContext com Npgsql. Total: 312 testes passando (nenhuma regressão no baseline de 304).
+
 ### Added (LIB-11 — Empacotamento NuGet dos pacotes Lumen.Authorization*)
 - **`Directory.Build.props`**: propriedades comuns centralizadas (`LumenAuthorizationVersion=0.1.0`, `LumenPackageAuthors`, `LumenPackageCompany`, `LumenPackageProduct`, `LumenPackageLicenseExpression`, `LumenPackageProjectUrl`, `LumenRepositoryUrl`, `LumenRepositoryType`) como propriedades livres sem `<IsPackable>` nem `<Version>` — apenas os 5 pacotes as consomem; hosts, módulos e testes não são afetados.
 - **`docs/nuget-readme.md`**: README compartilhado empacotado nos 5 `.nupkg` via `<None Pack="true" PackagePath="\README.md">`. Inclui tabela de pacotes, wiring mínimo, exemplo de proteção de endpoint e links para o repositório e ADR-0004.
