@@ -2,5 +2,6 @@ namespace Lumen.Authorization;
 
 internal static class LumenAuthorizationMigrationsAssembly
 {
-    public static readonly string Name = "Lumen.Authorization.Migrations";
+    public const string SqlServer  = "Lumen.Authorization.Migrations";
+    public const string PostgreSQL = "Lumen.Authorization.Migrations.PostgreSQL";
 }
