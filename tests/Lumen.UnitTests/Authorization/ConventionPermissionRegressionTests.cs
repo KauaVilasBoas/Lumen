@@ -1,5 +1,4 @@
 using System.Reflection;
-using Lumen.Api.Authorization;
 using Lumen.Api.Controllers;
 using Lumen.SharedKernel.Constants;
 using FluentAssertions;
@@ -7,6 +6,7 @@ using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using NSubstitute;
+using Lumen.Authorization.AspNetCore;
 
 namespace Lumen.UnitTests.Authorization;
 

@@ -1,0 +1,55 @@
+name: Publish Lumen.Authorization packages
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versão dos pacotes (ex.: 0.2.0)'
+        required: true
+
+jobs:
+  publish:
+    name: Pack & push Lumen.Authorization*
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      # Em push de tag a versão vem do nome da tag (v0.1.0 -> 0.1.0);
+      # em execução manual vem do input.
+      - name: Resolve version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "value=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Pack
+        run: |
+          VERSION="${{ steps.version.outputs.value }}"
+          PACK_ARGS="-c Release -p:LumenAuthorizationVersion=${VERSION} -p:ContinuousIntegrationBuild=true --output ./artifacts"
+
+          dotnet pack src/Lumen.Authorization.Contracts/Lumen.Authorization.Contracts.csproj $PACK_ARGS
+          dotnet pack src/Lumen.Authorization/Lumen.Authorization.csproj $PACK_ARGS
+          dotnet pack src/Lumen.Authorization.Migrations/Lumen.Authorization.Migrations.csproj $PACK_ARGS
+          dotnet pack src/Lumen.Authorization.AspNetCore/Lumen.Authorization.AspNetCore.csproj $PACK_ARGS
+          dotnet pack src/Lumen.Authorization.Backoffice/Lumen.Authorization.Backoffice.csproj $PACK_ARGS
+
+      - name: Push to nuget.org
+        run: >
+          dotnet nuget push "./artifacts/*.nupkg"
+          --api-key ${{ secrets.NUGET_API_KEY }}
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate

@@ -6,6 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
@@ -24,6 +28,10 @@
     <ProjectReference Include="..\..\src\Modules\Identity\Lumen.Modules.Identity\Lumen.Modules.Identity.csproj" />
     <ProjectReference Include="..\..\src\Modules\Identity\Lumen.Modules.Identity.Contracts\Lumen.Modules.Identity.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Modules\Audit\Lumen.Modules.Audit.Contracts\Lumen.Modules.Audit.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Lumen.Authorization\Lumen.Authorization.csproj" />
+    <ProjectReference Include="..\..\src\Lumen.Authorization.Contracts\Lumen.Authorization.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Lumen.Authorization.AspNetCore\Lumen.Authorization.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\src\Lumen.Authorization.Backoffice\Lumen.Authorization.Backoffice.csproj" />
   </ItemGroup>
 
 </Project>

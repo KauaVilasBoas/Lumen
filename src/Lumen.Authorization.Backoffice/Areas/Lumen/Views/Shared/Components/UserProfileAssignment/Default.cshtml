@@ -1,0 +1,104 @@
+@model UserProfileAssignmentViewModel
+@{
+    var avatarColor = BackofficeDisplayTokens.UserAvatar(Model.Username);
+    var assignedProfileIds = new HashSet<Guid>(Model.AssignedProfiles.Select(p => p.ProfileId));
+    var unassignedProfiles = Model.AvailableProfiles.Where(p => !assignedProfileIds.Contains(p.Id)).ToList();
+}
+
+<div class="lz-content-wrap">
+    <div class="lz-card lz-detail">
+        <div class="lz-detail-head" style="--lz-nc:@avatarColor">
+            <div class="lz-detail-title">
+                <span class="lz-detail-badge" style="background:@avatarColor">@Model.Username[0].ToString().ToUpperInvariant()</span>
+                <div>
+                    <h2>@Model.Username</h2>
+                    <p class="lz-muted">@Model.Email</p>
+                </div>
+            </div>
+            <div class="lz-detail-meta">
+                <div class="lz-stat-inline">
+                    <span class="lz-tnum">@Model.AssignedProfiles.Count</span>
+                    <span class="lz-mono">profile@(Model.AssignedProfiles.Count == 1 ? "" : "s")</span>
+                </div>
+                <span class="lz-badge lz-badge-state">@Model.State</span>
+                <a asp-area="Lumen" asp-controller="Users" asp-action="Index" class="lz-btn lz-btn-ghost lz-btn-sm">Back</a>
+            </div>
+        </div>
+
+        @if (Model.ErrorMessage is not null)
+        {
+            <div class="lz-error-banner lz-error-banner-inline">@Model.ErrorMessage</div>
+        }
+
+        <div class="lz-uprofile-section">
+            <div class="lz-uprofile-section-head">
+                <span class="lz-eyebrow">Assigned profiles</span>
+            </div>
+
+            @if (Model.AssignedProfiles.Count == 0)
+            {
+                <p class="lz-uprofile-empty lz-muted">No profiles assigned to this user.</p>
+            }
+            else
+            {
+                <div class="lz-uprofile-list">
+                    @foreach (var assigned in Model.AssignedProfiles)
+                    {
+                        var accent = BackofficeDisplayTokens.ProfileAccent(assigned.ProfileName, assigned.IsSystem);
+                        <div class="lz-uprofile-row" style="--lz-nc:@accent">
+                            <span class="lz-prow-bar"></span>
+                            <span class="lz-uprofile-name">
+                                @assigned.ProfileName
+                                @if (assigned.IsSystem)
+                                {
+                                    <span class="lz-badge lz-badge-sys">SYSTEM</span>
+                                }
+                            </span>
+                            @if (!assigned.IsSystem)
+                            {
+                                <form asp-area="Lumen" asp-controller="Users" asp-action="Remove" method="post" style="display:inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="userId" value="@Model.UserId" />
+                                    <input type="hidden" name="profileId" value="@assigned.ProfileId" />
+                                    <button type="submit" class="lz-btn lz-btn-danger lz-btn-sm"
+                                            onclick="return confirm('Remove @assigned.ProfileName from @Model.Username?')">Remove</button>
+                                </form>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        @if (unassignedProfiles.Count > 0)
+        {
+            <div class="lz-uprofile-section lz-uprofile-section-assign">
+                <div class="lz-uprofile-section-head">
+                    <span class="lz-eyebrow">Assign profile</span>
+                </div>
+                <div class="lz-uprofile-list">
+                    @foreach (var profile in unassignedProfiles)
+                    {
+                        var accent = BackofficeDisplayTokens.ProfileAccent(profile.Name, profile.IsSystem);
+                        <div class="lz-uprofile-row" style="--lz-nc:@accent">
+                            <span class="lz-prow-bar"></span>
+                            <span class="lz-uprofile-name">
+                                @profile.Name
+                                @if (profile.IsSystem)
+                                {
+                                    <span class="lz-badge lz-badge-sys">SYSTEM</span>
+                                }
+                            </span>
+                            <form asp-area="Lumen" asp-controller="Users" asp-action="Assign" method="post" style="display:inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="userId" value="@Model.UserId" />
+                                <input type="hidden" name="profileId" value="@profile.Id" />
+                                <button type="submit" class="lz-btn lz-btn-ghost lz-btn-sm">Assign</button>
+                            </form>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>

@@ -1,24 +1,10 @@
 using System.Security.Claims;
-using Lumen.Modules.Identity.Contracts;
-using Lumen.SharedKernel.Authorization;
+using Lumen.Authorization.AspNetCore;
+using Lumen.Authorization.Contracts;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 
 namespace Lumen.Backoffice.TagHelpers;
 
-/// <summary>
-/// Suppresses an HTML element when the current user lacks the specified permission.
-///
-/// Usage:
-/// <code>
-/// &lt;div asp-require-permission-controller="Users" asp-require-permission-action="Delete"&gt;
-///     Delete button here
-/// &lt;/div&gt;
-/// </code>
-///
-/// Anonymous users always see the element suppressed.  The permission code is built
-/// via <see cref="ControllerNameNormalizer"/> + <see cref="Permission.BuildCode"/>,
-/// matching the same normalization used by AUTH-09/AUTH-11 on the API side.
-/// </summary>
 [HtmlTargetElement(Attributes = PermissionControllerAttribute)]
 [HtmlTargetElement(Attributes = PermissionActionAttribute)]
 public sealed class RequirePermissionTagHelper : TagHelper

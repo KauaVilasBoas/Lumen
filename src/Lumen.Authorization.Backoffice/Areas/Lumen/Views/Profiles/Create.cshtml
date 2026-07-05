@@ -1,0 +1,41 @@
+@model CreateProfileFormModel
+@{
+    ViewData["Title"] = BackofficeDisplayTokens.PageTitleCreate;
+    ViewData["Subtitle"] = BackofficeDisplayTokens.PageSubtitleCreate;
+}
+
+<div class="lz-content-wrap">
+    <div class="lz-card lz-card-narrow">
+        <div class="lz-card-head">
+            <div>
+                <div class="lz-eyebrow">Profiles</div>
+                <h3 class="lz-card-title">New profile</h3>
+            </div>
+            <a asp-area="Lumen" asp-controller="Profiles" asp-action="Index" class="lz-btn lz-btn-ghost lz-btn-sm">Back</a>
+        </div>
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div asp-validation-summary="ModelOnly" class="lz-error-banner"></div>
+        }
+
+        <form asp-area="Lumen" asp-controller="Profiles" asp-action="Create" method="post" class="lz-form">
+            @Html.AntiForgeryToken()
+            <label class="lz-field">
+                <span class="lz-field-label">Name</span>
+                <div class="lz-field-input">
+                    <input asp-for="Name" maxlength="128" placeholder="e.g. Security Auditor" />
+                </div>
+                <span asp-validation-for="Name" class="lz-field-error"></span>
+            </label>
+            <label class="lz-field">
+                <span class="lz-field-label">Description</span>
+                <div class="lz-field-input">
+                    <input asp-for="Description" maxlength="512" placeholder="What this profile is for" />
+                </div>
+                <span asp-validation-for="Description" class="lz-field-error"></span>
+            </label>
+            <button type="submit" class="lz-btn lz-btn-primary">Create profile</button>
+        </form>
+    </div>
+</div>

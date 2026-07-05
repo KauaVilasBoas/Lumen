@@ -3,15 +3,8 @@ using FluentAssertions;
 
 namespace Lumen.ArchitectureTests;
 
-/// <summary>
-/// Architecture constraints for Lumen modular monolith.
-/// Each test enforces a module boundary rule.
-/// A failing test means a boundary was violated — fix the dependency, not the test.
-/// </summary>
 public sealed class ArchitectureTests
 {
-    // ─── Assembly markers ────────────────────────────────────────────────────
-
     private static readonly System.Reflection.Assembly SharedKernelAssembly =
         typeof(Lumen.SharedKernel.Constants.AuthErrorMessages).Assembly;
 
@@ -22,12 +15,22 @@ public sealed class ArchitectureTests
         typeof(Lumen.Modules.Identity.IdentityModule).Assembly;
 
     private static readonly System.Reflection.Assembly IdentityContractsAssembly =
-        typeof(Lumen.Modules.Identity.Contracts.IUserPermissionService).Assembly;
+        typeof(Lumen.Modules.Identity.Contracts.Events.UserLoggedInEvent).Assembly;
 
     private static readonly System.Reflection.Assembly AuditContractsAssembly =
         typeof(Lumen.Modules.Audit.Contracts.Events.CleanupJobExecutedEvent).Assembly;
 
-    // ─── Namespace constants ─────────────────────────────────────────────────
+    private static readonly System.Reflection.Assembly AuthorizationAssembly =
+        typeof(Lumen.Authorization.SystemProfiles).Assembly;
+
+    private static readonly System.Reflection.Assembly AuthorizationContractsAssembly =
+        typeof(Lumen.Authorization.Contracts.IUserPermissionService).Assembly;
+
+    private static readonly System.Reflection.Assembly AuthorizationAspNetCoreAssembly =
+        typeof(Lumen.Authorization.AspNetCore.RequirePermissionAttribute).Assembly;
+
+    private static readonly System.Reflection.Assembly AuthorizationBackofficeAssembly =
+        typeof(Lumen.Authorization.Backoffice.LumenBackofficeServiceCollectionExtensions).Assembly;
 
     private const string SharedKernelNamespace      = "Lumen.SharedKernel";
     private const string ModularityNamespace        = "Lumen.Modularity";
@@ -35,10 +38,10 @@ public sealed class ArchitectureTests
     private const string AuditModuleNamespace       = "Lumen.Modules.Audit";
     private const string IdentityContractsNamespace = "Lumen.Modules.Identity.Contracts";
     private const string AuditContractsNamespace    = "Lumen.Modules.Audit.Contracts";
-
-    // ────────────────────────────────────────────────────────────────────────
-    // RULE 01 — SharedKernel has no upward dependencies
-    // ────────────────────────────────────────────────────────────────────────
+    private const string AuthorizationNamespace          = "Lumen.Authorization";
+    private const string AuthorizationContractsNamespace = "Lumen.Authorization.Contracts";
+    private const string AuthorizationAspNetCoreNamespace = "Lumen.Authorization.AspNetCore";
+    private const string AuthorizationBackofficeNamespace = "Lumen.Authorization.Backoffice";
 
     [Fact]
     public void SharedKernel_MustNotDependOnAnyModule()
@@ -56,10 +59,6 @@ public sealed class ArchitectureTests
                      $"Failing types: {FailingTypes(result)}");
     }
 
-    // ────────────────────────────────────────────────────────────────────────
-    // RULE 02 — Lumen.Modularity (building block) has no module dependencies
-    // ────────────────────────────────────────────────────────────────────────
-
     [Fact]
     public void Modularity_MustNotDependOnAnyModule()
     {
@@ -76,10 +75,6 @@ public sealed class ArchitectureTests
                      $"Failing types: {FailingTypes(result)}");
     }
 
-    // ────────────────────────────────────────────────────────────────────────
-    // RULE 03 — Identity module internals must not reference Audit internals
-    // ────────────────────────────────────────────────────────────────────────
-
     [Fact]
     public void IdentityModule_MustNotDependOnAuditModuleInternals()
     {
@@ -93,12 +88,6 @@ public sealed class ArchitectureTests
                      "Cross-module communication goes through Contracts + IEventBus only. " +
                      $"Failing types: {FailingTypes(result)}");
     }
-
-    // ────────────────────────────────────────────────────────────────────────
-    // RULE 04 — Identity module internals may reference Audit Contracts
-    //           (publishes events that Audit consumes)
-    //           but Audit Contracts must NOT reference Identity internals
-    // ────────────────────────────────────────────────────────────────────────
 
     [Fact]
     public void AuditContracts_MustNotDependOnIdentityModuleInternals()
@@ -114,17 +103,9 @@ public sealed class ArchitectureTests
                      $"Failing types: {FailingTypes(result)}");
     }
 
-    // ────────────────────────────────────────────────────────────────────────
-    // RULE 05 — Identity.Contracts must not reference Identity module internals
-    //           or Audit module internals (only Lumen.Modularity allowed)
-    // ────────────────────────────────────────────────────────────────────────
-
     [Fact]
     public void IdentityContracts_MustNotDependOnModuleInternals()
     {
-        // Note: the Identity.Contracts assembly itself lives under the
-        // "Lumen.Modules.Identity.Contracts" namespace, so we must check
-        // against the non-Contracts identity namespace and the audit internals.
         var result = Types.InAssembly(IdentityContractsAssembly)
             .ShouldNot()
             .HaveDependencyOn(AuditModuleNamespace)
@@ -134,10 +115,6 @@ public sealed class ArchitectureTests
             because: "Identity.Contracts must not depend on Audit module internals. " +
                      $"Failing types: {FailingTypes(result)}");
     }
-
-    // ────────────────────────────────────────────────────────────────────────
-    // RULE 06 — Identity module Contracts must not reference Audit module internals
-    // ────────────────────────────────────────────────────────────────────────
 
     [Fact]
     public void IdentityContracts_MustNotDependOnAuditContracts()
@@ -153,10 +130,6 @@ public sealed class ArchitectureTests
                      $"Failing types: {FailingTypes(result)}");
     }
 
-    // ────────────────────────────────────────────────────────────────────────
-    // RULE 07 — Audit Contracts must not reference Identity.Contracts
-    // ────────────────────────────────────────────────────────────────────────
-
     [Fact]
     public void AuditContracts_MustNotDependOnIdentityContracts()
     {
@@ -170,9 +143,86 @@ public sealed class ArchitectureTests
                      $"Failing types: {FailingTypes(result)}");
     }
 
-    // ────────────────────────────────────────────────────────────────────────
-    // Helpers
-    // ────────────────────────────────────────────────────────────────────────
+    [Fact]
+    public void AuthorizationContracts_MustOnlyDependOnModularity()
+    {
+        var result = Types.InAssembly(AuthorizationContractsAssembly)
+            .ShouldNot()
+            .HaveDependencyOnAny(
+                IdentityModuleNamespace,
+                AuditModuleNamespace,
+                SharedKernelNamespace)
+            .GetResult();
+
+        result.IsSuccessful.Should().BeTrue(
+            because: "Lumen.Authorization.Contracts must only depend on Lumen.Modularity. " +
+                     $"Failing types: {FailingTypes(result)}");
+    }
+
+    [Fact]
+    public void Authorization_MustNotDependOnIdentityOrAuditModules()
+    {
+        var result = Types.InAssembly(AuthorizationAssembly)
+            .ShouldNot()
+            .HaveDependencyOnAny(
+                IdentityModuleNamespace,
+                AuditModuleNamespace,
+                SharedKernelNamespace)
+            .GetResult();
+
+        result.IsSuccessful.Should().BeTrue(
+            because: "Lumen.Authorization is a standalone library — it must not depend on any Lumen module or SharedKernel. " +
+                     $"Failing types: {FailingTypes(result)}");
+    }
+
+    [Fact]
+    public void Authorization_MustNotDependOnAspNetCoreFramework()
+    {
+        var result = Types.InAssembly(AuthorizationAssembly)
+            .ShouldNot()
+            .HaveDependencyOnAny(
+                AuthorizationAspNetCoreNamespace,
+                "Microsoft.AspNetCore.Authorization",
+                "Microsoft.AspNetCore.Http",
+                "Microsoft.AspNetCore.Mvc")
+            .GetResult();
+
+        result.IsSuccessful.Should().BeTrue(
+            because: "Lumen.Authorization core must remain framework-agnostic — ASP.NET enforcement lives in Lumen.Authorization.AspNetCore. " +
+                     $"Failing types: {FailingTypes(result)}");
+    }
+
+    [Fact]
+    public void AuthorizationAspNetCore_MustNotDependOnIdentityOrAuditModules()
+    {
+        var result = Types.InAssembly(AuthorizationAspNetCoreAssembly)
+            .ShouldNot()
+            .HaveDependencyOnAny(
+                IdentityModuleNamespace,
+                AuditModuleNamespace,
+                SharedKernelNamespace)
+            .GetResult();
+
+        result.IsSuccessful.Should().BeTrue(
+            because: "Lumen.Authorization.AspNetCore must not depend on business modules or SharedKernel. " +
+                     $"Failing types: {FailingTypes(result)}");
+    }
+
+    [Fact]
+    public void AuthorizationBackoffice_MustNotDependOnIdentityOrAuditModules()
+    {
+        var result = Types.InAssembly(AuthorizationBackofficeAssembly)
+            .ShouldNot()
+            .HaveDependencyOnAny(
+                IdentityModuleNamespace,
+                AuditModuleNamespace,
+                SharedKernelNamespace)
+            .GetResult();
+
+        result.IsSuccessful.Should().BeTrue(
+            because: "Lumen.Authorization.Backoffice must not depend on business modules or SharedKernel. " +
+                     $"Failing types: {FailingTypes(result)}");
+    }
 
     private static string FailingTypes(TestResult result)
     {

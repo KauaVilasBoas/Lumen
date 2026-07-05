@@ -1,11 +1,10 @@
+using Lumen.Authorization.AspNetCore;
 using Lumen.Modules.Identity.Application.Queries;
 using Lumen.Modules.Identity.Application.Users.Delete;
 using Lumen.Modules.Identity.Application.Users.Restore;
 using Lumen.Modules.Identity.Application.Users.Update;
-using Lumen.SharedKernel.Authorization;
 using Lumen.SharedKernel.Constants;
 using MediatR;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Lumen.Api.Controllers;
@@ -24,8 +23,7 @@ public sealed class UsersController : ApiBaseController
     }
 
     [HttpGet]
-    [RequirePermission]
-    [Authorize(Policy = PermissionCodes.Users.List)]
+    [RequirePermission(PermissionCodes.Users.List)]
     [ProducesResponseType(typeof(ListUsersPagedResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -42,8 +40,7 @@ public sealed class UsersController : ApiBaseController
     }
 
     [HttpGet("{id:guid}")]
-    [RequirePermission]
-    [Authorize(Policy = PermissionCodes.Users.Get)]
+    [RequirePermission(PermissionCodes.Users.Get)]
     [ProducesResponseType(typeof(GetUserDetailResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -55,8 +52,7 @@ public sealed class UsersController : ApiBaseController
     }
 
     [HttpPut("{id:guid}")]
-    [RequirePermission]
-    [Authorize(Policy = PermissionCodes.Users.Update)]
+    [RequirePermission(PermissionCodes.Users.Update)]
     [ProducesResponseType(typeof(UpdateUserResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -76,8 +72,7 @@ public sealed class UsersController : ApiBaseController
     }
 
     [HttpDelete("{id:guid}")]
-    [RequirePermission]
-    [Authorize(Policy = PermissionCodes.Users.Delete)]
+    [RequirePermission(PermissionCodes.Users.Delete)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
@@ -90,8 +85,7 @@ public sealed class UsersController : ApiBaseController
     }
 
     [HttpPost("{id:guid}/restore")]
-    [RequirePermission]
-    [Authorize(Policy = PermissionCodes.Users.Restore)]
+    [RequirePermission(PermissionCodes.Users.Restore)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]

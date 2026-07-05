@@ -1,0 +1,99 @@
+@model ProfileDetailViewModel
+@{
+    var profile = Model.Profile;
+    var allGroups = Model.AllPermissions;
+    var assignedIds = new HashSet<Guid>(profile.PermissionIds);
+    var accent = BackofficeDisplayTokens.ProfileAccent(profile.Name, profile.IsSystem);
+    var grantCount = profile.PermissionIds.Count;
+}
+
+<div class="lz-content-wrap">
+    <div class="lz-card lz-detail">
+        <div class="lz-detail-head" style="--lz-nc:@accent">
+            <div class="lz-detail-title">
+                <span class="lz-detail-badge" style="background:@accent">&#9679;</span>
+                <div>
+                    <h2>@profile.Name</h2>
+                    <p class="lz-muted">@profile.Description</p>
+                </div>
+            </div>
+            <div class="lz-detail-meta">
+                <div class="lz-stat-inline"><span class="lz-tnum">@grantCount</span> <span class="lz-mono">permissions</span></div>
+                <a asp-area="Lumen" asp-controller="Profiles" asp-action="Index" class="lz-btn lz-btn-ghost lz-btn-sm">Back</a>
+                @if (!profile.IsSystem)
+                {
+                    <a asp-area="Lumen" asp-controller="Profiles" asp-action="Edit" asp-route-id="@profile.Id"
+                       class="lz-btn lz-btn-ghost lz-btn-sm">Edit</a>
+                    <form asp-area="Lumen" asp-controller="Profiles" asp-action="Delete" asp-route-id="@profile.Id"
+                          method="post" style="display:inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="lz-btn lz-btn-danger lz-btn-sm"
+                                onclick="return confirm('Delete this profile?')">Delete</button>
+                    </form>
+                }
+            </div>
+        </div>
+
+        @if (Model.ErrorMessage is not null)
+        {
+            <div class="lz-error-banner lz-error-banner-inline">@Model.ErrorMessage</div>
+        }
+
+        @if (profile.IsSystem)
+        {
+            <div class="lz-syslock">
+                @(profile.Name == "Administrator"
+                    ? "Administrator is reconciled with every discovered permission at startup — its grants are read-only."
+                    : "System profile — its permission set is fixed and the profile cannot be deleted.")
+            </div>
+        }
+
+        <form asp-area="Lumen" asp-controller="Profiles" asp-action="SetPermissions" asp-route-id="@profile.Id" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="lz-matrix" data-matrix data-readonly="@(profile.IsSystem ? "1" : "0")">
+                @foreach (var group in allGroups)
+                {
+                    var total = group.Permissions.Count;
+                    var on = group.Permissions.Count(p => assignedIds.Contains(p.Id));
+                    <div class="lz-matrix-group">
+                        <div class="lz-matrix-group-head">
+                            <span class="lz-matrix-group-name lz-mono">@group.GroupName</span>
+                            <span class="lz-matrix-group-count lz-mono">@on/@total</span>
+                        </div>
+                        <div class="lz-matrix-perms">
+                            @foreach (var perm in group.Permissions)
+                            {
+                                var isOn = assignedIds.Contains(perm.Id);
+                                var method = PermissionDisplayHelper.HttpMethod(perm.Code);
+                                <label class="lz-mperm @(isOn ? "on" : "") @(perm.IsOrphan ? "orphan" : "")">
+                                    <input type="checkbox" name="selectedPermissionIds" value="@perm.Id"
+                                           @(isOn ? "checked" : "")
+                                           @(profile.IsSystem ? "disabled" : "") />
+                                    <div class="lz-mperm-main">
+                                        <span class="lz-mperm-code lz-mono">@perm.Code</span>
+                                        <span class="lz-mperm-name">@perm.DisplayName</span>
+                                    </div>
+                                    <span class="lz-method lz-mono"
+                                          style="color:@PermissionDisplayHelper.MethodCssColor(method)">@method</span>
+                                    @if (perm.IsOrphan)
+                                    {
+                                        <span class="lz-badge lz-badge-warn">orphan</span>
+                                    }
+                                </label>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+
+            @if (!profile.IsSystem)
+            {
+                <div class="lz-detail-foot">
+                    <a asp-area="Lumen" asp-controller="Profiles" asp-action="Index" class="lz-btn lz-btn-ghost lz-btn-sm">Discard</a>
+                    <button type="submit" class="lz-btn lz-btn-primary lz-btn-sm">Save permissions</button>
+                </div>
+            }
+        </form>
+    </div>
+</div>

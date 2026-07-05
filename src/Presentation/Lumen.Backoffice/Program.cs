@@ -1,3 +1,4 @@
+using Lumen.Authorization;
 using Lumen.Backoffice.Configuration;
 using Lumen.Backoffice.Middleware;
 using Lumen.Backoffice.Services;
@@ -26,7 +27,10 @@ builder.Services
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
-// ── Identity module (provides IUserPermissionService, Redis cache, etc.) ─────
+// ── Lumen authorization core (IUserPermissionService, Redis-backed cache) ────
+builder.Services.AddLumenAuthorization(builder.Configuration);
+
+// ── Identity module (replaces authz no-op sources with Identity-backed ones) ─
 builder.Services.AddModules(builder.Configuration, typeof(IdentityModule).Assembly);
 
 // ── Hangfire dashboard (storage only — no job server) ────────────────────────

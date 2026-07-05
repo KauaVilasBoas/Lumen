@@ -1,4 +1,4 @@
-using Lumen.Modules.Identity.Contracts;
+using Lumen.Authorization.Contracts;
 using Lumen.SharedKernel.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;

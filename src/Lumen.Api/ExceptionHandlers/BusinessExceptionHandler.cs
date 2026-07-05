@@ -1,3 +1,4 @@
+using Lumen.Authorization.Exceptions;
 using Lumen.SharedKernel.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
@@ -11,20 +12,36 @@ public sealed class BusinessExceptionHandler : IExceptionHandler
         Exception exception,
         CancellationToken ct)
     {
-        if (exception is not BusinessException businessException)
-            return false;
+        if (exception is BusinessException businessException)
+        {
+            httpContext.Response.StatusCode = businessException.StatusCode;
+            httpContext.Response.ContentType = "application/problem+json";
 
-        httpContext.Response.StatusCode = businessException.StatusCode;
-        httpContext.Response.ContentType = "application/problem+json";
+            var problemDetails = BuildSharedKernelProblemDetails(httpContext, businessException);
+            await httpContext.Response.WriteAsJsonAsync(problemDetails, ct);
+            return true;
+        }
 
-        var problemDetails = BuildProblemDetails(httpContext, businessException);
+        if (exception is AuthorizationException authorizationException)
+        {
+            httpContext.Response.StatusCode = authorizationException.StatusCode;
+            httpContext.Response.ContentType = "application/problem+json";
 
-        await httpContext.Response.WriteAsJsonAsync(problemDetails, ct);
+            var problemDetails = new ProblemDetails
+            {
+                Status = authorizationException.StatusCode,
+                Title = authorizationException.Message,
+                Instance = httpContext.Request.Path,
+            };
 
-        return true;
+            await httpContext.Response.WriteAsJsonAsync(problemDetails, ct);
+            return true;
+        }
+
+        return false;
     }
 
-    private static ProblemDetails BuildProblemDetails(HttpContext httpContext, BusinessException exception)
+    private static ProblemDetails BuildSharedKernelProblemDetails(HttpContext httpContext, BusinessException exception)
     {
         if (exception is SharedKernel.Exceptions.ValidationException validationException)
         {
@@ -39,8 +56,6 @@ public sealed class BusinessExceptionHandler : IExceptionHandler
 
         if (exception is AccountLockedException lockedEx)
         {
-            // RFC 6585 §4: 423 Locked responses SHOULD include Retry-After so that
-            // clients know when they may retry without burning another failed attempt.
             var retryAfterSeconds = Math.Max(1, (int)(lockedEx.LockedUntil - DateTime.UtcNow).TotalSeconds);
             httpContext.Response.Headers.Append("Retry-After", retryAfterSeconds.ToString());
         }

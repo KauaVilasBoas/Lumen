@@ -1,7 +1,7 @@
 using FluentAssertions;
-using Lumen.Modules.Identity.Application.EventHandlers;
-using Lumen.Modules.Identity.Contracts.Events;
-using Lumen.Modules.Identity.Domain.Authorization;
+using Lumen.Authorization.Application.EventHandlers;
+using Lumen.Authorization.Contracts.Events;
+using Lumen.Authorization.Domain;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 

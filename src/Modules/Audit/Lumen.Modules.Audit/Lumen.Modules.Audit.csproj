@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Lumen.Modules.Audit.Contracts\Lumen.Modules.Audit.Contracts.csproj" />
     <ProjectReference Include="..\..\Identity\Lumen.Modules.Identity.Contracts\Lumen.Modules.Identity.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Lumen.Authorization.Contracts\Lumen.Authorization.Contracts.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\Lumen.Modularity\Lumen.Modularity.csproj" />
     <ProjectReference Include="..\..\..\SharedKernel\Lumen.SharedKernel\Lumen.SharedKernel.csproj" />
   </ItemGroup>

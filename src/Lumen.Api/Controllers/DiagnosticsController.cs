@@ -1,7 +1,6 @@
-using Lumen.SharedKernel.Authorization;
+using Lumen.Authorization.AspNetCore;
 using Lumen.SharedKernel.Constants;
 using Hangfire;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StackExchange.Redis;
 
@@ -21,8 +20,7 @@ public sealed class DiagnosticsController : ApiBaseController
     }
 
     [HttpGet("cache-stats")]
-    [RequirePermission]
-    [Authorize(Policy = PermissionCodes.Diagnostics.GetCacheStats)]
+    [RequirePermission(PermissionCodes.Diagnostics.GetCacheStats)]
     [ProducesResponseType(typeof(CacheStatsResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -57,8 +55,7 @@ public sealed class DiagnosticsController : ApiBaseController
     }
 
     [HttpGet("job-stats")]
-    [RequirePermission]
-    [Authorize(Policy = PermissionCodes.Diagnostics.GetJobStats)]
+    [RequirePermission(PermissionCodes.Diagnostics.GetJobStats)]
     [ProducesResponseType(typeof(JobStatsResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

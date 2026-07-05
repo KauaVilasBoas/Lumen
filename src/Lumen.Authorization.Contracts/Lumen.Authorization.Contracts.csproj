@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <Version>$(LumenAuthorizationVersion)</Version>
+    <PackageId>Lumen.Authorization.Contracts</PackageId>
+    <Authors>$(LumenPackageAuthors)</Authors>
+    <Company>$(LumenPackageCompany)</Company>
+    <Product>$(LumenPackageProduct)</Product>
+    <Description>Public interfaces and exported events for Lumen.Authorization. Reference this package when you only need IUserPermissionService or IUserIdAccessor without taking a dependency on the full authorization core.</Description>
+    <PackageTags>authorization;permissions;aspnetcore;rbac;lumen;contracts;interfaces</PackageTags>
+    <PackageLicenseExpression>$(LumenPackageLicenseExpression)</PackageLicenseExpression>
+    <PackageProjectUrl>$(LumenPackageProjectUrl)</PackageProjectUrl>
+    <RepositoryUrl>$(LumenRepositoryUrl)</RepositoryUrl>
+    <RepositoryType>$(LumenRepositoryType)</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>images/lumen-mark.png</PackageIcon>
+    <EnablePackageValidation>true</EnablePackageValidation>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\docs\nuget-readme.md" Pack="true" PackagePath="\README.md" />
+    <None Include="..\..\src\Presentation\Lumen.Backoffice\wwwroot\img\brand\lumen-mark.png" Pack="true" PackagePath="images\lumen-mark.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BuildingBlocks\Lumen.Modularity\Lumen.Modularity.csproj" />
+  </ItemGroup>
+
+</Project>

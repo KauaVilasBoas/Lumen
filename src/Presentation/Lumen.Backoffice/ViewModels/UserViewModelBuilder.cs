@@ -1,3 +1,4 @@
+using Lumen.Authorization;
 using Lumen.Backoffice.Services;
 using Lumen.SharedKernel.Constants;
 
