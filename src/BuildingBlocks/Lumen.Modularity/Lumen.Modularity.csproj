@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <PackageId>Lumen.Modularity</PackageId>
-    <Version>0.4.0</Version>
+    <Version>1.0.0</Version>
     <Authors>Kauã Vilas Boas</Authors>
     <Description>Building block reutilizável para monolitos modulares em ASP.NET Core: annotation [Module], interface IModule, auto-discovery de módulos por assembly scanning (AddModules/MapModules) e event bus in-process (IEventBus) para integration events entre módulos.</Description>
     <PackageTags>modular-monolith;modularity;module;event-bus;integration-events;cqrs;aspnetcore;dependency-injection</PackageTags>
