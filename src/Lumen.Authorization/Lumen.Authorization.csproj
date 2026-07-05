@@ -7,8 +7,8 @@
     <Authors>$(LumenPackageAuthors)</Authors>
     <Company>$(LumenPackageCompany)</Company>
     <Product>$(LumenPackageProduct)</Product>
-    <Description>Core of Lumen.Authorization: domain entities (Permission, Profile, UserProfile), CQRS command/query handlers, EF Core persistence against SQL Server, and DI registration via AddLumenAuthorization(). SQL Server is required.</Description>
-    <PackageTags>authorization;permissions;aspnetcore;rbac;lumen;efcore;sqlserver;cqrs</PackageTags>
+    <Description>Core of Lumen.Authorization: domain entities (Permission, Profile, UserProfile), CQRS command/query handlers, EF Core persistence supporting SQL Server and PostgreSQL, and DI registration via AddLumenAuthorization().</Description>
+    <PackageTags>authorization;permissions;aspnetcore;rbac;lumen;efcore;sqlserver;postgresql;cqrs</PackageTags>
     <PackageLicenseExpression>$(LumenPackageLicenseExpression)</PackageLicenseExpression>
     <PackageProjectUrl>$(LumenPackageProjectUrl)</PackageProjectUrl>
     <RepositoryUrl>$(LumenRepositoryUrl)</RepositoryUrl>
@@ -30,6 +30,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -48,6 +49,7 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Lumen.Authorization.Tests" />
     <InternalsVisibleTo Include="Lumen.Authorization.Migrations" />
+    <InternalsVisibleTo Include="Lumen.Authorization.Migrations.PostgreSQL" />
     <InternalsVisibleTo Include="Lumen.Modules.Identity.Tests" />
     <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
   </ItemGroup>

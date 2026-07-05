@@ -15,7 +15,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Options;
+using Npgsql;
 
 namespace Lumen.Authorization;
 
@@ -25,13 +25,13 @@ public static class LumenAuthorizationServiceCollectionExtensions
     /// Registra os serviços do núcleo de autorização Lumen.
     /// </summary>
     /// <remarks>
-    /// Requer SQL Server: a lib utiliza <c>UseSqlServer</c> e as migrations em
-    /// <c>Lumen.Authorization.Migrations</c> são SQL-Server-específicas.
+    /// Suporta SQL Server (padrão) e PostgreSQL via <see cref="LumenAuthorizationOptions.Provider"/>.
+    /// O assembly de migrations correto é escolhido automaticamente de acordo com o provider.
     /// Quando <see cref="LumenAuthorizationOptions.ApplyMigrationsOnStartup"/> é <c>true</c>
     /// (padrão), o schema <c>Lumen</c> é criado/atualizado na inicialização da aplicação.
     /// </remarks>
     /// <param name="services">A coleção de serviços.</param>
-    /// <param name="connectionString">Connection string SQL Server não vazia.</param>
+    /// <param name="connectionString">Connection string não vazia para o provider escolhido.</param>
     /// <param name="configure">Configuração opcional de <see cref="LumenAuthorizationOptions"/>.</param>
     public static IServiceCollection AddLumenAuthorization(
         this IServiceCollection services,
@@ -49,9 +49,8 @@ public static class LumenAuthorizationServiceCollectionExtensions
     /// <see cref="IConfiguration"/>.
     /// </summary>
     /// <remarks>
-    /// Requer SQL Server: a lib utiliza <c>UseSqlServer</c> e as migrations em
-    /// <c>Lumen.Authorization.Migrations</c> são SQL-Server-específicas.
-    /// A connection string SQL Server é lida de <c>ConnectionStrings:DefaultConnection</c>.
+    /// A connection string é lida de <c>ConnectionStrings:DefaultConnection</c>.
+    /// O provider é lido de <c>Database:Provider</c> (<c>SqlServer</c> ou <c>PostgreSQL</c>).
     /// A connection string Redis (opcional) é lida de <c>ConnectionStrings:Redis</c>.
     /// Quando <see cref="LumenAuthorizationOptions.ApplyMigrationsOnStartup"/> é <c>true</c>
     /// (padrão), o schema <c>Lumen</c> é criado/atualizado na inicialização da aplicação.
@@ -66,11 +65,18 @@ public static class LumenAuthorizationServiceCollectionExtensions
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection");
         var redisConnectionString = configuration.GetConnectionString("Redis");
+        var providerValue = configuration["Database:Provider"];
 
         var options = new LumenAuthorizationOptions
         {
             RedisConnectionString = redisConnectionString
         };
+
+        if (!string.IsNullOrWhiteSpace(providerValue) &&
+            Enum.TryParse<DatabaseProvider>(providerValue, ignoreCase: true, out var parsed))
+        {
+            options.Provider = parsed;
+        }
 
         configure?.Invoke(options);
 
@@ -82,22 +88,19 @@ public static class LumenAuthorizationServiceCollectionExtensions
         string connectionString,
         LumenAuthorizationOptions options)
     {
-        ValidateSqlServerConnectionString(connectionString);
+        ValidateConnectionString(connectionString, options.Provider);
 
         var assembly = typeof(LumenAuthorizationServiceCollectionExtensions).Assembly;
 
         services.Configure<LumenAuthorizationOptions>(o =>
         {
+            o.Provider = options.Provider;
             o.RedisConnectionString = options.RedisConnectionString;
             o.ApplyMigrationsOnStartup = options.ApplyMigrationsOnStartup;
             o.UserIdClaimType = options.UserIdClaimType;
         });
 
-        services.AddDbContext<LumenAuthorizationDbContext>(dbOptions =>
-            dbOptions.UseSqlServer(
-                connectionString,
-                sql => sql.MigrationsAssembly(LumenAuthorizationMigrationsAssembly.Name)));
-
+        RegisterDbContext(services, connectionString, options.Provider);
         RegisterCacheProvider(services, options);
 
         services.AddScoped<IPermissionRepository, PermissionRepository>();
@@ -127,11 +130,61 @@ public static class LumenAuthorizationServiceCollectionExtensions
         return services;
     }
 
-    private static void ValidateSqlServerConnectionString(string connectionString)
+    private static void RegisterDbContext(
+        IServiceCollection services,
+        string connectionString,
+        DatabaseProvider provider)
+    {
+        services.AddDbContext<LumenAuthorizationDbContext>(dbOptions =>
+        {
+            switch (provider)
+            {
+                case DatabaseProvider.SqlServer:
+                    dbOptions.UseSqlServer(
+                        connectionString,
+                        sql => sql.MigrationsAssembly(LumenAuthorizationMigrationsAssembly.SqlServer));
+                    break;
+
+                case DatabaseProvider.PostgreSQL:
+                    dbOptions.UseNpgsql(
+                        connectionString,
+                        npgsql => npgsql.MigrationsAssembly(LumenAuthorizationMigrationsAssembly.PostgreSQL));
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(provider),
+                        provider,
+                        AuthorizationErrorMessages.UnknownProvider);
+            }
+        });
+    }
+
+    private static void ValidateConnectionString(string connectionString, DatabaseProvider provider)
     {
         if (string.IsNullOrWhiteSpace(connectionString))
             throw new ArgumentException(AuthorizationErrorMessages.ConnectionStringNullOrEmpty, nameof(connectionString));
 
+        switch (provider)
+        {
+            case DatabaseProvider.SqlServer:
+                ValidateSqlServerConnectionString(connectionString);
+                break;
+
+            case DatabaseProvider.PostgreSQL:
+                ValidatePostgresConnectionString(connectionString);
+                break;
+
+            default:
+                throw new ArgumentOutOfRangeException(
+                    nameof(provider),
+                    provider,
+                    AuthorizationErrorMessages.UnknownProvider);
+        }
+    }
+
+    private static void ValidateSqlServerConnectionString(string connectionString)
+    {
         try
         {
             _ = new SqlConnectionStringBuilder(connectionString);
@@ -139,6 +192,18 @@ public static class LumenAuthorizationServiceCollectionExtensions
         catch (Exception ex)
         {
             throw new ArgumentException(AuthorizationErrorMessages.ConnectionStringNotSqlServer, nameof(connectionString), ex);
+        }
+    }
+
+    private static void ValidatePostgresConnectionString(string connectionString)
+    {
+        try
+        {
+            _ = new NpgsqlConnectionStringBuilder(connectionString);
+        }
+        catch (Exception ex)
+        {
+            throw new ArgumentException(AuthorizationErrorMessages.ConnectionStringNotPostgres, nameof(connectionString), ex);
         }
     }
 
