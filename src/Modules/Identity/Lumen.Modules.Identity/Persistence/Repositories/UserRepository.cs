@@ -81,13 +81,6 @@ internal sealed class UserRepository : IUserRepository
         return (items, total);
     }
 
-    public Task<int> CountActiveAdministratorsAsync(Guid administratorProfileId, CancellationToken ct = default)
-        => _dbContext.Users
-                     .AsNoTracking()
-                     .Where(u => _dbContext.UserProfiles
-                         .Any(up => up.UserId == u.Id && up.ProfileId == administratorProfileId))
-                     .CountAsync(ct);
-
     private static bool IsSqlUniqueViolation(DbUpdateException ex, out string message)
     {
         if (ex.InnerException is SqlException { Number: SqlServerUniqueConstraintViolation or SqlServerUniqueIndexViolation } sqlEx)

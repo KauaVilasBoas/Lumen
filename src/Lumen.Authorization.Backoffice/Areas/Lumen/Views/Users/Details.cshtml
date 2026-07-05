@@ -1,0 +1,7 @@
+@model UserProfileAssignmentViewModel
+@{
+    ViewData["Title"] = Model.Username;
+    ViewData["Subtitle"] = BackofficeDisplayTokens.PageSubtitleUserDetail;
+}
+
+@await Component.InvokeAsync("UserProfileAssignment", new { model = Model })

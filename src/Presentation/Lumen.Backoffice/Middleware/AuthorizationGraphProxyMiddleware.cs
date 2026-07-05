@@ -2,7 +2,7 @@ using System.Net;
 using System.Net.WebSockets;
 using System.Security.Claims;
 using Lumen.Backoffice.Configuration;
-using Lumen.Modules.Identity.Contracts;
+using Lumen.Authorization.Contracts;
 using Lumen.SharedKernel.Constants;
 using Microsoft.Extensions.Options;
 

@@ -1,9 +1,9 @@
 using FluentAssertions;
+using Lumen.Authorization.Application.Profiles.SetPermissions;
+using Lumen.Authorization.Contracts.Events;
+using Lumen.Authorization.Domain;
+using Lumen.Authorization.Exceptions;
 using Lumen.Modularity;
-using Lumen.Modules.Identity.Application.Profiles.SetPermissions;
-using Lumen.Modules.Identity.Contracts.Events;
-using Lumen.Modules.Identity.Domain.Authorization;
-using Lumen.SharedKernel.Exceptions;
 using NSubstitute;
 
 namespace Lumen.Modules.Identity.Tests.Application;
@@ -30,7 +30,7 @@ public sealed class SetProfilePermissionsCommandHandlerTests
             new SetProfilePermissionsCommand(profileId, []),
             CancellationToken.None);
 
-        await act.Should().ThrowAsync<ForbiddenException>();
+        await act.Should().ThrowAsync<AuthorizationForbiddenException>();
     }
 
     [Fact]
@@ -43,7 +43,7 @@ public sealed class SetProfilePermissionsCommandHandlerTests
             new SetProfilePermissionsCommand(Guid.NewGuid(), []),
             CancellationToken.None);
 
-        await act.Should().ThrowAsync<NotFoundException>();
+        await act.Should().ThrowAsync<AuthorizationNotFoundException>();
     }
 
     [Fact]

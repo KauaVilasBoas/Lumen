@@ -1,0 +1,7 @@
+@model PermissionCatalogueViewModel
+@{
+    ViewData["Title"] = BackofficeDisplayTokens.PageTitlePermissions;
+    ViewData["Subtitle"] = BackofficeDisplayTokens.PageSubtitlePermissions;
+}
+
+@await Component.InvokeAsync("PermissionCatalogue", new { model = Model })

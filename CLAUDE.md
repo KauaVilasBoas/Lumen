@@ -47,16 +47,30 @@ src/
     Lumen.Jobs/                   Hangfire (registro de jobs e dashboard)
   Presentation/
     Lumen.Backoffice/             Backoffice MVC (Controllers, Views, ViewComponents)
+  Lumen.Authorization.Backoffice/ RCL montável: Area `Lumen`, controllers in-process, ViewComponents, CSS próprio; `AddLumenBackoffice()` + `MapLumenBackoffice("/lumen")`
   Lumen.Api/                      Host da API REST (Controllers, Program.cs, DI root)
 tests/
   Lumen.UnitTests/                Testes legados não migrados (ViewComponents, helpers, queries de auditoria)
   Lumen.Modules.Identity.Tests/   Handler + validator tests do módulo Identity (xUnit + NSubstitute + FluentAssertions)
   Lumen.Modules.Audit.Tests/      Testes de domínio do módulo Audit
   Lumen.Modularity.UnitTests/     Testes do building block Lumen.Modularity
-  Lumen.ArchitectureTests/        Testes de fronteira de módulo (NetArchTest.Rules — 7 regras)
+  Lumen.ArchitectureTests/        Testes de fronteira de módulo (NetArchTest.Rules — 12 regras)
+  Lumen.Authorization.Backoffice.Tests/ Testes de unidade dos controllers da RCL (xUnit + NSubstitute + FluentAssertions)
 ```
 
 > `tests/Lumen.IntegrationTests` foi removida temporariamente da solução — exige reescrita para usar `IdentityDbContext` em vez do legado `LumenDbContext`.
+
+> **Em andamento — autorização como biblioteca plugável ([ADR-0004](docs/adr/0004-authorization-as-library.md)):** a capacidade de autorização (Permissions, Profiles, UserProfiles, `IUserPermissionService`, enforcement, discovery, backoffice) será extraída do módulo Identity para a família de pacotes `Lumen.Authorization*` — núcleo agnóstico de ASP.NET (`Lumen.Authorization`), migrations (`.Migrations`), cola web com `[RequirePermission]`/policy provider (`.AspNetCore`) e backoffice montável como Razor Class Library (`.Backoffice`). Alvo: qualquer app ASP.NET Core faz `AddLumenAuthorization(connectionString)` (auto-migração do schema `Lumen`, tabelas singulares) + `AddLumenAuthorizationEnforcement()` + `[RequirePermission]` (declara e enforça) + `MapLumenBackoffice("/lumen")`, trazendo o próprio login. Épico "Lumen Authz Lib" (cards LIB-00…LIB-14).
+>
+> **LIB-07 (concluído):** `Lumen.Authorization.AspNetCore` criado com `PermissionPolicyProvider`, `PermissionRequirement`, `PermissionAuthorizationHandler`, `RequirePermissionAttribute`, `PermissionGroupAttribute`, `ControllerNameNormalizer`. Máquina de enforcement movida do host; SharedKernel limpo dos atributos. Registro: `AddLumenAuthorizationEnforcement()`.
+>
+> **LIB-06 (concluído):** `RequirePermissionAttribute` implementa `IAuthorizationRequirementData` — atributo único declara E enforça. Code explícito ou convenção `controller.action` via `ControllerActionDescriptor` do endpoint. Controllers do host migrados para `[RequirePermission(PermissionCodes.X)]` sem `[Authorize]` redundante. Policy nomeada aceita formato `code.com.ponto` (compat) ou `Lumen:code`.
+>
+> **LIB-08 (concluído):** `LumenAuthorizationOptions.UserIdClaimType` (default `ClaimTypes.NameIdentifier`) torna o claim de userId configurável. `IUserIdAccessor` (em `Lumen.Authorization.Contracts`) abstrai a leitura do userId — implementação default `ClaimsUserIdAccessor` em `Lumen.Authorization.AspNetCore`, registrada via `TryAddSingleton` em `AddLumenAuthorizationEnforcement()`. `PermissionAuthorizationHandler` delega a extração ao `IUserIdAccessor`.
+>
+> **LIB-09 (concluído):** `PermissionDiscoveryScanner` e `PermissionDiscoveryAndReconciliationHostedService` movidos para `Lumen.Authorization.AspNetCore`. Hosted service unificado executa `descobrir → SyncDiscoveredAsync → ReconcileAdministratorAsync` em sequência usando `IPermissionSyncService` diretamente. Registro: `AddLumenAuthorizationDiscovery()`. Todos os wrappers intermediários e o record `DiscoveredPermission` do host foram removidos; `Lumen.Api/Program.cs` usa `AddLumenAuthorizationDiscovery()` no lugar de `AddPermissionDiscovery()`.
+>
+> **LIB-10 (concluído):** `Lumen.Authorization.Backoffice` (RCL `Microsoft.NET.Sdk.Razor`) criado com Area `Lumen`, controllers in-process (`ProfilesController`, `PermissionsController`) que usam `ISender` MediatR para despachar Queries/Commands da lib diretamente — sem HTTP. ViewComponents separados: `ProfileListViewComponent`, `ProfileDetailViewComponent`, `PermissionCatalogueViewComponent`. CSS próprio em `wwwroot/css/lumen-authz.css`, servido via `_content/Lumen.Authorization.Backoffice/`. Registro: `AddLumenBackoffice()` + `MapLumenBackoffice(prefix)`. Autenticação é responsabilidade do consumidor. `tests/Lumen.Authorization.Backoffice.Tests`: 15 testes de unidade. `ArchitectureTests`: regra `AuthorizationBackoffice_MustNotDependOnIdentityOrAuditModules` adicionada.
 
 ## Arquitetura modular
 
@@ -181,6 +195,11 @@ Cada regra abaixo tem um teste correspondente em `ArchitectureTests.cs`.
 | 05 | Identity.Contracts não referencia internals do Audit | Tipo em `Lumen.Modules.Identity.Contracts` importa namespace `Lumen.Modules.Audit` |
 | 06 | Identity.Contracts não referencia Audit.Contracts | Tipo em `Lumen.Modules.Identity.Contracts` importa `Lumen.Modules.Audit.Contracts` |
 | 07 | Audit.Contracts não referencia Identity.Contracts | Tipo em `Lumen.Modules.Audit.Contracts` importa `Lumen.Modules.Identity.Contracts` |
+| 08 | Authorization.Contracts não depende de módulos de negócio | Tipo em `Lumen.Authorization.Contracts` importa `Lumen.Modules.*` ou `Lumen.SharedKernel` |
+| 09 | Authorization não depende de módulos de negócio | Tipo em `Lumen.Authorization` importa `Lumen.Modules.*` ou `Lumen.SharedKernel` |
+| 10 | Authorization não depende de ASP.NET Core | Tipo em `Lumen.Authorization` importa `Microsoft.AspNetCore.*` ou `Lumen.Authorization.AspNetCore` |
+| 11 | Authorization.AspNetCore não depende de módulos de negócio | Tipo em `Lumen.Authorization.AspNetCore` importa `Lumen.Modules.*` ou `Lumen.SharedKernel` |
+| 12 | Authorization.Backoffice não depende de módulos de negócio | Tipo em `Lumen.Authorization.Backoffice` importa `Lumen.Modules.*` ou `Lumen.SharedKernel` |
 
 > Violação detectada = **build de testes falha**. Corrija a dependência, não o teste.
 
@@ -193,6 +212,7 @@ dotnet test tests/Lumen.Modules.Audit.Tests               # testes do módulo Au
 dotnet test tests/Lumen.Modularity.UnitTests              # testes do building block
 dotnet test tests/Lumen.ArchitectureTests                 # constraints de fronteira
 dotnet test tests/Lumen.UnitTests                         # testes legados (ViewComponents, etc.)
+dotnet test tests/Lumen.Authorization.Backoffice.Tests    # testes de unidade da RCL (controllers)
 # IntegrationTests exigem Docker e estão fora da solution — pendente reescrita para IdentityDbContext
 
 dotnet ef migrations add <Nome> \
@@ -202,6 +222,10 @@ dotnet ef migrations add <Nome> \
 dotnet ef migrations add <Nome> \
   -p src/Modules/Audit/Lumen.Modules.Audit.Migrations \
   -s src/Modules/Audit/Lumen.Modules.Audit.Migrations          # nova migration do Audit
+
+dotnet ef migrations add <Nome> \
+  -p src/Lumen.Authorization.Migrations \
+  -s src/Lumen.Authorization.Migrations                        # nova migration do schema Lumen (lib de authz)
 ```
 
 > Decisões arquiteturais não cobertas aqui são definidas durante o desenvolvimento. Ao encontrar um caso novo, proponha uma abordagem com o trade-off (ganhos/perdas), confirme, e então atualize este documento.

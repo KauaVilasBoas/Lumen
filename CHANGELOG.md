@@ -1,4 +1,4 @@
-# Changelog
+﻿# Changelog
 
 All notable changes to this project will be documented in this file.
 
@@ -6,6 +6,154 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Added (LIB-11 — Empacotamento NuGet dos pacotes Lumen.Authorization*)
+- **`Directory.Build.props`**: propriedades comuns centralizadas (`LumenAuthorizationVersion=0.1.0`, `LumenPackageAuthors`, `LumenPackageCompany`, `LumenPackageProduct`, `LumenPackageLicenseExpression`, `LumenPackageProjectUrl`, `LumenRepositoryUrl`, `LumenRepositoryType`) como propriedades livres sem `<IsPackable>` nem `<Version>` — apenas os 5 pacotes as consomem; hosts, módulos e testes não são afetados.
+- **`docs/nuget-readme.md`**: README compartilhado empacotado nos 5 `.nupkg` via `<None Pack="true" PackagePath="\README.md">`. Inclui tabela de pacotes, wiring mínimo, exemplo de proteção de endpoint e links para o repositório e ADR-0004.
+- **Metadados NuGet nos 5 projetos** (`IsPackable=true`, `Version=$(LumenAuthorizationVersion)`, `PackageId`, `Description`, `PackageTags`, `PackageLicenseExpression=MIT`, `PackageProjectUrl`, `RepositoryUrl/Type`, `PackageReadmeFile`, `PackageIcon`, `EnablePackageValidation=true`): `Lumen.Authorization.Contracts`, `Lumen.Authorization`, `Lumen.Authorization.Migrations`, `Lumen.Authorization.AspNetCore`, `Lumen.Authorization.Backoffice`. Metadados específicos por pacote (`Description`, `PackageTags`) ficam no próprio `.csproj`; todos os demais campos comuns vêm das propriedades do `Directory.Build.props`.
+- **Ícone `lumen-mark.png`** empacotado em `images/lumen-mark.png` em cada `.nupkg` via `<None Pack="true">` referenciando o arquivo já existente em `src/Presentation/Lumen.Backoffice/wwwroot/img/brand/`.
+- **`GeneratePackageOnBuild` não habilitado** (decisão consciente): empacotar em todo build/CI adicionaria latência ao pipeline e geraria `.nupkg` intermediários não versionados; `dotnet pack` sob demanda é mais explícito e seguro. A publicação automatizada é responsabilidade do card LIB-19.
+- **Confirmações pós-pack**: `Microsoft.EntityFrameworkCore.Design` não vaza como dependência em nenhum dos 5 `.nuspec` (`PrivateAssets=all` correto); `Lumen.Authorization.Backoffice.0.1.0.nupkg` contém `staticwebassets/css/lumen-authz.css` e `build/Microsoft.AspNetCore.StaticWebAssets.props`; dependências entre pacotes (`Lumen.Authorization.Contracts 0.1.0`, `Lumen.Authorization 0.1.0`, etc.) aparecem corretamente no `.nuspec`.
+
+### Added (LIB-16 — Composição em uma chamada: `AddLumenAuthorization` umbrella)
+- **Overloads umbrella em `Lumen.Authorization.AspNetCore`**: dois novos overloads de `AddLumenAuthorization` — um recebendo `string connectionString` e outro recebendo `IConfiguration` — que compõem em uma única chamada: `AddLumenAuthorization` (core), `AddLumenAuthorizationMigrations`, `AddLumenAuthorizationEnforcement` e `AddLumenAuthorizationDiscovery`. Padrão Facade/Composition Root: os overloads apenas orquestram chamadas existentes, sem duplicar lógica de registro.
+- **`Lumen.Authorization.AspNetCore.csproj`**: adicionada `ProjectReference` para `Lumen.Authorization.Migrations`, necessária para que o umbrella possa invocar `AddLumenAuthorizationMigrations()`. A regra de arquitetura 11 (`Authorization.AspNetCore` não pode depender de `Lumen.Modules.*`/`SharedKernel`) não é violada — `Lumen.Authorization.Migrations` não é módulo de negócio.
+- **`Lumen.Api/Program.cs`** simplificado: 3 chamadas separadas (`AddLumenAuthorizationMigrations`, `AddLumenAuthorizationDiscovery`, `AddLumenAuthorizationEnforcement`) + `using Lumen.Authorization.Migrations` removidos, substituídos por `AddLumenAuthorization(builder.Configuration)` (umbrella). O umbrella é chamado antes de `AddModules` para que o módulo Identity possa usar `Replace` nos no-ops do core (`IUserDirectory`, `IAuthorizationUserSource`).
+- **`IdentityModule.RegisterAuthorization`**: removida a chamada ao core `AddLumenAuthorization(IConfiguration)` — responsabilidade transferida ao host (Composition Root), que é o lugar correto para registrar infraestrutura transversal. O módulo continua registrando suas implementações concretas via `services.Replace(...)`. O overload `IConfiguration` do core (`Lumen.Authorization`) permanece inalterado para outros consumidores.
+- **XML doc** nos dois novos overloads umbrella declarando: equivalência às chamadas granulares; diferença de escopo em relação ao overload de mesmo nome no namespace `Lumen.Authorization`; uso recomendado em hosts ASP.NET Core.
+- **Testes em `Lumen.Authorization.AspNetCore.Tests/ServiceRegistration/AddLumenAuthorizationWebTests`** (novo arquivo, 12 casos): `StringOverload_RegistersCoreServices`, `StringOverload_RegistersDistributedCache`, `StringOverload_RegistersMigrationsHostedService`, `StringOverload_RegistersDiscoveryHostedService`, `StringOverload_RegistersPolicyProvider`, `StringOverload_RegistersAuthorizationHandler`, `StringOverload_RegistersUserIdAccessor`, `StringOverload_ConfigureDelegate_PropagatedToOptions`, `IConfigurationOverload_RegistersCoreServices`, `IConfigurationOverload_RegistersMigrationsHostedService`, `IConfigurationOverload_RegistersPolicyProviderAndHandler`, `IConfigurationOverload_ReadsRedisFromConfiguration`.
+
+### Changed (LIB-16)
+- **`IdentityModule`** (`Lumen.Modules.Identity`): `RegisterAuthorization` não chama mais `AddLumenAuthorization(IConfiguration)` — o host é quem registra o núcleo de autorização. `using Lumen.Authorization` removido do arquivo. Comportamento de DI final idêntico: os no-ops (`IUserDirectory`, `IAuthorizationUserSource`) são registrados pelo core via umbrella no host, e o módulo os sobrescreve com as implementações concretas via `Replace`.
+
+### Added (LIB-15 — Policy nomeada por convenção `[Authorize(Policy = LumenPolicy.Default)]`)
+- **`LumenPolicy`** (novo tipo público em `Lumen.Authorization.AspNetCore`): constante `Default = "Lumen"` — fonte de verdade única para o nome bem-conhecido da policy de convenção. Elimina a necessidade de string literal nos atributos `[Authorize]` do consumidor.
+- **`PermissionPolicyProvider`**: reconhece `LumenPolicy.Default` via método `IsDefaultConventionalPolicy` (extrai a decisão do nome bem-conhecido de forma isolada e testável) e devolve policy com `RequireAuthenticatedUser()` + `PermissionRequirement(code: null)`. O handler resolve `controller.action` por convenção, exatamente como já faz para `[RequirePermission]` sem argumento. Formatos existentes (`Lumen:<code>` e `<code.com.ponto>`) continuam funcionando sem alteração via `ResolvePermissionCode`.
+- **Testes em `PermissionPolicyProviderTests`**: 2 novos casos — `GetPolicyAsync_WithLumenDefault_ReturnsConventionalPolicyWithNullCode` e `GetPolicyAsync_WithLumenDefault_PolicyRequiresAuthenticatedUser`.
+- **`LumenDefaultPolicyConventionTests`** (novo arquivo de testes): 4 casos exercitando o caminho completo — constante com valor correto; provider resolve policy convencional; handler permite quando usuário tem permissão; handler nega quando usuário não tem permissão.
+
+### Added (LIB-17 — Backoffice: gestão da relação Usuário↔Perfil)
+- **`UsersController`** (Area `Lumen`): novo controller na RCL com 4 actions — `Index` lista usuários ativos via `IAuthorizationUserSource` com contador de perfis por usuário; `Details` exibe perfis atribuídos e disponíveis para atribuição; `Assign` despacha `AssignUserProfileCommand` via `ISender`; `Remove` despacha `RemoveUserProfileCommand` via `ISender`. Protegido com `[RequirePermission]` e `[PermissionGroup(UsersController)]`.
+- **`UserListViewComponent`** + **`UserListViewModel`**: exibe a lista paginável de usuários com avatar gerado por cor determinística, estado e contagem de perfis. Quando `IAuthorizationUserSource` retorna lista vazia (default no-op), renderiza empty-state com instrução de implementação vinda de `BackofficeErrorMessages.UserSourceNotConfigured`.
+- **`UserProfileAssignmentViewComponent`** + **`UserProfileAssignmentViewModel`**: exibe o painel de gestão de perfis de um usuário — seção "Assigned profiles" com botão Remove por perfil não-sistema; seção "Assign profile" com perfis ainda não atribuídos, cada um com botão Assign. Ambas as ações usam `[ValidateAntiForgeryToken]`.
+- **Constantes novas em `Internal/`**: `BackofficeRouteDefaults.UsersController = "Users"`; `BackofficeErrorMessages.AssignProfileError`, `RemoveProfileError`, `UserSourceNotConfigured`; `BackofficeDisplayTokens.PageTitleUsers`, `PageSubtitleUsers`, `PageSubtitleUserDetail`, `UserAvatar(username)` (cor determinística por hash).
+- **CSS** em `lumen-authz.css`: classes `.lz-urow*` (user list row), `.lz-urow-avatar`, `.lz-badge-state`, `.lz-user-empty*` (empty state), `.lz-uprofile-*` (assignment sections) — todos usando custom properties `--lumen-*` existentes.
+- **`tests/Lumen.Authorization.Backoffice.Tests`**: 9 novos testes de unidade para `UsersController` — Index com usuários/empty-state/query por usuário; Details com usuário encontrado/não encontrado; Assign e Remove sucesso; Assign e Remove com `AuthorizationNotFoundException`; Remove com exceção inesperada. Total: 25 testes (era 15 + 1 PermissionsController).
+
+### Added (LIB-18 — Provedor de banco: exigência de SQL Server explícita)
+- **Guard de connection string em `RegisterCore`**: `ValidateSqlServerConnectionString` lança `ArgumentException` imediata se a connection string for nula/vazia (mensagem `ConnectionStringNullOrEmpty`) ou não parseável pelo `SqlConnectionStringBuilder` (mensagem `ConnectionStringNotSqlServer`) — falha cedo e legível em vez de erro obscuro do EF Core no startup.
+- **Constantes `ConnectionStringNullOrEmpty` e `ConnectionStringNotSqlServer`** adicionadas a `AuthorizationErrorMessages` em `src/Lumen.Authorization/Internal/`.
+- **XML doc (`/// <summary>`)** nos dois overloads públicos de `AddLumenAuthorization` declarando explicitamente: requer SQL Server; cria/aplica o schema `Lumen` no startup quando `ApplyMigrationsOnStartup = true`.
+- **`docs/authz-library.md`** (novo): guia do consumidor — requisito de SQL Server, tabela de pacotes, wiring mínimo em `Program.cs`, `LumenAuthorizationOptions`, formas de proteger endpoints, relação Usuário↔Perfil.
+- **Testes em `Lumen.Authorization.Tests`**: 3 novos casos — `NullOrWhitespaceConnectionString_ThrowsArgumentException` (Theory: null/vazia/whitespace), `ConnectionStringWithUnknownKeyword_ThrowsArgumentException` (keyword inválida para SQL Server), `IConfigurationOverload_NullDefaultConnection_ThrowsArgumentException` (DefaultConnection ausente no `IConfiguration`).
+
+### Added (LIB-10 — Backoffice montável como Razor Class Library)
+- **`Lumen.Authorization.Backoffice`** (novo projeto `Microsoft.NET.Sdk.Razor`, `AddRazorSupportForMvc`): RCL que empacota a gestão de Perfis e Permissões como UI montável pelo consumidor. ProjectReferences: `Lumen.Authorization`, `Lumen.Authorization.Contracts`, `Lumen.Authorization.AspNetCore`. PackageReference: `MediatR` (CPM).
+- **Area `Lumen`** com dois controllers in-process: `ProfilesController` (Index, Details, Create, Edit, Delete, SetPermissions) e `PermissionsController` (Index). Ambos usam `ISender` (MediatR) para despachar diretamente as Queries/Commands de `Lumen.Authorization.Application` — sem HTTP/AdminApiClient. Protegidos com `[RequirePermission]` e `[PermissionGroup]` do `Lumen.Authorization.AspNetCore`.
+- **ViewComponents separados**: `ProfileListViewComponent`, `ProfileDetailViewComponent`, `PermissionCatalogueViewComponent` — cada responsabilidade visual em seu próprio componente (CLAUDE.md regra). Views das controllers delegam ao ViewComponent; formulários de Create/Edit são PartialViews (telas burras).
+- **ViewModels próprios da RCL**: `ProfileListViewModel`, `ProfileDetailViewModel`, `CreateProfileFormModel`, `EditProfileFormModel`, `PermissionCatalogueViewModel`.
+- **Constantes internas** em `Internal/`: `BackofficeRouteDefaults` (prefixo `/lumen`, area `Lumen`, nomes de controller), `BackofficeErrorMessages`, `BackofficeDisplayTokens` (accent palette, labels de página), `PermissionDisplayHelper` (HTTP method + CSS color a partir do code).
+- **CSS próprio** em `wwwroot/css/lumen-authz.css`, servido via static web assets da RCL (`_content/Lumen.Authorization.Backoffice/css/lumen-authz.css`). Usa custom properties `--lumen-*` para não conflitar com o host.
+- **`AddLumenBackoffice()`** (`LumenBackofficeServiceCollectionExtensions`): registra o application part da RCL via `AddControllersWithViews().AddApplicationPart(...)`. Prerequisito: chamar `AddLumenAuthorization()` e `AddLumenAuthorizationEnforcement()` antes. Autenticação é responsabilidade do consumidor — documentado no XML do método.
+- **`MapLumenBackoffice(string prefix = "/lumen")`** (`LumenBackofficeEndpointRouteBuilderExtensions`): monta a Area `Lumen` via `MapAreaControllerRoute` sob o prefixo configurável. A rota deve ficar atrás do middleware de autenticação do host.
+- **`tests/Lumen.Authorization.Backoffice.Tests`**: 15 testes de unidade (xUnit + NSubstitute + FluentAssertions) cobrindo `ProfilesController` (Index, Details/404, Create GET, Create POST sucesso/conflito, Edit GET/sistema/sucesso, Delete sucesso/proibido, SetPermissions) e `PermissionsController` (Index com dados, query enviada, lista vazia). `FakeTempData` inline implementa `ITempDataDictionary` sem dependência de mocks de framework.
+- **`Lumen.ArchitectureTests`**: nova regra `AuthorizationBackoffice_MustNotDependOnIdentityOrAuditModules` (12→12 regras, agora 12 testes).
+
+### Added (LIB-08 — userId configurável + LIB-09 — discovery/seed como serviço da lib)
+- **`IUserIdAccessor`** (novo em `Lumen.Authorization.Contracts`): interface pública `bool TryGetUserId(ClaimsPrincipal, out Guid)` que abstrai a leitura do userId a partir de claims. Consumidor pode substituir via `services.Replace<IUserIdAccessor, ...>()`.
+- **`ClaimsUserIdAccessor`** (novo em `Lumen.Authorization.AspNetCore`): implementação default que lê o claim configurado em `LumenAuthorizationOptions.UserIdClaimType` e faz `Guid.TryParse`. Registrado via `TryAddSingleton` em `AddLumenAuthorizationEnforcement()`.
+- **`LumenAuthorizationOptions.UserIdClaimType`**: nova propriedade `string` com default `ClaimTypes.NameIdentifier`. Configurável via `configure` do `AddLumenAuthorization`. Propagada no `Configure<LumenAuthorizationOptions>`.
+- **`PermissionAuthorizationHandler`** agora injeta `IUserIdAccessor` e delega a ele a extração do userId — elimina o hardcode de `ClaimTypes.NameIdentifier` no handler.
+- **`PermissionDiscoveryScanner`** (movido de `Lumen.Api/Authorization` para `Lumen.Authorization.AspNetCore`): usa `IActionDescriptorCollectionProvider` para descobrir automaticamente os controllers do consumidor; retorna `IReadOnlyList<DiscoveredPermissionEntry>` (tipo da lib core, sem record intermediário).
+- **`PermissionDiscoveryAndReconciliationHostedService`** (novo em `Lumen.Authorization.AspNetCore`): hosted service unificado que executa o fluxo completo ordenado `descobrir → SyncDiscoveredAsync → ReconcileAdministratorAsync` usando diretamente `IPermissionSyncService` da lib core.
+- **`AddLumenAuthorizationDiscovery()`** (novo em `LumenAuthorizationAspNetCoreServiceCollectionExtensions`): registra `PermissionDiscoveryScanner` (singleton) e `PermissionDiscoveryAndReconciliationHostedService`. Substitui o antigo `AddPermissionDiscovery()` do host.
+- **Testes migrados/novos em `Lumen.Authorization.AspNetCore.Tests`**: `PermissionDiscoveryScannerTests` (7 casos, migrados de `Lumen.UnitTests`), `ClaimsUserIdAccessorTests` (5 casos: claim presente/ausente/inválido; claim customizado; assignable a `IUserIdAccessor`), `PermissionAuthorizationHandlerTests` (2 novos casos: custom claim type com sucesso; default claim ausente com claim custom configurado não passa).
+
+### Changed (LIB-08 + LIB-09)
+- **`Lumen.Api/Program.cs`**: `AddPermissionDiscovery()` substituído por `AddLumenAuthorizationDiscovery()`; `using Lumen.Api.Authorization` removido.
+- **Testes em `Lumen.UnitTests/Authorization`**: `ConventionPermissionRegressionTests` e `AuthorizationGraphPermissionDiscoveryTests` — `using Lumen.Api.Authorization` removido (scanner agora no namespace `Lumen.Authorization.AspNetCore`).
+
+### Removed (LIB-09)
+- **`Lumen.Api/Authorization/PermissionDiscoveryScanner.cs`**: movido para `Lumen.Authorization.AspNetCore`.
+- **`Lumen.Api/Authorization/DiscoveredPermission.cs`**: record intermediário eliminado — substituído por `DiscoveredPermissionEntry` da lib core.
+- **`Lumen.Api/Authorization/PermissionDiscoveryHostedService.cs`**: substituído por `PermissionDiscoveryAndReconciliationHostedService` na lib.
+- **`Lumen.Api/Authorization/PermissionSyncService.cs`**: wrapper de indireção eliminado — hosted service usa `IPermissionSyncService` diretamente.
+- **`Lumen.Api/Authorization/AdministratorPermissionReconciliationService.cs`**: wrapper de indireção eliminado — reconciliação executada diretamente pelo hosted service unificado.
+- **`Lumen.Api/Authorization/AdministratorPermissionReconciliationHostedService.cs`**: fluxo unificado no novo hosted service.
+- **`Lumen.Api/Authorization/PermissionDiscoveryServiceCollectionExtensions.cs`**: substituído por `AddLumenAuthorizationDiscovery()` na lib.
+- **`Lumen.UnitTests/Authorization/PermissionDiscoveryScannerTests.cs`**: migrado para `Lumen.Authorization.AspNetCore.Tests`.
+
+### Added (LIB-07 + LIB-06 — `Lumen.Authorization.AspNetCore` e `[RequirePermission]` que enforça)
+- **`Lumen.Authorization.AspNetCore`** (novo projeto `Microsoft.NET.Sdk` + `FrameworkReference Microsoft.AspNetCore.App`): contém toda a máquina de enforcement ASP.NET — `PermissionRequirement`, `PermissionPolicyProvider`, `PermissionAuthorizationHandler`, `RequirePermissionAttribute`, `PermissionGroupAttribute`, `ControllerNameNormalizer`. ProjectReferences para `Lumen.Authorization` e `Lumen.Authorization.Contracts`.
+- **`RequirePermissionAttribute` implementa `IAuthorizationRequirementData`** (net8): `GetRequirements()` devolve um `PermissionRequirement(Code)`. Quando `Code` é `null` (atributo sem argumento), o `PermissionAuthorizationHandler` resolve o code via convenção `controller.action` lendo `ControllerActionDescriptor` do `Endpoint` metadata do `HttpContext`.
+- **`AddLumenAuthorizationEnforcement()`** (`LumenAuthorizationAspNetCoreServiceCollectionExtensions`): registra `IAuthorizationPolicyProvider → PermissionPolicyProvider` (singleton) e `IAuthorizationHandler → PermissionAuthorizationHandler` (scoped) — equivalente ao antigo `AddPermissionEnforcement()`.
+- **`PermissionPolicyProvider`** suporta dois formatos de policy nomeada: code com `.` (compat com o formato anterior, ex.: `"Users.List"`) e prefixo `Lumen:` (ex.: `"Lumen:Users.List"`) — constante `AuthorizationPolicyPrefixes.Lumen` (interna).
+- **`Lumen.Authorization.AspNetCore.Tests`** (novo projeto de testes): testa `RequirePermissionAttribute.GetRequirements()` (code explícito / sem code / `IAuthorizationRequirementData`), `PermissionAuthorizationHandler` (code explícito permitido/negado; convenção via `ControllerActionDescriptor`; sub ausente/inválido; sem HttpContext), `PermissionPolicyProvider` (dot-notation; prefixo `Lumen:`; name sem reconhecimento).
+- **`Lumen.ArchitectureTests`**: 2 novas regras — `Authorization_MustNotDependOnAspNetCoreFramework` (core agnóstico de web) e `AuthorizationAspNetCore_MustNotDependOnIdentityOrAuditModules`.
+
+### Changed (LIB-07 + LIB-06)
+- **Controllers do `Lumen.Api`** migrados para atributo único: par `[RequirePermission] + [Authorize(Policy = PermissionCodes.X)]` substituído por `[RequirePermission(PermissionCodes.X)]` em todos os 7 controllers (`Users`, `Profiles`, `UserProfiles`, `Permissions`, `Audit`, `Diagnostics`, `AuthorizationGraph`). `using Lumen.SharedKernel.Authorization` → `using Lumen.Authorization.AspNetCore`. `using Microsoft.AspNetCore.Authorization` removido dos controllers onde era exclusivamente para enforcement.
+- **`RequirePermissionTagHelper` e `HasPermissionHtmlHelperExtensions`** (Backoffice): `using Lumen.SharedKernel.Authorization` → `using Lumen.Authorization.AspNetCore`; comentários XML legados removidos.
+- **`PermissionDiscoveryScanner`** (Lumen.Api): `using Lumen.SharedKernel.Authorization` → `using Lumen.Authorization.AspNetCore`.
+- **`Lumen.Api/Program.cs`**: troca `AddPermissionEnforcement()` por `AddLumenAuthorizationEnforcement()`; adiciona `using Lumen.Authorization.AspNetCore`.
+- **`Lumen.Api.csproj`**: adiciona `ProjectReference` para `Lumen.Authorization.AspNetCore`.
+- **`Lumen.Backoffice.csproj`**: adiciona `ProjectReference` para `Lumen.Authorization.AspNetCore`.
+- **`Lumen.UnitTests.csproj`**: adiciona `ProjectReference` para `Lumen.Authorization.AspNetCore` (acesso direto a `ControllerNameNormalizer` e tipos movidos).
+- **`tests/Lumen.UnitTests/Authorization`**: atualiza `using` de `ControllerNameNormalizerTests`, `PermissionDiscoveryScannerTests`, `ConventionPermissionRegressionTests`, `AuthorizationGraphPermissionDiscoveryTests` para `Lumen.Authorization.AspNetCore`.
+
+### Removed (LIB-07)
+- **`src/Lumen.Api/Authorization/PermissionPolicyProvider.cs`**, **`PermissionRequirement.cs`**, **`PermissionAuthorizationHandler.cs`**, **`PermissionEnforcementServiceCollectionExtensions.cs`**: movidos para `Lumen.Authorization.AspNetCore`.
+- **`src/SharedKernel/Lumen.SharedKernel/Authorization/RequirePermissionAttribute.cs`**, **`PermissionGroupAttribute.cs`**, **`ControllerNameNormalizer.cs`**: movidos para `Lumen.Authorization.AspNetCore`.
+
+### Added (LIB-04 + LIB-05 — Redis opcional e entry point único com options)
+- **`LumenAuthorizationOptions`** (novo em `Lumen.Authorization`): `public sealed class` com `RedisConnectionString?` (default `null` → cache em memória) e `ApplyMigrationsOnStartup` (default `true`).
+- **Overload `AddLumenAuthorization(string connectionString, Action<LumenAuthorizationOptions>? configure = null)`**: entry point mínimo — basta a connection string do banco; sem seção de `IConfiguration`, sem Redis obrigatório. Cache provider decidido internamente.
+- **`Lumen.Authorization.Tests`** (novo projeto): 4 testes de registro DI — sem Redis registra `IDistributedCache` em memória; com `RedisConnectionString` registra provider Redis; não sobrescreve `IDistributedCache` pré-registrado pelo consumidor; overload `IConfiguration` mapeia `DefaultConnection`/`Redis` corretamente.
+- **`Microsoft.Extensions.Options` versão `8.0.2`** em `Directory.Packages.props` (atualizado de `8.0.0` para resolver conflito de downgrade com dependências transitivas de Redis/EF Core).
+
+### Changed (LIB-04 + LIB-05)
+- **`AddLumenAuthorization`** refatorado: dois overloads públicos delegam a método core `RegisterCore(connectionString, options)`; lógica de cache consolidada em `RegisterCacheProvider` — se `IDistributedCache` já registrado pelo consumidor: skip; se `RedisConnectionString` preenchido: `AddStackExchangeRedisCache`; senão: `AddDistributedMemoryCache()`. Provider registrado com `services.Configure<LumenAuthorizationOptions>` para consumo pelo hosted service.
+- **Overload `AddLumenAuthorization(IConfiguration, ...)` mantido para compat**: lê `GetConnectionString("DefaultConnection")` e usa `GetConnectionString("Redis")` como default de `RedisConnectionString` — comportamento do `IdentityModule` preservado.
+- **`LumenAuthorizationMigrationsHostedService`**: passa a injetar `IOptions<LumenAuthorizationOptions>` e pula `MigrateAsync` quando `ApplyMigrationsOnStartup == false` — toggle de auto-migração sem referência circular (a lib NÃO referencia `.Migrations`; o `.Migrations` referencia a lib e lê as options).
+- **`IdentityModule.RegisterAuthorization`**: remove chamada explícita a `AddStackExchangeRedisCache` — o registro agora é responsabilidade de `AddLumenAuthorization(configuration)` via overload de compat (que lê `ConnectionStrings:Redis` e decide o provider).
+
+### Added (LIB-03 — Migration da lib: schema `Lumen` + tabelas singulares)
+- **`Lumen.Authorization.Migrations`** (novo projeto): projeto `Microsoft.NET.Sdk` com `ProjectReference` para `Lumen.Authorization`, empacota `Microsoft.EntityFrameworkCore.SqlServer` + `Design` (PrivateAssets). Adicionado à `Lumen.sln` sob o folder `src`.
+- **`LumenAuthorizationDbContextFactory`**: `IDesignTimeDbContextFactory<LumenAuthorizationDbContext>` para uso com `dotnet ef`; lê connection string de `appsettings.json` → env var → fallback local; configura `MigrationsAssembly` via `typeof(LumenAuthorizationDbContextFactory).Assembly.FullName`.
+- **`LumenAuthorizationMigrationsHostedService`**: `IHostedService` que verifica `GetPendingMigrationsAsync` e chama `MigrateAsync` no startup; loga migrations pendentes e resultado.
+- **`AddLumenAuthorizationMigrations()`** (`LumenAuthorizationMigrationsServiceCollectionExtensions`): extension method que registra o hosted service; chamado em `Lumen.Api/Program.cs`.
+- **`LumenAuthorizationMigrationsAssembly`** (novo, interno em `Lumen.Authorization`): marker com nome do assembly de migrations como string const — elimina referência circular sem hardcode solto.
+- **Migration `20260702090707_InitialLumenAuthorizationSchema`**: cria schema `Lumen`, 5 tabelas singulares (`PermissionGroup`, `Permission`, `Profile`, `UserProfile`, `PermissionProfile`) com todos os índices `ix_lumen_*` (unique com filtro `[IsDeleted] = 0` onde aplicável) e relações (FK `Permission → PermissionGroup` SetNull, `UserProfile → Profile` Restrict, `PermissionProfile → Permission/Profile` Restrict). Sem FK de `UserProfile` para User (Guid opaco).
+- **Migration `20260702090836_SeedLumenSystemProfiles`**: semeia os 2 perfis de sistema consumer-agnósticos — `Administrator` (`20000000-...-0001`, `IsSystem=true`) e `User` (`20000000-...-0002`, `IsSystem=true`). Sem permissões de aplicação (LIB-09) nem usuários (módulo Identity).
+- **`InternalsVisibleTo`** em `Lumen.Authorization.csproj`: adiciona `Lumen.Authorization.Migrations` para que o factory/hosted service acessem `LumenAuthorizationDbContext` (internal).
+
+### Changed (LIB-03)
+- **`AddLumenAuthorization`**: configura `sql.MigrationsAssembly(LumenAuthorizationMigrationsAssembly.Name)` no `UseSqlServer` — necessário para que `MigrateAsync` runtime encontre as migrations no assembly correto.
+- **`Lumen.Api/Program.cs`**: adiciona `using Lumen.Authorization.Migrations` e chama `builder.Services.AddLumenAuthorizationMigrations()` junto com as demais migrations de módulo.
+- **`Lumen.Api.csproj`**: adiciona `ProjectReference` para `Lumen.Authorization.Migrations`.
+- **`CLAUDE.md`**: seção Comandos atualizada com o `dotnet ef migrations add` do `Lumen.Authorization.Migrations`.
+
+### Added (LIB-02 — Extração do núcleo de autorização para `Lumen.Authorization`)
+- **`Lumen.Authorization.Contracts`** (novo projeto): superfície pública da lib — `IUserPermissionService`, `IUserDirectory`, `IUserProfileGuard`, `IAuthorizationUserSource`, `AuthorizationUserDto` e os 4 integration events de authz (`UserPermissionsChangedEvent`, `ProfilePermissionsSetEvent`, `UserProfileAssignedEvent`, `UserProfileRemovedEvent`). Depende apenas de `Lumen.Modularity`.
+- **`Lumen.Authorization`** (núcleo): entidades (`Permission`, `GroupPermission`, `Profile`, `PermissionProfile`, `UserProfile`), repositórios, `LumenAuthorizationDbContext` (schema `Lumen`, tabelas singulares, sem FK cross-domínio em `UserProfile`), `UserPermissionCache`, `UserPermissionService`, `PermissionSyncService`, handlers CQRS de Profiles/UserProfiles/Queries/EventHandlers, `ValidationBehavior`, constantes internas (`AuthorizationErrorMessages`, `AuthorizationActorNames`, `AuthorizationCacheKeys`), exceções próprias (`AuthorizationException`, `AuthorizationNotFoundException`, `AuthorizationConflictException`, `AuthorizationForbiddenException`), `UserProfileGuard`, `NoOpUserDirectory`, `EmptyAuthorizationUserSource`. Extension `AddLumenAuthorization(configuration)`.
+- **`IUserDirectory`**: abstração user-agnóstica para obter display name; default no-op retorna `null`; Identity registra `IdentityUserDirectory` que consulta `IUserRepository`.
+- **`IAuthorizationUserSource`**: abstração para listar usuários ativos para o grafo; default retorna lista vazia; Identity registra `IdentityAuthorizationUserSource` via `UserStateResolver`.
+- **`IUserProfileGuard`**: expõe `IsUserAdministratorAsync` para que o `DeleteUserCommandHandler` do Identity valide o guard "último administrador" sem acessar internals da lib.
+- **`DeleteUserCommandHandler`** refatorado: substitui `IUserProfileRepository` direto por `IUserProfileGuard`; injeta `IUserProfileGuard` e publica `UserPermissionsChangedEvent` de `Lumen.Authorization.Contracts.Events`.
+
+### Changed (LIB-02)
+- **`IdentityDbContext`**: remove DbSets de authz (`Permission`, `Profile`, `GroupPermission`, `PermissionProfile`, `UserProfile`); configs e repositórios de authz removidos do assembly Identity.
+- **`IdentityModule`**: chama `AddLumenAuthorization(configuration)` + `AddStackExchangeRedisCache`; substitui no-ops por `IdentityUserDirectory` e `IdentityAuthorizationUserSource`; remove registro manual de repos/cache/`IPermissionSyncService` de authz.
+- **4 integration events de authz** (`UserPermissionsChangedEvent`, `ProfilePermissionsSetEvent`, `UserProfileAssignedEvent`, `UserProfileRemovedEvent`) movidos de `Lumen.Modules.Identity.Contracts.Events` para `Lumen.Authorization.Contracts.Events`; `IUserPermissionService` movido de `Lumen.Modules.Identity.Contracts` para `Lumen.Authorization.Contracts`.
+- **Audit module**: event handlers (`ProfilePermissionsSetEventHandler`, `UserPermissionsChangedEventHandler`, `UserProfileAssignedEventHandler`, `UserProfileRemovedEventHandler`) passam a importar de `Lumen.Authorization.Contracts.Events`; `Lumen.Modules.Audit.csproj` troca referência ao `Identity.Contracts` por `Authorization.Contracts`.
+- **`Lumen.Api` controllers** (`ProfilesController`, `UserProfilesController`, `PermissionsController`, `AuthorizationGraphController`): importam de `Lumen.Authorization.Application.*`; `PermissionAuthorizationHandler` e `AuthorizationGraphHub` usam `Lumen.Authorization.Contracts.IUserPermissionService`; `GraphLivePushHandler` usa `Lumen.Authorization.Contracts.Events.UserPermissionsChangedEvent`.
+- **`BusinessExceptionHandler`**: mapeia também `AuthorizationException` (404/409/403) além de `BusinessException` (SharedKernel).
+- **Backoffice** (`AuthorizationGraphController`, `AuthorizationGraphProxyMiddleware`, `RequirePermissionTagHelper`, `HasPermissionHtmlHelperExtensions`): usam `Lumen.Authorization.Contracts.IUserPermissionService`.
+- **`Lumen.ArchitectureTests`**: 2 novas regras — `AuthorizationContracts_MustOnlyDependOnModularity` e `Authorization_MustNotDependOnIdentityOrAuditModules`.
+- **Testes de Identity** (`Create/Update/Delete/SetPermissions Profile`, `Assign/Remove UserProfile`, `UserPermissionsChangedCacheHandler`, `DeleteUser`): atualizados para usar novos namespaces da lib; `DeleteUserCommandHandlerTests` substitui `IUserProfileRepository` por `IUserProfileGuard` no mock.
+
+### Docs
+- **[ADR-0004](docs/adr/0004-authorization-as-library.md)** (novo): decisão de extrair a autorização do módulo Identity para a família de pacotes `Lumen.Authorization*` (núcleo agnóstico de ASP.NET, `.Migrations`, `.AspNetCore`, `.Backoffice` como RCL montável), tornando-a instalável por qualquer app ASP.NET Core — `AddLumenAuthorization(connectionString)` com auto-migração do schema `Lumen`, `[RequirePermission]` que declara e enforça, e `MapLumenBackoffice`. Define a fronteira da extração (o que migra vs. o que fica no Identity), o contrato com o consumidor (traz o próprio login; Redis opcional; `UserProfile.UserId` como Guid opaco) e o naming schema `Lumen`/tabelas singulares. Abre o épico "Lumen Authz Lib" (cards LIB-00…LIB-14).
 
 ## [0.4.0] - 2026-06-30
 

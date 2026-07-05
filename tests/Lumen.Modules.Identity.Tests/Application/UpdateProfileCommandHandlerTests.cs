@@ -1,8 +1,8 @@
 using FluentAssertions;
 using FluentValidation.TestHelper;
-using Lumen.Modules.Identity.Application.Profiles.Update;
-using Lumen.Modules.Identity.Domain.Authorization;
-using Lumen.SharedKernel.Exceptions;
+using Lumen.Authorization.Application.Profiles.Update;
+using Lumen.Authorization.Domain;
+using Lumen.Authorization.Exceptions;
 using NSubstitute;
 
 namespace Lumen.Modules.Identity.Tests.Application;
@@ -47,7 +47,7 @@ public sealed class UpdateProfileCommandHandlerTests
             new UpdateProfileCommand(Guid.NewGuid(), "Name", "Desc"),
             CancellationToken.None);
 
-        await act.Should().ThrowAsync<NotFoundException>();
+        await act.Should().ThrowAsync<AuthorizationNotFoundException>();
     }
 
     [Fact]
@@ -63,7 +63,7 @@ public sealed class UpdateProfileCommandHandlerTests
             new UpdateProfileCommand(profileId, "NewName", "Desc"),
             CancellationToken.None);
 
-        await act.Should().ThrowAsync<ForbiddenException>();
+        await act.Should().ThrowAsync<AuthorizationForbiddenException>();
     }
 
     [Fact]
@@ -101,7 +101,7 @@ public sealed class UpdateProfileCommandHandlerTests
             new UpdateProfileCommand(profileId, "TakenName", "Desc"),
             CancellationToken.None);
 
-        await act.Should().ThrowAsync<ConflictException>();
+        await act.Should().ThrowAsync<AuthorizationConflictException>();
     }
 
     [Fact]

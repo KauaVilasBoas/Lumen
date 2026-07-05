@@ -1,0 +1,40 @@
+@model UserListViewModel
+
+<div class="lz-content-wrap">
+    <div class="lz-card">
+        <div class="lz-list-head">
+            <span class="lz-eyebrow">Users · @Model.Users.Count</span>
+        </div>
+
+        @if (Model.IsEmpty)
+        {
+            <div class="lz-user-empty">
+                <div class="lz-user-empty-icon">&#128100;</div>
+                <p class="lz-user-empty-title">No users available</p>
+                <p class="lz-user-empty-hint lz-mono">@BackofficeErrorMessages.UserSourceNotConfigured</p>
+            </div>
+        }
+        else
+        {
+            <div class="lz-list-body">
+                @foreach (var user in Model.Users)
+                {
+                    var avatarColor = BackofficeDisplayTokens.UserAvatar(user.Username);
+                    <a asp-area="Lumen" asp-controller="Users" asp-action="Details" asp-route-id="@user.Id"
+                       class="lz-urow">
+                        <span class="lz-urow-avatar" style="background:@avatarColor">@user.Username[0].ToString().ToUpperInvariant()</span>
+                        <div class="lz-urow-main">
+                            <div class="lz-urow-name">@user.Username</div>
+                            <div class="lz-urow-email lz-muted">@user.Email</div>
+                        </div>
+                        <div class="lz-urow-meta">
+                            <span class="lz-badge lz-badge-state">@user.State</span>
+                            <span class="lz-urow-profiles lz-mono">@user.ProfileCount profile@(user.ProfileCount == 1 ? "" : "s")</span>
+                        </div>
+                        <span class="lz-prow-chevron">›</span>
+                    </a>
+                }
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,42 @@
+@model EditProfileFormModel
+@{
+    ViewData["Title"] = BackofficeDisplayTokens.PageTitleEdit;
+    ViewData["Subtitle"] = BackofficeDisplayTokens.PageSubtitleEdit;
+}
+
+<div class="lz-content-wrap">
+    <div class="lz-card lz-card-narrow">
+        <div class="lz-card-head">
+            <div>
+                <div class="lz-eyebrow">Profiles</div>
+                <h3 class="lz-card-title">Edit profile</h3>
+            </div>
+            <a asp-area="Lumen" asp-controller="Profiles" asp-action="Index" class="lz-btn lz-btn-ghost lz-btn-sm">Back</a>
+        </div>
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div asp-validation-summary="ModelOnly" class="lz-error-banner"></div>
+        }
+
+        <form asp-area="Lumen" asp-controller="Profiles" asp-action="Edit" method="post" class="lz-form">
+            @Html.AntiForgeryToken()
+            <input asp-for="Id" type="hidden" />
+            <label class="lz-field">
+                <span class="lz-field-label">Name</span>
+                <div class="lz-field-input">
+                    <input asp-for="Name" maxlength="128" />
+                </div>
+                <span asp-validation-for="Name" class="lz-field-error"></span>
+            </label>
+            <label class="lz-field">
+                <span class="lz-field-label">Description</span>
+                <div class="lz-field-input">
+                    <input asp-for="Description" maxlength="512" />
+                </div>
+                <span asp-validation-for="Description" class="lz-field-error"></span>
+            </label>
+            <button type="submit" class="lz-btn lz-btn-primary">Save changes</button>
+        </form>
+    </div>
+</div>

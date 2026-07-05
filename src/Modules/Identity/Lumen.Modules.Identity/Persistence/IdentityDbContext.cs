@@ -1,5 +1,4 @@
 using System.Linq.Expressions;
-using Lumen.Modules.Identity.Domain.Authorization;
 using Lumen.Modules.Identity.Domain.Tokens;
 using Lumen.Modules.Identity.Domain.Users;
 using Lumen.SharedKernel.Persistence;
@@ -22,16 +21,6 @@ internal sealed class IdentityDbContext : DbContext
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
 
     public DbSet<EmailConfirmationToken> EmailConfirmationTokens => Set<EmailConfirmationToken>();
-
-    public DbSet<Permission> Permissions => Set<Permission>();
-
-    public DbSet<Profile> Profiles => Set<Profile>();
-
-    public DbSet<GroupPermission> GroupPermissions => Set<GroupPermission>();
-
-    public DbSet<PermissionProfile> PermissionProfiles => Set<PermissionProfile>();
-
-    public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

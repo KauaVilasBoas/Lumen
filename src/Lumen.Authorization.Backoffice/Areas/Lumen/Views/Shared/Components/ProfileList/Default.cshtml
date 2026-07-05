@@ -1,0 +1,40 @@
+@model ProfileListViewModel
+@{
+    string Accent(ListProfilesResult p) => BackofficeDisplayTokens.ProfileAccent(p.Name, p.IsSystem);
+}
+
+<div class="lz-content-wrap">
+    <div class="lz-card">
+        <div class="lz-list-head">
+            <span class="lz-eyebrow">Profiles · @Model.Profiles.Count</span>
+            <a asp-area="Lumen" asp-controller="Profiles" asp-action="Create" class="lz-btn lz-btn-primary lz-btn-sm">+ New profile</a>
+        </div>
+
+        @if (TempData["Error"] is string error)
+        {
+            <div class="lz-error-banner lz-error-banner-inline">@error</div>
+        }
+
+        <div class="lz-list-body">
+            @foreach (var p in Model.Profiles)
+            {
+                var accent = Accent(p);
+                <a asp-area="Lumen" asp-controller="Profiles" asp-action="Details" asp-route-id="@p.Id"
+                   class="lz-prow" style="--lz-nc:@accent">
+                    <span class="lz-prow-bar"></span>
+                    <div class="lz-prow-main">
+                        <div class="lz-prow-name">
+                            @p.Name
+                            @if (p.IsSystem)
+                            {
+                                <span class="lz-badge lz-badge-sys">SYSTEM</span>
+                            }
+                        </div>
+                        <div class="lz-prow-desc">@p.Description</div>
+                    </div>
+                    <span class="lz-prow-chevron">›</span>
+                </a>
+            }
+        </div>
+    </div>
+</div>

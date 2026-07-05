@@ -21,5 +21,4 @@ internal interface IUserRepository
         int pageSize,
         CancellationToken ct = default);
 
-    Task<int> CountActiveAdministratorsAsync(Guid administratorProfileId, CancellationToken ct = default);
 }

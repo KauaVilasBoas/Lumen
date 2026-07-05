@@ -1,8 +1,8 @@
 using FluentAssertions;
 using FluentValidation.TestHelper;
-using Lumen.Modules.Identity.Application.Profiles.Create;
-using Lumen.Modules.Identity.Domain.Authorization;
-using Lumen.SharedKernel.Exceptions;
+using Lumen.Authorization.Application.Profiles.Create;
+using Lumen.Authorization.Domain;
+using Lumen.Authorization.Exceptions;
 using NSubstitute;
 
 namespace Lumen.Modules.Identity.Tests.Application;
@@ -45,7 +45,7 @@ public sealed class CreateProfileCommandHandlerTests
             new CreateProfileCommand("Managers", "Desc"),
             CancellationToken.None);
 
-        await act.Should().ThrowAsync<ConflictException>();
+        await act.Should().ThrowAsync<AuthorizationConflictException>();
         await _profileRepository.DidNotReceive().InsertAsync(Arg.Any<Profile>(), Arg.Any<CancellationToken>());
     }
 

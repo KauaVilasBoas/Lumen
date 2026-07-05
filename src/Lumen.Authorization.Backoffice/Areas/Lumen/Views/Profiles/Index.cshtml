@@ -1,0 +1,7 @@
+@model ProfileListViewModel
+@{
+    ViewData["Title"] = BackofficeDisplayTokens.PageTitleProfiles;
+    ViewData["Subtitle"] = BackofficeDisplayTokens.PageSubtitleProfiles;
+}
+
+@await Component.InvokeAsync("ProfileList", new { model = Model })

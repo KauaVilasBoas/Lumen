@@ -1,4 +1,4 @@
-using Lumen.Modules.Identity.Application.Queries;
+using Lumen.Authorization.Application.Queries;
 
 namespace Lumen.Api.Hubs;
 
