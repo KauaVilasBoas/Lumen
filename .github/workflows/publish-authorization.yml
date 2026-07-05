@@ -14,6 +14,10 @@ jobs:
     name: Pack & push Lumen.Authorization*
     runs-on: ubuntu-latest
 
+    permissions:
+      id-token: write
+      contents: read
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -44,12 +48,19 @@ jobs:
           dotnet pack src/Lumen.Authorization.Contracts/Lumen.Authorization.Contracts.csproj $PACK_ARGS
           dotnet pack src/Lumen.Authorization/Lumen.Authorization.csproj $PACK_ARGS
           dotnet pack src/Lumen.Authorization.Migrations/Lumen.Authorization.Migrations.csproj $PACK_ARGS
+          dotnet pack src/Lumen.Authorization.Migrations.PostgreSQL/Lumen.Authorization.Migrations.PostgreSQL.csproj $PACK_ARGS
           dotnet pack src/Lumen.Authorization.AspNetCore/Lumen.Authorization.AspNetCore.csproj $PACK_ARGS
           dotnet pack src/Lumen.Authorization.Backoffice/Lumen.Authorization.Backoffice.csproj $PACK_ARGS
+
+      - name: NuGet login (Trusted Publishing)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: kauavilasboas
 
       - name: Push to nuget.org
         run: >
           dotnet nuget push "./artifacts/*.nupkg"
-          --api-key ${{ secrets.NUGET_API_KEY }}
+          --api-key ${{ steps.login.outputs.NUGET_API_KEY }}
           --source https://api.nuget.org/v3/index.json
           --skip-duplicate

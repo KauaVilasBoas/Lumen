@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-07-05
+
+> Primeira versão estável (1.0.0). Consolida a extração da capacidade de autorização do módulo Identity para a família de pacotes plugáveis **`Lumen.Authorization*`** — núcleo agnóstico de ASP.NET (`Lumen.Authorization` + `.Contracts`), cola web (`.AspNetCore`) com `[RequirePermission]` que declara e enforça, migrations (`.Migrations` para SQL Server e `.Migrations.PostgreSQL` para PostgreSQL) e backoffice montável como Razor Class Library (`.Backoffice`). Qualquer app ASP.NET Core passa a instalar autorização com `AddLumenAuthorization(connectionString)` + `[RequirePermission]` + `MapLumenBackoffice("/lumen")`, incluindo persistência **multi-provider** (SQL Server e PostgreSQL) selecionável via `DatabaseProvider`. Ver [ADR-0004](docs/adr/0004-authorization-as-library.md) e [ADR-0005](docs/adr/0005-multi-provider-database-support.md). Fecha os épicos "Lumen Authz Lib" (LIB-02…18) e "Suporte a PostgreSQL" (#146).
+
 ### Added (#146 — Suporte a PostgreSQL: persistência multi-provider)
 - **`DatabaseProvider`** (novo enum público em `Lumen.Authorization`): `SqlServer` e `PostgreSQL` — tipagem segura para seleção de provider de banco de dados.
 - **`LumenAuthorizationOptions.Provider`**: nova propriedade com padrão `DatabaseProvider.SqlServer` — retrocompatível; consumidores existentes não precisam de mudança.
