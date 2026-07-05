@@ -44,6 +44,7 @@ jobs:
           dotnet pack src/Lumen.Authorization.Contracts/Lumen.Authorization.Contracts.csproj $PACK_ARGS
           dotnet pack src/Lumen.Authorization/Lumen.Authorization.csproj $PACK_ARGS
           dotnet pack src/Lumen.Authorization.Migrations/Lumen.Authorization.Migrations.csproj $PACK_ARGS
+          dotnet pack src/Lumen.Authorization.Migrations.PostgreSQL/Lumen.Authorization.Migrations.PostgreSQL.csproj $PACK_ARGS
           dotnet pack src/Lumen.Authorization.AspNetCore/Lumen.Authorization.AspNetCore.csproj $PACK_ARGS
           dotnet pack src/Lumen.Authorization.Backoffice/Lumen.Authorization.Backoffice.csproj $PACK_ARGS
 
