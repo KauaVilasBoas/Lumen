@@ -30,12 +30,7 @@ internal sealed class PermissionProfileConfiguration : IEntityTypeConfiguration<
                .HasForeignKey(pp => pp.ProfileId)
                .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(pp => new { pp.PermissionId, pp.ProfileId })
-               .IsUnique()
-               .HasFilter("[IsDeleted] = 0")
-               .HasDatabaseName("ix_lumen_permission_profile_active_unique");
-
-        builder.HasIndex(pp => pp.PermissionId)
-               .HasDatabaseName("ix_lumen_permission_profile_permission_id");
+        // Filtered unique index on (PermissionId, ProfileId) and lookup index on PermissionId are
+        // registered in LumenAuthorizationDbContext.ApplyProviderAwareConfigurations with dialect-correct syntax.
     }
 }

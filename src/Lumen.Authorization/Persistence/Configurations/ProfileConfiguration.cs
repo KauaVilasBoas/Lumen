@@ -33,9 +33,7 @@ internal sealed class ProfileConfiguration : IEntityTypeConfiguration<Profile>
         builder.Property(p => p.DeletedAt)
                .UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        builder.HasIndex(p => p.Name)
-               .IsUnique()
-               .HasFilter("[IsDeleted] = 0")
-               .HasDatabaseName("ix_lumen_profile_name_unique");
+        // Filtered unique index on Name is registered in LumenAuthorizationDbContext.ApplyProviderAwareConfigurations
+        // with dialect-correct syntax (SQL Server vs PostgreSQL).
     }
 }

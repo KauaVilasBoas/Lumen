@@ -49,10 +49,8 @@ internal sealed class PermissionConfiguration : IEntityTypeConfiguration<Permiss
         builder.Property(p => p.DeletedAt)
                .UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        builder.HasIndex(p => p.Code)
-               .IsUnique()
-               .HasFilter("[IsDeleted] = 0")
-               .HasDatabaseName("ix_lumen_permission_code_unique");
+        // Filtered unique index on Code is registered in LumenAuthorizationDbContext.ApplyProviderAwareConfigurations
+        // with dialect-correct syntax (SQL Server vs PostgreSQL).
 
         builder.HasOne<GroupPermission>()
                .WithMany()

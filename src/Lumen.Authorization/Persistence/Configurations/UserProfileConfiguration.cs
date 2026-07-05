@@ -25,12 +25,7 @@ internal sealed class UserProfileConfiguration : IEntityTypeConfiguration<UserPr
                .HasForeignKey(up => up.ProfileId)
                .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(up => new { up.UserId, up.ProfileId })
-               .IsUnique()
-               .HasFilter("[IsDeleted] = 0")
-               .HasDatabaseName("ix_lumen_user_profile_active_unique");
-
-        builder.HasIndex(up => up.UserId)
-               .HasDatabaseName("ix_lumen_user_profile_user_id");
+        // Filtered unique index on (UserId, ProfileId) and lookup index on UserId are registered
+        // in LumenAuthorizationDbContext.ApplyProviderAwareConfigurations with dialect-correct syntax.
     }
 }

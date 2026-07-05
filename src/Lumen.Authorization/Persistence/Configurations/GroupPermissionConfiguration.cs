@@ -30,9 +30,7 @@ internal sealed class GroupPermissionConfiguration : IEntityTypeConfiguration<Gr
         builder.Property(g => g.DeletedAt)
                .UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        builder.HasIndex(g => g.Name)
-               .IsUnique()
-               .HasFilter("[IsDeleted] = 0")
-               .HasDatabaseName("ix_lumen_permission_group_name_unique");
+        // Filtered unique index on Name is registered in LumenAuthorizationDbContext.ApplyProviderAwareConfigurations
+        // with dialect-correct syntax (SQL Server vs PostgreSQL).
     }
 }
