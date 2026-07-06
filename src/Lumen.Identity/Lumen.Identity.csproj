@@ -1,0 +1,67 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <Version>$(LumenIdentityVersion)</Version>
+    <PackageId>Lumen.Identity</PackageId>
+    <Authors>$(LumenPackageAuthors)</Authors>
+    <Company>$(LumenPackageCompany)</Company>
+    <Product>$(LumenPackageProduct)</Product>
+    <Description>Core of Lumen.Identity: user domain (User, tokens, lockout), JWT/HS256 with refresh-token rotation, BCrypt, email confirmation, password reset, and integration bridges (IAuthorizationUserSource, IUserDirectory) for Lumen.Authorization. DI entry-point: AddLumenIdentity().</Description>
+    <PackageTags>identity;authentication;authn;jwt;aspnetcore;lumen;efcore;sqlserver;postgresql;cqrs</PackageTags>
+    <PackageLicenseExpression>$(LumenPackageLicenseExpression)</PackageLicenseExpression>
+    <PackageProjectUrl>$(LumenPackageProjectUrl)</PackageProjectUrl>
+    <RepositoryUrl>$(LumenRepositoryUrl)</RepositoryUrl>
+    <RepositoryType>$(LumenRepositoryType)</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>images/lumen-mark.png</PackageIcon>
+    <EnablePackageValidation>true</EnablePackageValidation>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Infrastructure\Notifications\Templates\Email\*.html" />
+    <EmbeddedResource Include="Infrastructure\Notifications\Templates\Email\*.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\docs\nuget-readme.md" Pack="true" PackagePath="\README.md" />
+    <None Include="..\Presentation\Lumen.Backoffice\wwwroot\img\brand\lumen-mark.png" Pack="true" PackagePath="images\lumen-mark.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Lumen.Authorization\Lumen.Authorization.csproj" />
+    <ProjectReference Include="..\Lumen.Authorization.Contracts\Lumen.Authorization.Contracts.csproj" />
+    <ProjectReference Include="..\SharedKernel\Lumen.SharedKernel\Lumen.SharedKernel.csproj" />
+    <ProjectReference Include="..\BuildingBlocks\Lumen.Modularity\Lumen.Modularity.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BCrypt.Net-Next" />
+    <PackageReference Include="FluentValidation" />
+    <PackageReference Include="MailKit" />
+    <PackageReference Include="MediatR" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" />
+    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Lumen.Identity.Migrations" />
+    <InternalsVisibleTo Include="Lumen.Identity.Migrations.PostgreSQL" />
+    <InternalsVisibleTo Include="Lumen.Identity.Tests" />
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+  </ItemGroup>
+
+</Project>
