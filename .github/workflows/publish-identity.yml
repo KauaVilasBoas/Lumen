@@ -1,17 +1,17 @@
-name: Publish Lumen.Authorization packages
+name: Publish Lumen.Identity packages
 
 on:
   push:
-    tags: ['authorization-v*']
+    tags: ['identity-v*']
   workflow_dispatch:
     inputs:
       version:
-        description: 'Versão dos pacotes (ex.: 1.1.0)'
+        description: 'Versão dos pacotes (ex.: 1.0.0)'
         required: true
 
 jobs:
   publish:
-    name: Pack & push Lumen.Authorization*
+    name: Pack & push Lumen.Identity*
     runs-on: ubuntu-latest
 
     permissions:
@@ -29,7 +29,7 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      # Em push de tag a versão vem do nome da tag (authorization-v1.1.0 -> 1.1.0);
+      # Em push de tag a versão vem do nome da tag (identity-v1.0.0 -> 1.0.0);
       # em execução manual vem do input.
       - name: Resolve version
         id: version
@@ -37,20 +37,18 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "value=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
           else
-            echo "value=${GITHUB_REF_NAME#authorization-v}" >> "$GITHUB_OUTPUT"
+            echo "value=${GITHUB_REF_NAME#identity-v}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Pack
         run: |
           VERSION="${{ steps.version.outputs.value }}"
-          PACK_ARGS="-c Release -p:LumenAuthorizationVersion=${VERSION} -p:ContinuousIntegrationBuild=true --output ./artifacts"
+          PACK_ARGS="-c Release -p:LumenIdentityVersion=${VERSION} -p:ContinuousIntegrationBuild=true --output ./artifacts"
 
-          dotnet pack src/Lumen.Authorization.Contracts/Lumen.Authorization.Contracts.csproj $PACK_ARGS
-          dotnet pack src/Lumen.Authorization/Lumen.Authorization.csproj $PACK_ARGS
-          dotnet pack src/Lumen.Authorization.Migrations/Lumen.Authorization.Migrations.csproj $PACK_ARGS
-          dotnet pack src/Lumen.Authorization.Migrations.PostgreSQL/Lumen.Authorization.Migrations.PostgreSQL.csproj $PACK_ARGS
-          dotnet pack src/Lumen.Authorization.AspNetCore/Lumen.Authorization.AspNetCore.csproj $PACK_ARGS
-          dotnet pack src/Lumen.Authorization.Backoffice/Lumen.Authorization.Backoffice.csproj $PACK_ARGS
+          dotnet pack src/Lumen.Identity/Lumen.Identity.csproj $PACK_ARGS
+          dotnet pack src/Lumen.Identity.AspNetCore/Lumen.Identity.AspNetCore.csproj $PACK_ARGS
+          dotnet pack src/Lumen.Identity.Migrations/Lumen.Identity.Migrations.csproj $PACK_ARGS
+          dotnet pack src/Lumen.Identity.Migrations.PostgreSQL/Lumen.Identity.Migrations.PostgreSQL.csproj $PACK_ARGS
 
       - name: NuGet login (Trusted Publishing)
         uses: NuGet/login@v1
