@@ -21,7 +21,7 @@ public sealed class RemoveUserProfileCommandHandlerTests
         => new(_userDirectory, _profileRepository, _userProfileRepository, _eventBus);
 
     [Fact]
-    public async Task Handle_ValidRemoval_SoftDeletesAndPublishesBothEvents()
+    public async Task Handle_ValidGlobalRemoval_SoftDeletesAndPublishesBothEvents()
     {
         var userId = Guid.NewGuid();
         var profileId = Guid.NewGuid();
@@ -31,7 +31,7 @@ public sealed class RemoveUserProfileCommandHandlerTests
         _userDirectory.GetDisplayNameAsync(userId, Arg.Any<CancellationToken>()).Returns("user");
         _profileRepository.FindByIdAsync(profileId, Arg.Any<CancellationToken>()).Returns(profile);
         _userProfileRepository
-            .FindActiveAsync(userId, profileId, Arg.Any<CancellationToken>())
+            .FindActiveAsync(userId, profileId, null, Arg.Any<CancellationToken>())
             .Returns(userProfile);
 
         var handler = CreateHandler();
@@ -42,7 +42,7 @@ public sealed class RemoveUserProfileCommandHandlerTests
             Arg.Any<CancellationToken>());
 
         await _eventBus.Received(1).PublishAsync(
-            Arg.Is<UserPermissionsChangedEvent>(e => e.UserId == userId),
+            Arg.Is<UserPermissionsChangedEvent>(e => e.UserId == userId && e.ScopeId == null),
             Arg.Any<CancellationToken>());
 
         await _eventBus.Received(1).PublishAsync(
@@ -50,6 +50,29 @@ public sealed class RemoveUserProfileCommandHandlerTests
                 e.UserId == userId &&
                 e.ProfileId == profileId &&
                 e.ProfileName == "Admin"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_ValidScopedRemoval_PublishesScopedInvalidationEvent()
+    {
+        var userId = Guid.NewGuid();
+        var profileId = Guid.NewGuid();
+        var scopeId = Guid.NewGuid();
+        var profile = Profile.Create("Admin", "Administrator profile");
+        var userProfile = UserProfile.Create(userId, profileId, scopeId);
+
+        _userDirectory.GetDisplayNameAsync(userId, Arg.Any<CancellationToken>()).Returns("user");
+        _profileRepository.FindByIdAsync(profileId, Arg.Any<CancellationToken>()).Returns(profile);
+        _userProfileRepository
+            .FindActiveAsync(userId, profileId, scopeId, Arg.Any<CancellationToken>())
+            .Returns(userProfile);
+
+        var handler = CreateHandler();
+        await handler.Handle(new RemoveUserProfileCommand(userId, profileId, scopeId), CancellationToken.None);
+
+        await _eventBus.Received(1).PublishAsync(
+            Arg.Is<UserPermissionsChangedEvent>(e => e.UserId == userId && e.ScopeId == scopeId),
             Arg.Any<CancellationToken>());
     }
 
@@ -77,7 +100,7 @@ public sealed class RemoveUserProfileCommandHandlerTests
 
         _profileRepository.FindByIdAsync(profileId, Arg.Any<CancellationToken>()).Returns(profile);
         _userProfileRepository
-            .FindActiveAsync(userId, profileId, Arg.Any<CancellationToken>())
+            .FindActiveAsync(userId, profileId, null, Arg.Any<CancellationToken>())
             .Returns((UserProfile?)null);
 
         var handler = CreateHandler();

@@ -20,7 +20,7 @@ public sealed class AssignUserProfileCommandHandlerTests
         => new(_userDirectory, _profileRepository, _userProfileRepository, _eventBus);
 
     [Fact]
-    public async Task Handle_ValidAssignment_InsertsAndPublishesBothEvents()
+    public async Task Handle_ValidGlobalAssignment_InsertsAndPublishesBothEvents()
     {
         var userId = Guid.NewGuid();
         var profileId = Guid.NewGuid();
@@ -28,15 +28,19 @@ public sealed class AssignUserProfileCommandHandlerTests
 
         _userDirectory.GetDisplayNameAsync(userId, Arg.Any<CancellationToken>()).Returns("user");
         _profileRepository.FindByIdAsync(profileId, Arg.Any<CancellationToken>()).Returns(profile);
-        _userProfileRepository.FindActiveAsync(userId, profileId, Arg.Any<CancellationToken>()).Returns((UserProfile?)null);
+        _userProfileRepository
+            .FindActiveAsync(userId, profileId, null, Arg.Any<CancellationToken>())
+            .Returns((UserProfile?)null);
 
         var handler = CreateHandler();
         await handler.Handle(new AssignUserProfileCommand(userId, profileId), CancellationToken.None);
 
-        await _userProfileRepository.Received(1).InsertAsync(Arg.Any<UserProfile>(), Arg.Any<CancellationToken>());
+        await _userProfileRepository.Received(1).InsertAsync(
+            Arg.Is<UserProfile>(up => up.UserId == userId && up.ProfileId == profileId && up.ScopeId == null),
+            Arg.Any<CancellationToken>());
 
         await _eventBus.Received(1).PublishAsync(
-            Arg.Is<UserPermissionsChangedEvent>(e => e.UserId == userId),
+            Arg.Is<UserPermissionsChangedEvent>(e => e.UserId == userId && e.ScopeId == null),
             Arg.Any<CancellationToken>());
 
         await _eventBus.Received(1).PublishAsync(
@@ -44,6 +48,32 @@ public sealed class AssignUserProfileCommandHandlerTests
                 e.UserId == userId &&
                 e.ProfileId == profileId &&
                 e.ProfileName == "Admin"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_ValidScopedAssignment_InsertsWithScopeIdAndPublishesScopedEvent()
+    {
+        var userId = Guid.NewGuid();
+        var profileId = Guid.NewGuid();
+        var scopeId = Guid.NewGuid();
+        var profile = Profile.Create("Admin", "Administrator profile");
+
+        _userDirectory.GetDisplayNameAsync(userId, Arg.Any<CancellationToken>()).Returns("user");
+        _profileRepository.FindByIdAsync(profileId, Arg.Any<CancellationToken>()).Returns(profile);
+        _userProfileRepository
+            .FindActiveAsync(userId, profileId, scopeId, Arg.Any<CancellationToken>())
+            .Returns((UserProfile?)null);
+
+        var handler = CreateHandler();
+        await handler.Handle(new AssignUserProfileCommand(userId, profileId, scopeId), CancellationToken.None);
+
+        await _userProfileRepository.Received(1).InsertAsync(
+            Arg.Is<UserProfile>(up => up.UserId == userId && up.ProfileId == profileId && up.ScopeId == scopeId),
+            Arg.Any<CancellationToken>());
+
+        await _eventBus.Received(1).PublishAsync(
+            Arg.Is<UserPermissionsChangedEvent>(e => e.UserId == userId && e.ScopeId == scopeId),
             Arg.Any<CancellationToken>());
     }
 
@@ -56,7 +86,9 @@ public sealed class AssignUserProfileCommandHandlerTests
         var existingAssignment = UserProfile.Create(userId, profileId);
 
         _profileRepository.FindByIdAsync(profileId, Arg.Any<CancellationToken>()).Returns(profile);
-        _userProfileRepository.FindActiveAsync(userId, profileId, Arg.Any<CancellationToken>()).Returns(existingAssignment);
+        _userProfileRepository
+            .FindActiveAsync(userId, profileId, null, Arg.Any<CancellationToken>())
+            .Returns(existingAssignment);
 
         var handler = CreateHandler();
         await handler.Handle(new AssignUserProfileCommand(userId, profileId), CancellationToken.None);

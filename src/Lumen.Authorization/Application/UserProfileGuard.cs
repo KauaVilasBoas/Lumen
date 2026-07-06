@@ -13,7 +13,7 @@ internal sealed class UserProfileGuard : IUserProfileGuard
     }
 
     public async Task<bool> IsUserAdministratorAsync(Guid userId, CancellationToken ct = default)
-        => await _userProfileRepository.FindActiveAsync(userId, SystemProfiles.AdministratorId, ct) is not null;
+        => await _userProfileRepository.FindActiveAsync(userId, SystemProfiles.AdministratorId, scopeId: null, ct) is not null;
 
     public async Task<int> CountActiveAdministratorsAsync(Guid administratorProfileId, CancellationToken ct = default)
     {

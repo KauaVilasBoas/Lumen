@@ -12,8 +12,10 @@ internal sealed class UserProfileRepository : IUserProfileRepository
         _dbContext = dbContext;
     }
 
-    public Task<UserProfile?> FindActiveAsync(Guid userId, Guid profileId, CancellationToken ct = default)
-        => _dbContext.UserProfiles.FirstOrDefaultAsync(up => up.UserId == userId && up.ProfileId == profileId, ct);
+    public Task<UserProfile?> FindActiveAsync(Guid userId, Guid profileId, Guid? scopeId = null, CancellationToken ct = default)
+        => _dbContext.UserProfiles.FirstOrDefaultAsync(
+            up => up.UserId == userId && up.ProfileId == profileId && up.ScopeId == scopeId,
+            ct);
 
     public async Task<IReadOnlyList<UserProfile>> ListByUserIdAsync(Guid userId, CancellationToken ct = default)
         => await _dbContext.UserProfiles.Where(up => up.UserId == userId).ToListAsync(ct);
