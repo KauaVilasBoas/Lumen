@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (#148 — Empacotar Lumen.Modules.Identity como pacote NuGet)
+- **`Lumen.Identity`** (novo pacote): núcleo plugável de autenticação — domínio de usuários (`User`, `RefreshToken`, `PasswordResetToken`, `EmailConfirmationToken`), interfaces de repositório, CQRS handlers (Login/Logout/Register/Refresh/ConfirmEmail/ForgotPassword/ResetPassword/ChangePassword/ResendConfirmation), queries (GetCurrentUser/GetDetail/List), adapters de segurança (JWT/BCrypt/PwnedPasswords/MailKit) e bridges de autorização (`IdentityAuthorizationUserSource`, `IdentityUserDirectory`). DI entry-point: `AddLumenIdentityCore(connectionString, configuration)`. Depende de `Lumen.Authorization` (Opção B): fluxo único registra AuthN + bridges em uma chamada.
+- **`Lumen.Identity.AspNetCore`** (novo pacote): integração ASP.NET Core — `AddLumenIdentity()` (umbrella: core + JWT Bearer) e `MapLumenIdentityEndpoints()` (minimal-API: login, refresh, logout, register, confirm-email, resend-confirmation, forgot-password, reset-password, change-password, me). `IdentityJwtParametersBuilder` expõe parâmetros de validação JWT sem acoplar ao `JwtService` interno.
+- **`Lumen.Identity.Migrations`** (novo pacote): migrations EF Core para SQL Server (`identity.Users/RefreshTokens/PasswordResetTokens/EmailConfirmationTokens`), hosted service `LumenIdentityMigrationsHostedService` e `IDesignTimeDbContextFactory`.
+- **`Lumen.Identity.Migrations.PostgreSQL`** (novo pacote): migrations EF Core para PostgreSQL com snake_case e tipos nativos (`uuid`, `character varying`, `timestamp with time zone`, `boolean`), filtros com sintaxe PostgreSQL (`is_deleted = false`).
+- **`LumenIdentityVersion=1.0.0`** adicionado ao `Directory.Build.props`.
+
 ## [1.0.0] - 2026-07-05
 
 > Primeira versão estável (1.0.0). Consolida a extração da capacidade de autorização do módulo Identity para a família de pacotes plugáveis **`Lumen.Authorization*`** — núcleo agnóstico de ASP.NET (`Lumen.Authorization` + `.Contracts`), cola web (`.AspNetCore`) com `[RequirePermission]` que declara e enforça, migrations (`.Migrations` para SQL Server e `.Migrations.PostgreSQL` para PostgreSQL) e backoffice montável como Razor Class Library (`.Backoffice`). Qualquer app ASP.NET Core passa a instalar autorização com `AddLumenAuthorization(connectionString)` + `[RequirePermission]` + `MapLumenBackoffice("/lumen")`, incluindo persistência **multi-provider** (SQL Server e PostgreSQL) selecionável via `DatabaseProvider`. Ver [ADR-0004](docs/adr/0004-authorization-as-library.md) e [ADR-0005](docs/adr/0005-multi-provider-database-support.md). Fecha os épicos "Lumen Authz Lib" (LIB-02…18) e "Suporte a PostgreSQL" (#146).
