@@ -29,6 +29,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`Lumen.Identity.Migrations.PostgreSQL`** (novo pacote): migrations EF Core para PostgreSQL com snake_case e tipos nativos (`uuid`, `character varying`, `timestamp with time zone`, `boolean`), filtros com sintaxe PostgreSQL (`is_deleted = false`).
 - **`LumenIdentityVersion=1.0.0`** adicionado ao `Directory.Build.props`.
 
+### Upgrade Notes — Lumen.Authorization 1.0.0 → 1.1.0
+
+Atualizar `Lumen.Authorization` (e variantes `.*`) de **1.0.0 para 1.1.0** requer **aplicar a migration de banco de dados** que adiciona a coluna `ScopeId` à tabela `UserProfiles`:
+
+- **SQL Server**: execute a migration `AddScopeIdToUserProfile` (pacote `Lumen.Authorization.Migrations`).  
+  Ou, se `ApplyMigrationsOnStartup = true`, o hosted service aplicará automaticamente no próximo startup.
+- **PostgreSQL**: execute a migration `AddScopeIdToUserProfilePostgres` (pacote `Lumen.Authorization.Migrations.PostgreSQL`).  
+  Ou, se `ApplyMigrationsOnStartup = true`, o hosted service aplicará automaticamente no próximo startup.
+
+Dados existentes (assignments globais com `ScopeId = NULL`) permanecem válidos sem alteração de dados — a migration apenas adiciona a coluna `NULL`-able e substitui o índice único `(UserId, ProfileId)` por `(UserId, ProfileId, ScopeId)`.
+
 ## [1.0.0] - 2026-07-05
 
 > Primeira versão estável (1.0.0). Consolida a extração da capacidade de autorização do módulo Identity para a família de pacotes plugáveis **`Lumen.Authorization*`** — núcleo agnóstico de ASP.NET (`Lumen.Authorization` + `.Contracts`), cola web (`.AspNetCore`) com `[RequirePermission]` que declara e enforça, migrations (`.Migrations` para SQL Server e `.Migrations.PostgreSQL` para PostgreSQL) e backoffice montável como Razor Class Library (`.Backoffice`). Qualquer app ASP.NET Core passa a instalar autorização com `AddLumenAuthorization(connectionString)` + `[RequirePermission]` + `MapLumenBackoffice("/lumen")`, incluindo persistência **multi-provider** (SQL Server e PostgreSQL) selecionável via `DatabaseProvider`. Ver [ADR-0004](docs/adr/0004-authorization-as-library.md) e [ADR-0005](docs/adr/0005-multi-provider-database-support.md). Fecha os épicos "Lumen Authz Lib" (LIB-02…18) e "Suporte a PostgreSQL" (#146).
