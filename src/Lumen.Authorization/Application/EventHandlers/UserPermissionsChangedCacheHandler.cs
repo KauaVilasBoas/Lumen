@@ -20,10 +20,11 @@ internal sealed class UserPermissionsChangedCacheHandler : IIntegrationEventHand
 
     public async Task HandleAsync(UserPermissionsChangedEvent integrationEvent, CancellationToken cancellationToken = default)
     {
-        await _cache.InvalidateAsync(integrationEvent.UserId, cancellationToken);
+        await _cache.InvalidateAsync(integrationEvent.UserId, integrationEvent.ScopeId, cancellationToken);
 
         _logger.LogInformation(
-            "Permission cache invalidated for user {UserId} due to profile/permission change.",
-            integrationEvent.UserId);
+            "Permission cache invalidated for user {UserId} scope {ScopeId} due to profile/permission change.",
+            integrationEvent.UserId,
+            integrationEvent.ScopeId);
     }
 }

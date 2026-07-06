@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [Authorization 1.1.0] - 2026-07-06
+
+> Autorização **tenant-scoped**: assignments `user → profile` ganham dimensão opcional de scope/tenant (`UserProfile.ScopeId`), com cache e enforcement isolados por scope via `ITenantScopeAccessor`. Caminho global (`ScopeId = null`) é 100% retrocompatível — código existente continua compilando e operando sem mudança. Ver [ADR-0006](docs/adr/0006-authz-tenant-scoped-permissions.md). Atualizar de 1.0.0 exige aplicar a migration `AddScopeIdToUserProfile` (ver Upgrade Notes abaixo).
+
+### Added (#147 — Autorização tenant-scoped: profiles/permissões por scope)
+
+- **`ITenantScopeAccessor`** (novo contrato público em `Lumen.Authorization.Contracts`): ponto de extensão opcional para hosts multi-tenant. Retorna o `Guid?` do scope/tenant ativo para o request corrente. Default no-op retorna `null` (comportamento global, retrocompatível). Análogo ao `IUserIdAccessor` existente. Registrado via `TryAddScoped` — host sobrescreve com `services.AddScoped<ITenantScopeAccessor, MeuAccessor>()` sem conflito.
+- **`UserProfile.ScopeId`** (nova propriedade `Guid?` em `Lumen.Authorization.Domain`): dimensão de tenant no assignment `user → profile`. `null` = global (comportamento atual, retrocompatível); `<guid>` = scoped (válido apenas para aquele tenant/company). Overload `UserProfile.Create(userId, profileId, scopeId)` adicionado; `Create(userId, profileId)` permanece inalterado e produz `ScopeId = null`.
+- **`IUserPermissionCache`** atualizado: assinaturas de `GetAsync`, `SetAsync` e `InvalidateAsync` recebem `Guid? scopeId` (parâmetro opcional com default `null`). Cache chaveado por `(userId, scopeId)` — formato `user-permissions:{userId}:{scopeId}` ou `user-permissions:{userId}:global`. Entradas de scopes distintos nunca colidem.
+- **`IUserPermissionService`** atualizado (`Contracts` e `Domain`): `GetPermissionsAsync` e `HasPermissionAsync` recebem `Guid? scopeId = null`. Default `null` mantém retrocompatibilidade total — código existente sem `scopeId` continua compilando e operando no modo global.
+- **`IProfileRepository.GetPermissionCodesByUserIdAsync`**: overload dedicado `(userId, scopeId, ct)` adicionado; assinatura original `(userId, ct)` preservada sem alteração — chamadas posicionais existentes continuam compilando sem modificação.
+- **`PermissionAuthorizationHandler`** atualizado: resolve o scope ativo via `ITenantScopeAccessor.GetCurrentScopeId()` e passa para `HasPermissionAsync`. Sem scope ativo → comportamento global inalterado.
+- **`AssignUserProfileCommand` / `RemoveUserProfileCommand`**: recebem `Guid? ScopeId = null` (opcional, retrocompatível). Handlers propagam o scope no `UserProfile.Create` e no `UserPermissionsChangedEvent`.
+- **`UserPermissionsChangedEvent`**: recebe `Guid? ScopeId = null`. O `UserPermissionsChangedCacheHandler` invalida apenas a entrada `(userId, scopeId)` afetada — não todas as entradas do usuário.
+- **ADR-0006** (`docs/adr/0006-authz-tenant-scoped-permissions.md`): documenta o modelo, alternativas rejeitadas, consequências e trade-offs.
+- **Migrations SQL Server** (`AddScopeIdToUserProfile`): adiciona coluna `ScopeId uniqueidentifier NULL`; substitui índice único `(UserId, ProfileId)` por `(UserId, ProfileId, ScopeId)` com filtro `[IsDeleted] = 0`. Dados existentes (global) permanecem válidos sem migração.
+- **Migrations PostgreSQL** (`AddScopeIdToUserProfilePostgres`): equivalente com tipo `uuid` e filtro `is_deleted = false`. Ambos os model snapshots atualizados.
+- **Testes**: 28 novos testes em `Lumen.Authorization.Tests/TenantScope/` cobrindo: unicidade de chaves de cache por scope, isolamento de permissões entre scopes, compatibilidade do caminho global (sem scope), registro e override do `ITenantScopeAccessor`, `UserProfile.Create` com scope. Testes existentes atualizados para as novas assinaturas. Total: 340 passando (baseline: 312). Zero regressões.
+
+### Upgrade Notes — Lumen.Authorization 1.0.0 → 1.1.0
+
+Atualizar `Lumen.Authorization` (e variantes `.*`) de **1.0.0 para 1.1.0** requer **aplicar a migration de banco de dados** que adiciona a coluna `ScopeId` à tabela `UserProfiles`:
+
+- **SQL Server**: execute a migration `AddScopeIdToUserProfile` (pacote `Lumen.Authorization.Migrations`).  
+  Ou, se `ApplyMigrationsOnStartup = true`, o hosted service aplicará automaticamente no próximo startup.
+- **PostgreSQL**: execute a migration `AddScopeIdToUserProfilePostgres` (pacote `Lumen.Authorization.Migrations.PostgreSQL`).  
+  Ou, se `ApplyMigrationsOnStartup = true`, o hosted service aplicará automaticamente no próximo startup.
+
+Dados existentes (assignments globais com `ScopeId = NULL`) permanecem válidos sem alteração de dados — a migration apenas adiciona a coluna `NULL`-able e substitui o índice único `(UserId, ProfileId)` por `(UserId, ProfileId, ScopeId)`.
+
+## [Identity 1.0.0] - 2026-07-06
+
+> Primeira versão da família **`Lumen.Identity*`** — autenticação plugável para ASP.NET Core empacotada como núcleo (`Lumen.Identity`: domínio de usuários, CQRS, adapters JWT/BCrypt/PwnedPasswords/MailKit, bridges de autorização), integração web com minimal-API endpoints (`.AspNetCore`) e migrations SQL Server/PostgreSQL (`.Migrations`, `.Migrations.PostgreSQL`). Wiring mínimo: `AddLumenIdentity()` + `MapLumenIdentityEndpoints()`. Depende de `Lumen.Authorization >= 1.1.0`.
+
+### Added (#148 — Empacotar Lumen.Modules.Identity como pacote NuGet)
+- **`Lumen.Identity`** (novo pacote): núcleo plugável de autenticação — domínio de usuários (`User`, `RefreshToken`, `PasswordResetToken`, `EmailConfirmationToken`), interfaces de repositório, CQRS handlers (Login/Logout/Register/Refresh/ConfirmEmail/ForgotPassword/ResetPassword/ChangePassword/ResendConfirmation), queries (GetCurrentUser/GetDetail/List), adapters de segurança (JWT/BCrypt/PwnedPasswords/MailKit) e bridges de autorização (`IdentityAuthorizationUserSource`, `IdentityUserDirectory`). DI entry-point: `AddLumenIdentityCore(connectionString, configuration)`. Depende de `Lumen.Authorization >= 1.1.0` (Opção B): fluxo único registra AuthN + bridges em uma chamada.
+- **`Lumen.Identity.AspNetCore`** (novo pacote): integração ASP.NET Core — `AddLumenIdentity()` (umbrella: core + JWT Bearer) e `MapLumenIdentityEndpoints()` (minimal-API: login, refresh, logout, register, confirm-email, resend-confirmation, forgot-password, reset-password, change-password, me). `IdentityJwtParametersBuilder` expõe parâmetros de validação JWT sem acoplar ao `JwtService` interno.
+- **`Lumen.Identity.Migrations`** (novo pacote): migrations EF Core para SQL Server (`identity.Users/RefreshTokens/PasswordResetTokens/EmailConfirmationTokens`), hosted service `LumenIdentityMigrationsHostedService` e `IDesignTimeDbContextFactory`.
+- **`Lumen.Identity.Migrations.PostgreSQL`** (novo pacote): migrations EF Core para PostgreSQL com snake_case e tipos nativos (`uuid`, `character varying`, `timestamp with time zone`, `boolean`), filtros com sintaxe PostgreSQL (`is_deleted = false`).
+- **`LumenIdentityVersion=1.0.0`** adicionado ao `Directory.Build.props`.
+
 ## [1.0.0] - 2026-07-05
 
 > Primeira versão estável (1.0.0). Consolida a extração da capacidade de autorização do módulo Identity para a família de pacotes plugáveis **`Lumen.Authorization*`** — núcleo agnóstico de ASP.NET (`Lumen.Authorization` + `.Contracts`), cola web (`.AspNetCore`) com `[RequirePermission]` que declara e enforça, migrations (`.Migrations` para SQL Server e `.Migrations.PostgreSQL` para PostgreSQL) e backoffice montável como Razor Class Library (`.Backoffice`). Qualquer app ASP.NET Core passa a instalar autorização com `AddLumenAuthorization(connectionString)` + `[RequirePermission]` + `MapLumenBackoffice("/lumen")`, incluindo persistência **multi-provider** (SQL Server e PostgreSQL) selecionável via `DatabaseProvider`. Ver [ADR-0004](docs/adr/0004-authorization-as-library.md) e [ADR-0005](docs/adr/0005-multi-provider-database-support.md). Fecha os épicos "Lumen Authz Lib" (LIB-02…18) e "Suporte a PostgreSQL" (#146).

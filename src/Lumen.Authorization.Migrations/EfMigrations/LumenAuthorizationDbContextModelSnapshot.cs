@@ -185,6 +185,9 @@ namespace Lumen.Authorization.Migrations.EfMigrations
                     b.Property<Guid>("ProfileId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("ScopeId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
 
@@ -195,7 +198,7 @@ namespace Lumen.Authorization.Migrations.EfMigrations
                     b.HasIndex("UserId")
                         .HasDatabaseName("ix_lumen_user_profile_user_id");
 
-                    b.HasIndex("UserId", "ProfileId")
+                    b.HasIndex("UserId", "ProfileId", "ScopeId")
                         .IsUnique()
                         .HasDatabaseName("ix_lumen_user_profile_active_unique")
                         .HasFilter("[IsDeleted] = 0");

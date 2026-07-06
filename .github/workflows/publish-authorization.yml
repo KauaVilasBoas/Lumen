@@ -2,11 +2,11 @@ name: Publish Lumen.Authorization packages
 
 on:
   push:
-    tags: ['v*']
+    tags: ['authorization-v*']
   workflow_dispatch:
     inputs:
       version:
-        description: 'Versão dos pacotes (ex.: 0.2.0)'
+        description: 'Versão dos pacotes (ex.: 1.1.0)'
         required: true
 
 jobs:
@@ -29,7 +29,7 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      # Em push de tag a versão vem do nome da tag (v0.1.0 -> 0.1.0);
+      # Em push de tag a versão vem do nome da tag (authorization-v1.1.0 -> 1.1.0);
       # em execução manual vem do input.
       - name: Resolve version
         id: version
@@ -37,7 +37,7 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "value=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
           else
-            echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+            echo "value=${GITHUB_REF_NAME#authorization-v}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Pack

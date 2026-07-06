@@ -12,7 +12,7 @@ public sealed class UserPermissionsChangedCacheHandlerTests
     private readonly IUserPermissionCache _cache = Substitute.For<IUserPermissionCache>();
 
     [Fact]
-    public async Task HandleAsync_InvalidatesCacheForUser()
+    public async Task HandleAsync_GlobalEvent_InvalidatesCacheWithNullScope()
     {
         var userId = Guid.NewGuid();
         var handler = new UserPermissionsChangedCacheHandler(
@@ -21,6 +21,23 @@ public sealed class UserPermissionsChangedCacheHandlerTests
 
         await handler.HandleAsync(new UserPermissionsChangedEvent(userId), CancellationToken.None);
 
-        await _cache.Received(1).InvalidateAsync(userId, Arg.Any<CancellationToken>());
+        // ScopeId defaults to null — invalidates the global permission cache entry.
+        await _cache.Received(1).InvalidateAsync(userId, null, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_ScopedEvent_InvalidatesCacheForSpecificScope()
+    {
+        var userId = Guid.NewGuid();
+        var scopeId = Guid.NewGuid();
+        var handler = new UserPermissionsChangedCacheHandler(
+            _cache,
+            NullLogger<UserPermissionsChangedCacheHandler>.Instance);
+
+        await handler.HandleAsync(new UserPermissionsChangedEvent(userId, scopeId), CancellationToken.None);
+
+        // Only the targeted (userId, scopeId) cache entry is invalidated, not global.
+        await _cache.Received(1).InvalidateAsync(userId, scopeId, Arg.Any<CancellationToken>());
+        await _cache.DidNotReceive().InvalidateAsync(userId, null, Arg.Any<CancellationToken>());
     }
 }

@@ -1,0 +1,64 @@
+name: Publish Lumen.Identity packages
+
+on:
+  push:
+    tags: ['identity-v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versão dos pacotes (ex.: 1.0.0)'
+        required: true
+
+jobs:
+  publish:
+    name: Pack & push Lumen.Identity*
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      # Em push de tag a versão vem do nome da tag (identity-v1.0.0 -> 1.0.0);
+      # em execução manual vem do input.
+      - name: Resolve version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "value=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=${GITHUB_REF_NAME#identity-v}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Pack
+        run: |
+          VERSION="${{ steps.version.outputs.value }}"
+          PACK_ARGS="-c Release -p:LumenIdentityVersion=${VERSION} -p:ContinuousIntegrationBuild=true --output ./artifacts"
+
+          dotnet pack src/Lumen.Identity/Lumen.Identity.csproj $PACK_ARGS
+          dotnet pack src/Lumen.Identity.AspNetCore/Lumen.Identity.AspNetCore.csproj $PACK_ARGS
+          dotnet pack src/Lumen.Identity.Migrations/Lumen.Identity.Migrations.csproj $PACK_ARGS
+          dotnet pack src/Lumen.Identity.Migrations.PostgreSQL/Lumen.Identity.Migrations.PostgreSQL.csproj $PACK_ARGS
+
+      - name: NuGet login (Trusted Publishing)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: kauavilasboas
+
+      - name: Push to nuget.org
+        run: >
+          dotnet nuget push "./artifacts/*.nupkg"
+          --api-key ${{ steps.login.outputs.NUGET_API_KEY }}
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate

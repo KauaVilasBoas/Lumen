@@ -187,6 +187,9 @@ namespace Lumen.Authorization.Migrations.PostgreSQL.EfMigrations
                     b.Property<Guid>("ProfileId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("ScopeId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
@@ -198,7 +201,7 @@ namespace Lumen.Authorization.Migrations.PostgreSQL.EfMigrations
                     b.HasIndex("UserId")
                         .HasDatabaseName("ix_lumen_user_profile_user_id");
 
-                    b.HasIndex("UserId", "ProfileId")
+                    b.HasIndex("UserId", "ProfileId", "ScopeId")
                         .IsUnique()
                         .HasDatabaseName("ix_lumen_user_profile_active_unique")
                         .HasFilter("is_deleted = false");

@@ -73,9 +73,10 @@ internal sealed class LumenAuthorizationDbContext : DbContext
             .HasFilter(isPostgres ? "is_deleted = false" : "[IsDeleted] = 0")
             .HasDatabaseName("ix_lumen_permission_group_name_unique");
 
-        // UserProfile: unique active assignment per user+profile
+        // UserProfile: unique active assignment per (user, profile, scope).
+        // ScopeId is nullable — the index covers both scoped and global (null) assignments.
         modelBuilder.Entity<UserProfile>()
-            .HasIndex(up => new { up.UserId, up.ProfileId })
+            .HasIndex(up => new { up.UserId, up.ProfileId, up.ScopeId })
             .IsUnique()
             .HasFilter(isPostgres ? "is_deleted = false" : "[IsDeleted] = 0")
             .HasDatabaseName("ix_lumen_user_profile_active_unique");
