@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Lumen.Identity.Infrastructure.Configuration;
 
-internal sealed class IdentityJwtOptions
+public sealed class IdentityJwtOptions
 {
     public const string SectionName = "Jwt";
 

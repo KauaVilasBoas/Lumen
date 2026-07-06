@@ -70,7 +70,7 @@ internal sealed class JwtService : IJwtService
         }
     }
 
-    internal static TokenValidationParameters BuildValidationParameters(IdentityJwtOptions options)
+    public static TokenValidationParameters BuildValidationParameters(IdentityJwtOptions options)
     {
         return new TokenValidationParameters
         {

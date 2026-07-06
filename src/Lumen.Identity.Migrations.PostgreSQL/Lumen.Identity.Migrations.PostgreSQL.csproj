@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Lumen.Identity.Migrations.PostgreSQL</RootNamespace>
+    <AssemblyName>Lumen.Identity.Migrations.PostgreSQL</AssemblyName>
+    <IsPackable>true</IsPackable>
+    <Version>$(LumenIdentityVersion)</Version>
+    <PackageId>Lumen.Identity.Migrations.PostgreSQL</PackageId>
+    <Authors>$(LumenPackageAuthors)</Authors>
+    <Company>$(LumenPackageCompany)</Company>
+    <Product>$(LumenPackageProduct)</Product>
+    <Description>EF Core migrations for the Lumen.Identity schema (PostgreSQL, snake_case). Includes a hosted service that applies migrations automatically on startup. Add this package alongside Lumen.Identity when targeting PostgreSQL.</Description>
+    <PackageTags>identity;authentication;lumen;efcore;migrations;postgresql;npgsql</PackageTags>
+    <PackageLicenseExpression>$(LumenPackageLicenseExpression)</PackageLicenseExpression>
+    <PackageProjectUrl>$(LumenPackageProjectUrl)</PackageProjectUrl>
+    <RepositoryUrl>$(LumenRepositoryUrl)</RepositoryUrl>
+    <RepositoryType>$(LumenRepositoryType)</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>images/lumen-mark.png</PackageIcon>
+    <EnablePackageValidation>true</EnablePackageValidation>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\docs\nuget-readme.md" Pack="true" PackagePath="\README.md" />
+    <None Include="..\Presentation\Lumen.Backoffice\wwwroot\img\brand\lumen-mark.png" Pack="true" PackagePath="images\lumen-mark.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Lumen.Identity\Lumen.Identity.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+  </ItemGroup>
+
+</Project>
