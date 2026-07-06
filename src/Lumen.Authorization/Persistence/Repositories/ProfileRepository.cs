@@ -91,9 +91,12 @@ internal sealed class ProfileRepository : IProfileRepository
         await _dbContext.SaveChangesAsync(ct);
     }
 
+    public Task<HashSet<string>> GetPermissionCodesByUserIdAsync(Guid userId, CancellationToken ct = default)
+        => GetPermissionCodesByUserIdAsync(userId, scopeId: null, ct);
+
     public async Task<HashSet<string>> GetPermissionCodesByUserIdAsync(
         Guid userId,
-        Guid? scopeId = null,
+        Guid? scopeId,
         CancellationToken ct = default)
     {
         var codes = await _dbContext.UserProfiles
