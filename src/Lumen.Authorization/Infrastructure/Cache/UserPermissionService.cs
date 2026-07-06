@@ -20,25 +20,35 @@ internal sealed class UserPermissionService : Domain.IUserPermissionService, Con
         _logger = logger;
     }
 
-    public async Task<HashSet<string>> GetPermissionsAsync(Guid userId, CancellationToken cancellationToken = default)
+    public async Task<HashSet<string>> GetPermissionsAsync(
+        Guid userId,
+        Guid? scopeId = null,
+        CancellationToken cancellationToken = default)
     {
-        var cached = await _cache.GetAsync(userId, cancellationToken);
+        var cached = await _cache.GetAsync(userId, scopeId, cancellationToken);
 
         if (cached is not null)
             return cached;
 
-        _logger.LogDebug("Permission cache miss for user {UserId}. Falling back to database.", userId);
+        _logger.LogDebug(
+            "Permission cache miss for user {UserId} scope {ScopeId}. Falling back to database.",
+            userId,
+            scopeId);
 
-        var fromDb = await _profileRepository.GetPermissionCodesByUserIdAsync(userId, cancellationToken);
+        var fromDb = await _profileRepository.GetPermissionCodesByUserIdAsync(userId, scopeId, cancellationToken);
 
-        await _cache.SetAsync(userId, fromDb, cancellationToken);
+        await _cache.SetAsync(userId, scopeId, fromDb, cancellationToken);
 
         return fromDb;
     }
 
-    public async Task<bool> HasPermissionAsync(Guid userId, string permissionCode, CancellationToken cancellationToken = default)
+    public async Task<bool> HasPermissionAsync(
+        Guid userId,
+        string permissionCode,
+        Guid? scopeId = null,
+        CancellationToken cancellationToken = default)
     {
-        var permissions = await GetPermissionsAsync(userId, cancellationToken);
+        var permissions = await GetPermissionsAsync(userId, scopeId, cancellationToken);
         return permissions.Contains(permissionCode);
     }
 }

@@ -46,7 +46,7 @@ internal sealed class GetUserDetailQueryHandler
             ?? throw new NotFoundException($"User '{query.UserId}' was not found.");
 
         var profiles = await _profileRepository.GetProfilesByUserIdAsync(query.UserId, ct);
-        var permissionCodes = await _profileRepository.GetPermissionCodesByUserIdAsync(query.UserId, ct);
+        var permissionCodes = await _profileRepository.GetPermissionCodesByUserIdAsync(query.UserId, scopeId: null, ct);
 
         var profileSummaries = await BuildProfileSummariesAsync(profiles, ct);
 

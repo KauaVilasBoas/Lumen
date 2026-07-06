@@ -28,7 +28,14 @@ public interface IProfileRepository
 
     Task UpdateAsync(Profile profile, CancellationToken ct = default);
 
-    Task<HashSet<string>> GetPermissionCodesByUserIdAsync(Guid userId, CancellationToken ct = default);
+    /// <summary>
+    /// Returns the active permission codes for <paramref name="userId"/> filtered by scope.
+    /// Pass <c>null</c> for global assignments (where <c>ScopeId IS NULL</c>).
+    /// </summary>
+    Task<HashSet<string>> GetPermissionCodesByUserIdAsync(
+        Guid userId,
+        Guid? scopeId = null,
+        CancellationToken ct = default);
 
     Task<bool> ActiveNameExistsAsync(string name, Guid? excludeId, CancellationToken ct = default);
 

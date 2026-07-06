@@ -29,7 +29,7 @@ public sealed class AuthorizationGraphHubTests
         var userId = Guid.NewGuid();
         SetupCallerWithSubject(userId.ToString());
         _permissionService
-            .HasPermissionAsync(userId, PermissionCodes.AuthorizationGraph.View, Arg.Any<CancellationToken>())
+            .HasPermissionAsync(userId, PermissionCodes.AuthorizationGraph.View, Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
             .Returns(true);
 
         await _sut.OnConnectedAsync();
@@ -43,7 +43,7 @@ public sealed class AuthorizationGraphHubTests
         var userId = Guid.NewGuid();
         SetupCallerWithSubject(userId.ToString());
         _permissionService
-            .HasPermissionAsync(userId, PermissionCodes.AuthorizationGraph.View, Arg.Any<CancellationToken>())
+            .HasPermissionAsync(userId, PermissionCodes.AuthorizationGraph.View, Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
             .Returns(false);
 
         await _sut.OnConnectedAsync();
@@ -60,7 +60,7 @@ public sealed class AuthorizationGraphHubTests
 
         _context.Received(1).Abort();
         await _permissionService.DidNotReceive()
-            .HasPermissionAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+            .HasPermissionAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -72,7 +72,7 @@ public sealed class AuthorizationGraphHubTests
 
         _context.Received(1).Abort();
         await _permissionService.DidNotReceive()
-            .HasPermissionAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+            .HasPermissionAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
     }
 
     private void SetupCallerWithSubject(string subject)

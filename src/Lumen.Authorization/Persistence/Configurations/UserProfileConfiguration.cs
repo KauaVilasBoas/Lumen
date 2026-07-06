@@ -14,6 +14,9 @@ internal sealed class UserProfileConfiguration : IEntityTypeConfiguration<UserPr
 
         builder.Property(up => up.Id).ValueGeneratedNever();
 
+        builder.Property(up => up.ScopeId)
+               .IsRequired(false);
+
         builder.Property(up => up.IsDeleted)
                .UsePropertyAccessMode(PropertyAccessMode.Field);
 
@@ -25,7 +28,8 @@ internal sealed class UserProfileConfiguration : IEntityTypeConfiguration<UserPr
                .HasForeignKey(up => up.ProfileId)
                .OnDelete(DeleteBehavior.Restrict);
 
-        // Filtered unique index on (UserId, ProfileId) and lookup index on UserId are registered
-        // in LumenAuthorizationDbContext.ApplyProviderAwareConfigurations with dialect-correct syntax.
+        // Filtered unique index on (UserId, ProfileId, ScopeId) and lookup index on UserId are
+        // registered in LumenAuthorizationDbContext.ApplyProviderAwareConfigurations with
+        // dialect-correct syntax (SQL Server vs PostgreSQL).
     }
 }

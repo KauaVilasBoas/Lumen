@@ -11,13 +11,16 @@ public sealed class PermissionAuthorizationHandler
 {
     private readonly IUserPermissionService _permissionService;
     private readonly IUserIdAccessor _userIdAccessor;
+    private readonly ITenantScopeAccessor _tenantScopeAccessor;
 
     public PermissionAuthorizationHandler(
         IUserPermissionService permissionService,
-        IUserIdAccessor userIdAccessor)
+        IUserIdAccessor userIdAccessor,
+        ITenantScopeAccessor tenantScopeAccessor)
     {
         _permissionService = permissionService;
         _userIdAccessor = userIdAccessor;
+        _tenantScopeAccessor = tenantScopeAccessor;
     }
 
     protected override async Task HandleRequirementAsync(
@@ -32,7 +35,9 @@ public sealed class PermissionAuthorizationHandler
         if (code is null)
             return;
 
-        var hasPermission = await _permissionService.HasPermissionAsync(userId, code);
+        var scopeId = _tenantScopeAccessor.GetCurrentScopeId();
+
+        var hasPermission = await _permissionService.HasPermissionAsync(userId, code, scopeId);
 
         if (hasPermission)
             context.Succeed(requirement);

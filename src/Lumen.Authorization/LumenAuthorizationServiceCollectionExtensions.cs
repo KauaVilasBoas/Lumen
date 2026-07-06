@@ -118,6 +118,7 @@ public static class LumenAuthorizationServiceCollectionExtensions
 
         services.TryAddScoped<IUserDirectory, NoOpUserDirectory>();
         services.TryAddScoped<IAuthorizationUserSource, EmptyAuthorizationUserSource>();
+        services.TryAddScoped<ITenantScopeAccessor, NoOpTenantScopeAccessor>();
 
         services.AddMediatR(cfg =>
         {

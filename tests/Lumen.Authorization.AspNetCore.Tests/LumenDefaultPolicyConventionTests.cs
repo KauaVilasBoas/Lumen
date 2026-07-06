@@ -21,7 +21,9 @@ public sealed class LumenDefaultPolicyConventionTests
     {
         _permissionService = Substitute.For<IUserPermissionService>();
         var accessor = new ClaimsUserIdAccessor(Options.Create(new LumenAuthorizationOptions()));
-        _handler = new PermissionAuthorizationHandler(_permissionService, accessor);
+        var noOpScopeAccessor = Substitute.For<ITenantScopeAccessor>();
+        noOpScopeAccessor.GetCurrentScopeId().Returns((Guid?)null);
+        _handler = new PermissionAuthorizationHandler(_permissionService, accessor, noOpScopeAccessor);
     }
 
     [Fact]
@@ -33,7 +35,7 @@ public sealed class LumenDefaultPolicyConventionTests
             nameof(FakeOrdersController.Index));
         var context = BuildContext(userId, requirement, httpContext);
 
-        _permissionService.HasPermissionAsync(userId, "FakeOrders.Index", Arg.Any<CancellationToken>())
+        _permissionService.HasPermissionAsync(userId, "FakeOrders.Index", null, Arg.Any<CancellationToken>())
             .Returns(true);
 
         await _handler.HandleAsync(context);
@@ -50,7 +52,7 @@ public sealed class LumenDefaultPolicyConventionTests
             nameof(FakeOrdersController.Index));
         var context = BuildContext(userId, requirement, httpContext);
 
-        _permissionService.HasPermissionAsync(userId, "FakeOrders.Index", Arg.Any<CancellationToken>())
+        _permissionService.HasPermissionAsync(userId, "FakeOrders.Index", null, Arg.Any<CancellationToken>())
             .Returns(false);
 
         await _handler.HandleAsync(context);

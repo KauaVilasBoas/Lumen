@@ -15,13 +15,16 @@ namespace Lumen.Authorization.AspNetCore.Tests;
 public sealed class PermissionAuthorizationHandlerTests
 {
     private readonly IUserPermissionService _permissionService;
+    private readonly ITenantScopeAccessor _noOpScopeAccessor;
     private readonly IAuthorizationHandler _handler;
 
     public PermissionAuthorizationHandlerTests()
     {
         _permissionService = Substitute.For<IUserPermissionService>();
         var accessor = new ClaimsUserIdAccessor(Options.Create(new LumenAuthorizationOptions()));
-        _handler = new PermissionAuthorizationHandler(_permissionService, accessor);
+        _noOpScopeAccessor = Substitute.For<ITenantScopeAccessor>();
+        _noOpScopeAccessor.GetCurrentScopeId().Returns((Guid?)null);
+        _handler = new PermissionAuthorizationHandler(_permissionService, accessor, _noOpScopeAccessor);
     }
 
     [Fact]
@@ -31,7 +34,7 @@ public sealed class PermissionAuthorizationHandlerTests
         var requirement = new PermissionRequirement("Users.List");
         var context = BuildContext(userId, requirement, httpContext: null);
 
-        _permissionService.HasPermissionAsync(userId, "Users.List", Arg.Any<CancellationToken>())
+        _permissionService.HasPermissionAsync(userId, "Users.List", null, Arg.Any<CancellationToken>())
             .Returns(true);
 
         await _handler.HandleAsync(context);
@@ -46,7 +49,7 @@ public sealed class PermissionAuthorizationHandlerTests
         var requirement = new PermissionRequirement("Users.List");
         var context = BuildContext(userId, requirement, httpContext: null);
 
-        _permissionService.HasPermissionAsync(userId, "Users.List", Arg.Any<CancellationToken>())
+        _permissionService.HasPermissionAsync(userId, "Users.List", null, Arg.Any<CancellationToken>())
             .Returns(false);
 
         await _handler.HandleAsync(context);
@@ -62,7 +65,7 @@ public sealed class PermissionAuthorizationHandlerTests
         var httpContext = BuildHttpContextWithActionDescriptor<FakeUsersController>(nameof(FakeUsersController.List));
         var context = BuildContext(userId, requirement, httpContext);
 
-        _permissionService.HasPermissionAsync(userId, "FakeUsers.List", Arg.Any<CancellationToken>())
+        _permissionService.HasPermissionAsync(userId, "FakeUsers.List", null, Arg.Any<CancellationToken>())
             .Returns(true);
 
         await _handler.HandleAsync(context);
@@ -79,7 +82,7 @@ public sealed class PermissionAuthorizationHandlerTests
             nameof(FakeDiagnosticsController.GetCacheStats));
         var context = BuildContext(userId, requirement, httpContext);
 
-        _permissionService.HasPermissionAsync(userId, "FakeDiagnostics.GetCacheStats", Arg.Any<CancellationToken>())
+        _permissionService.HasPermissionAsync(userId, "FakeDiagnostics.GetCacheStats", null, Arg.Any<CancellationToken>())
             .Returns(false);
 
         await _handler.HandleAsync(context);
@@ -97,7 +100,7 @@ public sealed class PermissionAuthorizationHandlerTests
         await _handler.HandleAsync(authContext);
 
         await _permissionService.DidNotReceive()
-            .HasPermissionAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+            .HasPermissionAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
         authContext.HasSucceeded.Should().BeFalse();
     }
 
@@ -111,7 +114,7 @@ public sealed class PermissionAuthorizationHandlerTests
         await _handler.HandleAsync(authContext);
 
         await _permissionService.DidNotReceive()
-            .HasPermissionAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+            .HasPermissionAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -125,7 +128,7 @@ public sealed class PermissionAuthorizationHandlerTests
 
         context.HasSucceeded.Should().BeFalse();
         await _permissionService.DidNotReceive()
-            .HasPermissionAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+            .HasPermissionAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -135,7 +138,9 @@ public sealed class PermissionAuthorizationHandlerTests
         var options = Options.Create(new LumenAuthorizationOptions { UserIdClaimType = customClaimType });
         var accessor = new ClaimsUserIdAccessor(options);
         var permissionService = Substitute.For<IUserPermissionService>();
-        var handler = new PermissionAuthorizationHandler(permissionService, accessor);
+        var scopeAccessor = Substitute.For<ITenantScopeAccessor>();
+        scopeAccessor.GetCurrentScopeId().Returns((Guid?)null);
+        var handler = new PermissionAuthorizationHandler(permissionService, accessor, scopeAccessor);
 
         var userId = Guid.NewGuid();
         var identity = new ClaimsIdentity([new Claim(customClaimType, userId.ToString())]);
@@ -143,7 +148,7 @@ public sealed class PermissionAuthorizationHandlerTests
         var requirement = new PermissionRequirement("Users.List");
         var context = new AuthorizationHandlerContext([requirement], user, resource: null);
 
-        permissionService.HasPermissionAsync(userId, "Users.List", Arg.Any<CancellationToken>())
+        permissionService.HasPermissionAsync(userId, "Users.List", null, Arg.Any<CancellationToken>())
             .Returns(true);
 
         await handler.HandleAsync(context);
@@ -158,7 +163,9 @@ public sealed class PermissionAuthorizationHandlerTests
         var options = Options.Create(new LumenAuthorizationOptions { UserIdClaimType = customClaimType });
         var accessor = new ClaimsUserIdAccessor(options);
         var permissionService = Substitute.For<IUserPermissionService>();
-        var handler = new PermissionAuthorizationHandler(permissionService, accessor);
+        var scopeAccessor = Substitute.For<ITenantScopeAccessor>();
+        scopeAccessor.GetCurrentScopeId().Returns((Guid?)null);
+        var handler = new PermissionAuthorizationHandler(permissionService, accessor, scopeAccessor);
 
         var userId = Guid.NewGuid();
         var identity = new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, userId.ToString())]);
@@ -171,7 +178,50 @@ public sealed class PermissionAuthorizationHandlerTests
         context.HasSucceeded.Should().BeFalse(
             because: "the handler must read from the configured claim type only");
         await permissionService.DidNotReceive()
-            .HasPermissionAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+            .HasPermissionAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleRequirement_WithActiveTenantScope_PassesScopeIdToPermissionService()
+    {
+        var userId = Guid.NewGuid();
+        var scopeId = Guid.NewGuid();
+        var requirement = new PermissionRequirement("Users.List");
+
+        var permissionService = Substitute.For<IUserPermissionService>();
+        var accessor = new ClaimsUserIdAccessor(Options.Create(new LumenAuthorizationOptions()));
+        var scopeAccessor = Substitute.For<ITenantScopeAccessor>();
+        scopeAccessor.GetCurrentScopeId().Returns(scopeId);
+        var handler = new PermissionAuthorizationHandler(permissionService, accessor, scopeAccessor);
+
+        var context = BuildContext(userId, requirement, httpContext: null);
+
+        permissionService.HasPermissionAsync(userId, "Users.List", scopeId, Arg.Any<CancellationToken>())
+            .Returns(true);
+
+        await handler.HandleAsync(context);
+
+        context.HasSucceeded.Should().BeTrue(
+            because: "when a tenant scope is active the handler must evaluate scoped permissions");
+        await permissionService.Received(1)
+            .HasPermissionAsync(userId, "Users.List", scopeId, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleRequirement_NoActiveTenantScope_PassesNullScopeToPermissionService()
+    {
+        var userId = Guid.NewGuid();
+        var requirement = new PermissionRequirement("Users.List");
+
+        var context = BuildContext(userId, requirement, httpContext: null);
+
+        _permissionService.HasPermissionAsync(userId, "Users.List", null, Arg.Any<CancellationToken>())
+            .Returns(true);
+
+        await _handler.HandleAsync(context);
+
+        await _permissionService.Received(1)
+            .HasPermissionAsync(userId, "Users.List", (Guid?)null, Arg.Any<CancellationToken>());
     }
 
     private static AuthorizationHandlerContext BuildContext(

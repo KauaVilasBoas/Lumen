@@ -28,7 +28,7 @@ public static class HasPermissionHtmlHelperExtensions
         var normalizedController = ControllerNameNormalizer.Normalize(controller);
         var permissionCode = $"{normalizedController}.{action}";
 
-        return await permissionService.HasPermissionAsync(userId, permissionCode, cancellationToken);
+        return await permissionService.HasPermissionAsync(userId, permissionCode, scopeId: null, cancellationToken);
     }
 
     public static async Task<IHtmlContent> RenderIfPermittedAsync(

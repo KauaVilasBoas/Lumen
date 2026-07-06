@@ -3,6 +3,7 @@ using System;
 using Lumen.Authorization.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Lumen.Authorization.Migrations.PostgreSQL.EfMigrations
 {
     [DbContext(typeof(LumenAuthorizationDbContext))]
-    partial class LumenAuthorizationPostgresDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260706000000_AddScopeIdToUserProfilePostgres")]
+    partial class AddScopeIdToUserProfilePostgres
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -100,8 +103,7 @@ namespace Lumen.Authorization.Migrations.PostgreSQL.EfMigrations
                         .HasDatabaseName("ix_lumen_permission_code_unique")
                         .HasFilter("is_deleted = false");
 
-                    b.HasIndex("GroupPermissionId")
-                        .HasDatabaseName("IX_Permission_GroupPermissionId");
+                    b.HasIndex("GroupPermissionId");
 
                     b.ToTable("Permission", "Lumen");
                 });
@@ -128,8 +130,7 @@ namespace Lumen.Authorization.Migrations.PostgreSQL.EfMigrations
                     b.HasIndex("PermissionId")
                         .HasDatabaseName("ix_lumen_permission_profile_permission_id");
 
-                    b.HasIndex("ProfileId")
-                        .HasDatabaseName("IX_PermissionProfile_ProfileId");
+                    b.HasIndex("ProfileId");
 
                     b.HasIndex("PermissionId", "ProfileId")
                         .IsUnique()
