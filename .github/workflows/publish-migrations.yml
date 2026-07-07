@@ -1,0 +1,48 @@
+name: Publish Lumen migrations patches
+
+# Publica pacotes de migrations individuais (patch) sem republicar a família
+# inteira. A versão de cada pacote vem do <Version> explícito no próprio .csproj.
+# Use quando só as migrations mudam (ex.: regeneração/fix), mantendo o resto da
+# família na versão atual.
+on:
+  workflow_dispatch:
+
+jobs:
+  publish:
+    name: Pack & push Lumen migrations patches
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Pack
+        run: |
+          PACK_ARGS="-c Release -p:ContinuousIntegrationBuild=true --output ./artifacts"
+
+          dotnet pack src/Lumen.Authorization.Migrations.PostgreSQL/Lumen.Authorization.Migrations.PostgreSQL.csproj $PACK_ARGS
+          dotnet pack src/Lumen.Identity.Migrations.PostgreSQL/Lumen.Identity.Migrations.PostgreSQL.csproj $PACK_ARGS
+
+      - name: NuGet login (Trusted Publishing)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: kauavilasboas
+
+      - name: Push to nuget.org
+        run: >
+          dotnet nuget push "./artifacts/*.nupkg"
+          --api-key ${{ steps.login.outputs.NUGET_API_KEY }}
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate
