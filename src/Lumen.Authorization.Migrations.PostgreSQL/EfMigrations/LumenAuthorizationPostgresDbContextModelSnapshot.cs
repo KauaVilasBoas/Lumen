@@ -48,7 +48,7 @@ namespace Lumen.Authorization.Migrations.PostgreSQL.EfMigrations
                     b.HasIndex("Name")
                         .IsUnique()
                         .HasDatabaseName("ix_lumen_permission_group_name_unique")
-                        .HasFilter("is_deleted = false");
+                        .HasFilter("\"IsDeleted\" = false");
 
                     b.ToTable("PermissionGroup", "Lumen");
                 });
@@ -98,7 +98,7 @@ namespace Lumen.Authorization.Migrations.PostgreSQL.EfMigrations
                     b.HasIndex("Code")
                         .IsUnique()
                         .HasDatabaseName("ix_lumen_permission_code_unique")
-                        .HasFilter("is_deleted = false");
+                        .HasFilter("\"IsDeleted\" = false");
 
                     b.HasIndex("GroupPermissionId");
 
@@ -132,7 +132,7 @@ namespace Lumen.Authorization.Migrations.PostgreSQL.EfMigrations
                     b.HasIndex("PermissionId", "ProfileId")
                         .IsUnique()
                         .HasDatabaseName("ix_lumen_permission_profile_active_unique")
-                        .HasFilter("is_deleted = false");
+                        .HasFilter("\"IsDeleted\" = false");
 
                     b.ToTable("PermissionProfile", "Lumen");
                 });
@@ -166,7 +166,7 @@ namespace Lumen.Authorization.Migrations.PostgreSQL.EfMigrations
                     b.HasIndex("Name")
                         .IsUnique()
                         .HasDatabaseName("ix_lumen_profile_name_unique")
-                        .HasFilter("is_deleted = false");
+                        .HasFilter("\"IsDeleted\" = false");
 
                     b.ToTable("Profile", "Lumen");
                 });
@@ -201,7 +201,7 @@ namespace Lumen.Authorization.Migrations.PostgreSQL.EfMigrations
                     b.HasIndex("UserId", "ProfileId", "ScopeId")
                         .IsUnique()
                         .HasDatabaseName("ix_lumen_user_profile_active_unique")
-                        .HasFilter("is_deleted = false");
+                        .HasFilter("\"IsDeleted\" = false");
 
                     b.ToTable("UserProfile", "Lumen");
                 });

@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [Authorization.Migrations.PostgreSQL 1.1.1] - 2026-07-07
+
+### Fixed
+
+- **[Migration] attribute ausente nas migrations PostgreSQL**: as classes `InitialLumenAuthorizationSchemaPostgres`, `SeedLumenSystemProfilesPostgres` e `AddScopeIdToUserProfilePostgres` foram escritas à mão sem o atributo `[Migration("id")]` e sem `.Designer.cs` — o EF Core silenciosamente as ignorava, resultando em 0 tabelas criadas no PostgreSQL. Corrigido regenerando via `dotnet ef migrations add`.
+- **Colapso em migration inicial única**: as 3 migrations anteriores (nunca aplicadas) foram consolidadas em `InitialLumenAuthorizationSchemaPostgres` cumulativa, já incluindo `ScopeId` e seed dos profiles `Administrator`/`User`.
+- **Filtros de índice corrigidos para PostgreSQL**: substituídos `is_deleted = false` (snake_case inválido sem aspas) por `"IsDeleted" = false` (referência correta à coluna PascalCase no Postgres case-sensitive).
+- **Snapshot e Designer** regenerados com `dotnet ef` para estado consistente.
+
+## [Identity.Migrations.PostgreSQL 1.0.1] - 2026-07-07
+
+### Fixed
+
+- **[Migration] attribute ausente**: a classe `InitialIdentitySchemaPostgres` foi escrita à mão sem o atributo `[Migration("id")]` e sem `.Designer.cs` — o EF Core silenciosamente a ignorava, resultando em 0 tabelas `identity.*` criadas no PostgreSQL.
+- **Filtros de índice corrigidos**: substituídos `[IsDeleted] = 0` / `[LockedUntil] IS NOT NULL` (sintaxe SQL Server) por `"IsDeleted" = false` / `"LockedUntil" IS NOT NULL` (sintaxe PostgreSQL com colunas PascalCase).
+- **FKs adicionadas**: as FK constraints de `RefreshTokens`, `PasswordResetTokens` e `EmailConfirmationTokens` para `Users` (ON DELETE RESTRICT) agora fazem parte da migration, consistente com o pacote SQL Server.
+- **Snapshot e Designer** gerados com `dotnet ef` para estado consistente.
+
 ## [Authorization 1.1.0] - 2026-07-06
 
 > Autorização **tenant-scoped**: assignments `user → profile` ganham dimensão opcional de scope/tenant (`UserProfile.ScopeId`), com cache e enforcement isolados por scope via `ITenantScopeAccessor`. Caminho global (`ScopeId = null`) é 100% retrocompatível — código existente continua compilando e operando sem mudança. Ver [ADR-0006](docs/adr/0006-authz-tenant-scoped-permissions.md). Atualizar de 1.0.0 exige aplicar a migration `AddScopeIdToUserProfile` (ver Upgrade Notes abaixo).
