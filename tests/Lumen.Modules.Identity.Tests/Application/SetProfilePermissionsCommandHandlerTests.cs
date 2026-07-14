@@ -52,7 +52,7 @@ public sealed class SetProfilePermissionsCommandHandlerTests
         var profileId = Guid.NewGuid();
         var permId = Guid.NewGuid();
         var profile = Profile.Create("Readers", "desc");
-        var permission = Permission.Create("Resources", "Read", "Resources — Read");
+        var permission = Permission.Create("Resources", "Read");
 
         _profileRepository.FindByIdAsync(profileId, Arg.Any<CancellationToken>()).Returns(profile);
         _permissionRepository.FindByIdAsync(permId, Arg.Any<CancellationToken>()).Returns(permission);

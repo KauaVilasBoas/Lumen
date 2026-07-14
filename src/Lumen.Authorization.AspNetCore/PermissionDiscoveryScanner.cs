@@ -54,12 +54,10 @@ public sealed class PermissionDiscoveryScanner
                 .FirstOrDefault();
 
             var groupName = groupAttribute?.Name ?? normalizedController;
-            var displayName = $"{normalizedController} — {normalizedAction}";
 
             results.Add(new DiscoveredPermissionEntry(
                 Controller: normalizedController,
                 Action: normalizedAction,
-                DisplayName: displayName,
                 Code: code,
                 GroupName: groupName));
         }

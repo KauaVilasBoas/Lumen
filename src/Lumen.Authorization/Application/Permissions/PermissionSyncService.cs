@@ -37,7 +37,7 @@ internal sealed class PermissionSyncService : IPermissionSyncService
 
             if (existingPermissions.TryGetValue(item.Code, out var existing))
             {
-                existing.Update(item.Controller, item.Action, item.DisplayName, groupId);
+                existing.UpdateLocationAndGroup(item.Controller, item.Action, groupId);
 
                 if (existing.IsOrphan)
                 {
@@ -51,7 +51,7 @@ internal sealed class PermissionSyncService : IPermissionSyncService
             }
             else
             {
-                var permission = Permission.Create(item.Controller, item.Action, item.DisplayName, groupId);
+                var permission = Permission.Create(item.Controller, item.Action, groupId);
                 await _permissionRepository.InsertAsync(permission, ct);
 
                 _logger.LogInformation("Registered new permission '{Code}'.", item.Code);
