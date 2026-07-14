@@ -11,6 +11,4 @@ public interface IPermissionRepository
     Task InsertAsync(Permission permission, CancellationToken ct = default);
 
     Task UpdateAsync(Permission permission, CancellationToken ct = default);
-
-    Task SaveAllAsync(IEnumerable<Permission> permissions, CancellationToken ct = default);
 }

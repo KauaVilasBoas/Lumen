@@ -7,7 +7,6 @@ using StackExchange.Redis;
 namespace Lumen.Api.Controllers;
 
 [Route("api/diagnostics")]
-[PermissionGroup(PermissionGroups.Diagnostics)]
 public sealed class DiagnosticsController : ApiBaseController
 {
     private readonly IConnectionMultiplexer _redis;

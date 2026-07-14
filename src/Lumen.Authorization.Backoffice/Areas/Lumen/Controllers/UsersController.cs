@@ -11,8 +11,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Lumen.Authorization.Backoffice.Areas.Lumen.Controllers;
 
-[PermissionGroup(BackofficeRouteDefaults.UsersController)]
-[RequirePermission]
 public sealed class UsersController : LumenBackofficeBaseController
 {
     private readonly ISender _sender;
@@ -25,7 +23,7 @@ public sealed class UsersController : LumenBackofficeBaseController
     }
 
     [HttpGet]
-    [RequirePermission]
+    [RequirePermission(LumenBackofficePermissions.UserProfilesManage)]
     public async Task<IActionResult> Index(CancellationToken ct)
     {
         var users = await _userSource.ListActiveUsersAsync(ct);
@@ -34,7 +32,7 @@ public sealed class UsersController : LumenBackofficeBaseController
     }
 
     [HttpGet]
-    [RequirePermission]
+    [RequirePermission(LumenBackofficePermissions.UserProfilesManage)]
     public async Task<IActionResult> Details(Guid id, CancellationToken ct)
     {
         var users = await _userSource.ListActiveUsersAsync(ct);
@@ -52,7 +50,7 @@ public sealed class UsersController : LumenBackofficeBaseController
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    [RequirePermission]
+    [RequirePermission(LumenBackofficePermissions.UserProfilesManage)]
     public async Task<IActionResult> Assign(Guid userId, Guid profileId, CancellationToken ct)
     {
         try
@@ -73,7 +71,7 @@ public sealed class UsersController : LumenBackofficeBaseController
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    [RequirePermission]
+    [RequirePermission(LumenBackofficePermissions.UserProfilesManage)]
     public async Task<IActionResult> Remove(Guid userId, Guid profileId, CancellationToken ct)
     {
         try

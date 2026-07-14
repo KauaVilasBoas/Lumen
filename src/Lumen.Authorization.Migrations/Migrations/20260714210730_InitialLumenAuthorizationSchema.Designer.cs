@@ -9,11 +9,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace Lumen.Authorization.Migrations.EfMigrations
+namespace Lumen.Authorization.Migrations.Migrations
 {
     [DbContext(typeof(LumenAuthorizationDbContext))]
-    [Migration("20260702090836_SeedLumenSystemProfiles")]
-    partial class SeedLumenSystemProfiles
+    [Migration("20260714210730_InitialLumenAuthorizationSchema")]
+    partial class InitialLumenAuthorizationSchema
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -61,20 +61,10 @@ namespace Lumen.Authorization.Migrations.EfMigrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)");
-
                     b.Property<string>("Code")
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("Controller")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)");
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("datetime2");
@@ -89,12 +79,6 @@ namespace Lumen.Authorization.Migrations.EfMigrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
-
-                    b.Property<bool>("IsOrphan")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("OrphanedAt")
-                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
@@ -188,6 +172,9 @@ namespace Lumen.Authorization.Migrations.EfMigrations
                     b.Property<Guid>("ProfileId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("ScopeId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
 
@@ -198,7 +185,7 @@ namespace Lumen.Authorization.Migrations.EfMigrations
                     b.HasIndex("UserId")
                         .HasDatabaseName("ix_lumen_user_profile_user_id");
 
-                    b.HasIndex("UserId", "ProfileId")
+                    b.HasIndex("UserId", "ProfileId", "ScopeId")
                         .IsUnique()
                         .HasDatabaseName("ix_lumen_user_profile_active_unique")
                         .HasFilter("[IsDeleted] = 0");

@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 namespace Lumen.Api.Controllers;
 
 [Route("api/authorization-graph")]
-[PermissionGroup(PermissionGroups.Authorization)]
 public sealed class AuthorizationGraphController : ApiBaseController
 {
     private readonly IMediator _mediator;

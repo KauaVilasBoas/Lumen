@@ -11,10 +11,4 @@ public sealed class LumenAuthorizationOptions
     public bool ApplyMigrationsOnStartup { get; set; } = true;
 
     public string UserIdClaimType { get; set; } = ClaimTypes.NameIdentifier;
-
-    public PermissionCatalogMode CatalogMode { get; set; } = PermissionCatalogMode.Validate;
-
-    public bool FailFastOnMissingPermission { get; set; } = false;
-
-    public bool AutoGrantAllToAdministrator { get; set; } = false;
 }

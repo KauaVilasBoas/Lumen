@@ -26,7 +26,7 @@ public sealed class AdminApiClient
         bool IsSystem,
         IReadOnlyList<Guid> PermissionIds);
 
-    public sealed record PermissionItem(Guid Id, string Code, string DisplayName, bool IsOrphan);
+    public sealed record PermissionItem(Guid Id, string Code, string DisplayName);
 
     public sealed record PermissionGroup(Guid? GroupId, string GroupName, IReadOnlyList<PermissionItem> Permissions);
 
@@ -70,7 +70,7 @@ public sealed class AdminApiClient
         IReadOnlyList<ProfileMembership> Profiles,
         int ResolvedPermissionCount);
 
-    public sealed record PermissionNode(string Code, string Name, string Group, bool Orphan);
+    public sealed record PermissionNode(string Code, string Name, string Group);
 
     public sealed record ProfileNode(string Name, bool IsSystem, IReadOnlyList<string> Permissions);
 

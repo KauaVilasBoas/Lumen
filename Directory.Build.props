@@ -15,7 +15,7 @@
     csproj que optam por <IsPackable>true</IsPackable> e consomem essas props.
   -->
   <PropertyGroup>
-    <LumenAuthorizationVersion>2.0.0</LumenAuthorizationVersion>
+    <LumenAuthorizationVersion>3.0.0</LumenAuthorizationVersion>
     <LumenIdentityVersion>1.0.0</LumenIdentityVersion>
     <LumenPackageAuthors>Kauã Vilas Boas</LumenPackageAuthors>
     <LumenPackageCompany>Kauã Vilas Boas</LumenPackageCompany>

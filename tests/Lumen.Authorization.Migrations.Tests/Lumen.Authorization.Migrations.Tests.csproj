@@ -6,16 +6,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="FluentAssertions" />
-    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
   </ItemGroup>
 
   <ItemGroup>
@@ -23,9 +19,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Lumen.Authorization.AspNetCore\Lumen.Authorization.AspNetCore.csproj" />
-    <ProjectReference Include="..\..\src\Lumen.Authorization.Contracts\Lumen.Authorization.Contracts.csproj" />
     <ProjectReference Include="..\..\src\Lumen.Authorization.Migrations\Lumen.Authorization.Migrations.csproj" />
+    <ProjectReference Include="..\..\src\Lumen.Authorization.Migrations.PostgreSQL\Lumen.Authorization.Migrations.PostgreSQL.csproj" />
   </ItemGroup>
 
 </Project>

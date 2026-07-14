@@ -1,5 +1,3 @@
-using Lumen.Authorization;
-using Lumen.Authorization.Contracts;
 using Lumen.Authorization.Contracts.Events;
 using Lumen.Modularity;
 using Lumen.Modules.Identity.Domain.Tokens;
@@ -19,20 +17,17 @@ internal sealed class DeleteUserCommandHandler
     private readonly IUserRepository _userRepository;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IEventBus _eventBus;
-    private readonly IUserProfileGuard _userProfileGuard;
     private readonly ILogger<DeleteUserCommandHandler> _logger;
 
     public DeleteUserCommandHandler(
         IUserRepository userRepository,
         IRefreshTokenRepository refreshTokenRepository,
         IEventBus eventBus,
-        IUserProfileGuard userProfileGuard,
         ILogger<DeleteUserCommandHandler> logger)
     {
         _userRepository = userRepository;
         _refreshTokenRepository = refreshTokenRepository;
         _eventBus = eventBus;
-        _userProfileGuard = userProfileGuard;
         _logger = logger;
     }
 
@@ -44,8 +39,6 @@ internal sealed class DeleteUserCommandHandler
         if (user.IsBootstrap)
             throw new ForbiddenException(AuthErrorMessages.CannotDeleteBootstrapUser);
 
-        await GuardLastAdministratorAsync(cmd.UserId, ct);
-
         user.SoftDelete();
         await _userRepository.UpdateAsync(user, ct);
 
@@ -56,20 +49,6 @@ internal sealed class DeleteUserCommandHandler
             user.Id, cmd.ActorId);
 
         await _eventBus.PublishAsync(new UserPermissionsChangedEvent(user.Id), ct);
-    }
-
-    private async Task GuardLastAdministratorAsync(Guid userId, CancellationToken ct)
-    {
-        var isAdministrator = await _userProfileGuard.IsUserAdministratorAsync(userId, ct);
-
-        if (!isAdministrator)
-            return;
-
-        var activeAdminCount = await _userProfileGuard.CountActiveAdministratorsAsync(
-            SystemProfiles.AdministratorId, ct);
-
-        if (activeAdminCount <= 1)
-            throw new ConflictException(AuthErrorMessages.CannotDeleteLastAdministrator);
     }
 
     private async Task RevokeActiveRefreshTokensAsync(Guid userId, CancellationToken ct)

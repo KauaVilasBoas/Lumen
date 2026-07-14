@@ -19,16 +19,6 @@ internal sealed class PermissionConfiguration : IEntityTypeConfiguration<Permiss
                .HasMaxLength(256)
                .UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        builder.Property(p => p.Controller)
-               .IsRequired()
-               .HasMaxLength(128)
-               .UsePropertyAccessMode(PropertyAccessMode.Field);
-
-        builder.Property(p => p.Action)
-               .IsRequired()
-               .HasMaxLength(128)
-               .UsePropertyAccessMode(PropertyAccessMode.Field);
-
         builder.Property(p => p.DisplayName)
                .IsRequired()
                .HasMaxLength(256)
@@ -37,20 +27,11 @@ internal sealed class PermissionConfiguration : IEntityTypeConfiguration<Permiss
         builder.Property(p => p.GroupPermissionId)
                .UsePropertyAccessMode(PropertyAccessMode.Field);
 
-        builder.Property(p => p.IsOrphan)
-               .UsePropertyAccessMode(PropertyAccessMode.Field);
-
-        builder.Property(p => p.OrphanedAt)
-               .UsePropertyAccessMode(PropertyAccessMode.Field);
-
         builder.Property(p => p.IsDeleted)
                .UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder.Property(p => p.DeletedAt)
                .UsePropertyAccessMode(PropertyAccessMode.Field);
-
-        // Filtered unique index on Code is registered in LumenAuthorizationDbContext.ApplyProviderAwareConfigurations
-        // with dialect-correct syntax (SQL Server vs PostgreSQL).
 
         builder.HasOne<GroupPermission>()
                .WithMany()

@@ -9,10 +9,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace Lumen.Authorization.Migrations.PostgreSQL.EfMigrations
+namespace Lumen.Authorization.Migrations.PostgreSQL.Migrations
 {
     [DbContext(typeof(LumenAuthorizationDbContext))]
-    [Migration("20260707134415_InitialLumenAuthorizationSchemaPostgres")]
+    [Migration("20260714210804_InitialLumenAuthorizationSchemaPostgres")]
     partial class InitialLumenAuthorizationSchemaPostgres
     {
         /// <inheritdoc />
@@ -51,7 +51,7 @@ namespace Lumen.Authorization.Migrations.PostgreSQL.EfMigrations
                     b.HasIndex("Name")
                         .IsUnique()
                         .HasDatabaseName("ix_lumen_permission_group_name_unique")
-                        .HasFilter("\"IsDeleted\" = false");
+                        .HasFilter("is_deleted = false");
 
                     b.ToTable("PermissionGroup", "Lumen");
                 });
@@ -61,20 +61,10 @@ namespace Lumen.Authorization.Migrations.PostgreSQL.EfMigrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Action")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
-
                     b.Property<string>("Code")
                         .IsRequired()
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
-
-                    b.Property<string>("Controller")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
@@ -90,18 +80,12 @@ namespace Lumen.Authorization.Migrations.PostgreSQL.EfMigrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<bool>("IsOrphan")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime?>("OrphanedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.HasKey("Id");
 
                     b.HasIndex("Code")
                         .IsUnique()
                         .HasDatabaseName("ix_lumen_permission_code_unique")
-                        .HasFilter("\"IsDeleted\" = false");
+                        .HasFilter("is_deleted = false");
 
                     b.HasIndex("GroupPermissionId");
 
@@ -135,7 +119,7 @@ namespace Lumen.Authorization.Migrations.PostgreSQL.EfMigrations
                     b.HasIndex("PermissionId", "ProfileId")
                         .IsUnique()
                         .HasDatabaseName("ix_lumen_permission_profile_active_unique")
-                        .HasFilter("\"IsDeleted\" = false");
+                        .HasFilter("is_deleted = false");
 
                     b.ToTable("PermissionProfile", "Lumen");
                 });
@@ -169,7 +153,7 @@ namespace Lumen.Authorization.Migrations.PostgreSQL.EfMigrations
                     b.HasIndex("Name")
                         .IsUnique()
                         .HasDatabaseName("ix_lumen_profile_name_unique")
-                        .HasFilter("\"IsDeleted\" = false");
+                        .HasFilter("is_deleted = false");
 
                     b.ToTable("Profile", "Lumen");
                 });
@@ -204,7 +188,7 @@ namespace Lumen.Authorization.Migrations.PostgreSQL.EfMigrations
                     b.HasIndex("UserId", "ProfileId", "ScopeId")
                         .IsUnique()
                         .HasDatabaseName("ix_lumen_user_profile_active_unique")
-                        .HasFilter("\"IsDeleted\" = false");
+                        .HasFilter("is_deleted = false");
 
                     b.ToTable("UserProfile", "Lumen");
                 });

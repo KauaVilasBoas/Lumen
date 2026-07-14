@@ -8,7 +8,6 @@
     var userCount       = Model.UserCount;
     var profileCount    = Model.ProfileCount;
     var permissionCount = Model.PermissionCount;
-    var orphanCount     = Model.OrphanCount;
     var cacheHitRate    = Model.CacheHitRate;
 
     var activity = Model.Activity;
@@ -68,7 +67,7 @@
                         class="badge muted">discovered</span></div>
                 <div class="stat-value tnum">@permissionCount</div>
                 <div class="stat-label">Permissions</div>
-                <div class="stat-sub mono">@(orphanCount ?? 0) orphan flagged</div>
+                <div class="stat-sub mono">seeded via consumer migration</div>
             </div>
         }
         @if (cacheHitRate.HasValue)

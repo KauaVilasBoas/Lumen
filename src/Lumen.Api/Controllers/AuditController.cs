@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 namespace Lumen.Api.Controllers;
 
 [Route("api/audit")]
-[PermissionGroup(PermissionGroups.Audit)]
 public sealed class AuditController : ApiBaseController
 {
     private readonly IMediator _mediator;

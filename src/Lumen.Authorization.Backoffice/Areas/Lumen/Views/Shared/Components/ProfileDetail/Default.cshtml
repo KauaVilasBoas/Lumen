@@ -39,15 +39,6 @@
             <div class="lz-error-banner lz-error-banner-inline">@Model.ErrorMessage</div>
         }
 
-        @if (profile.IsSystem)
-        {
-            <div class="lz-syslock">
-                @(profile.Name == "Administrator"
-                    ? "Administrator is reconciled with every discovered permission at startup — its grants are read-only."
-                    : "System profile — its permission set is fixed and the profile cannot be deleted.")
-            </div>
-        }
-
         <form asp-area="Lumen" asp-controller="Profiles" asp-action="SetPermissions" asp-route-id="@profile.Id" method="post">
             @Html.AntiForgeryToken()
 
@@ -66,7 +57,7 @@
                             {
                                 var isOn = assignedIds.Contains(perm.Id);
                                 var method = PermissionDisplayHelper.HttpMethod(perm.Code);
-                                <label class="lz-mperm @(isOn ? "on" : "") @(perm.IsOrphan ? "orphan" : "")">
+                                <label class="lz-mperm @(isOn ? "on" : "")">
                                     <input type="checkbox" name="selectedPermissionIds" value="@perm.Id"
                                            @(isOn ? "checked" : "")
                                            @(profile.IsSystem ? "disabled" : "") />
@@ -76,10 +67,6 @@
                                     </div>
                                     <span class="lz-method lz-mono"
                                           style="color:@PermissionDisplayHelper.MethodCssColor(method)">@method</span>
-                                    @if (perm.IsOrphan)
-                                    {
-                                        <span class="lz-badge lz-badge-warn">orphan</span>
-                                    }
                                 </label>
                             }
                         </div>

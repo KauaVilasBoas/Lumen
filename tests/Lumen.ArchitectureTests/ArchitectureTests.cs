@@ -21,7 +21,7 @@ public sealed class ArchitectureTests
         typeof(Lumen.Modules.Audit.Contracts.Events.CleanupJobExecutedEvent).Assembly;
 
     private static readonly System.Reflection.Assembly AuthorizationAssembly =
-        typeof(Lumen.Authorization.SystemProfiles).Assembly;
+        typeof(Lumen.Authorization.LumenAuthorizationOptions).Assembly;
 
     private static readonly System.Reflection.Assembly AuthorizationContractsAssembly =
         typeof(Lumen.Authorization.Contracts.IUserPermissionService).Assembly;

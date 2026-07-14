@@ -10,7 +10,6 @@ using Microsoft.AspNetCore.Mvc;
 namespace Lumen.Api.Controllers;
 
 [Route("api/users")]
-[PermissionGroup(PermissionGroups.Users)]
 public sealed class UsersController : ApiBaseController
 {
     public sealed record UpdateUserRequest(string? Email, string? Username);

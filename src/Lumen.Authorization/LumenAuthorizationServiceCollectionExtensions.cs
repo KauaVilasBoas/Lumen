@@ -1,7 +1,5 @@
 using FluentValidation;
-using Lumen.Authorization.Application;
 using Lumen.Authorization.Application.Behaviors;
-using Lumen.Authorization.Application.Permissions;
 using Lumen.Authorization.Contracts;
 using Lumen.Authorization.Domain;
 using Lumen.Authorization.Infrastructure;
@@ -21,18 +19,6 @@ namespace Lumen.Authorization;
 
 public static class LumenAuthorizationServiceCollectionExtensions
 {
-    /// <summary>
-    /// Registra os serviços do núcleo de autorização Lumen.
-    /// </summary>
-    /// <remarks>
-    /// Suporta SQL Server (padrão) e PostgreSQL via <see cref="LumenAuthorizationOptions.Provider"/>.
-    /// O assembly de migrations correto é escolhido automaticamente de acordo com o provider.
-    /// Quando <see cref="LumenAuthorizationOptions.ApplyMigrationsOnStartup"/> é <c>true</c>
-    /// (padrão), o schema <c>Lumen</c> é criado/atualizado na inicialização da aplicação.
-    /// </remarks>
-    /// <param name="services">A coleção de serviços.</param>
-    /// <param name="connectionString">Connection string não vazia para o provider escolhido.</param>
-    /// <param name="configure">Configuração opcional de <see cref="LumenAuthorizationOptions"/>.</param>
     public static IServiceCollection AddLumenAuthorization(
         this IServiceCollection services,
         string connectionString,
@@ -44,20 +30,6 @@ public static class LumenAuthorizationServiceCollectionExtensions
         return services.RegisterCore(connectionString, options);
     }
 
-    /// <summary>
-    /// Registra os serviços do núcleo de autorização Lumen lendo a configuração de
-    /// <see cref="IConfiguration"/>.
-    /// </summary>
-    /// <remarks>
-    /// A connection string é lida de <c>ConnectionStrings:DefaultConnection</c>.
-    /// O provider é lido de <c>Database:Provider</c> (<c>SqlServer</c> ou <c>PostgreSQL</c>).
-    /// A connection string Redis (opcional) é lida de <c>ConnectionStrings:Redis</c>.
-    /// Quando <see cref="LumenAuthorizationOptions.ApplyMigrationsOnStartup"/> é <c>true</c>
-    /// (padrão), o schema <c>Lumen</c> é criado/atualizado na inicialização da aplicação.
-    /// </remarks>
-    /// <param name="services">A coleção de serviços.</param>
-    /// <param name="configuration">Configuração da aplicação.</param>
-    /// <param name="configure">Configuração opcional de <see cref="LumenAuthorizationOptions"/>.</param>
     public static IServiceCollection AddLumenAuthorization(
         this IServiceCollection services,
         IConfiguration configuration,
@@ -98,9 +70,6 @@ public static class LumenAuthorizationServiceCollectionExtensions
             o.RedisConnectionString = options.RedisConnectionString;
             o.ApplyMigrationsOnStartup = options.ApplyMigrationsOnStartup;
             o.UserIdClaimType = options.UserIdClaimType;
-            o.CatalogMode = options.CatalogMode;
-            o.FailFastOnMissingPermission = options.FailFastOnMissingPermission;
-            o.AutoGrantAllToAdministrator = options.AutoGrantAllToAdministrator;
         });
 
         RegisterDbContext(services, connectionString, options.Provider);
@@ -115,9 +84,6 @@ public static class LumenAuthorizationServiceCollectionExtensions
         services.AddScoped<UserPermissionService>();
         services.AddScoped<Domain.IUserPermissionService>(sp => sp.GetRequiredService<UserPermissionService>());
         services.AddScoped<Contracts.IUserPermissionService>(sp => sp.GetRequiredService<UserPermissionService>());
-
-        services.AddScoped<IPermissionSyncService, PermissionSyncService>();
-        services.AddScoped<IUserProfileGuard, UserProfileGuard>();
 
         services.TryAddScoped<IUserDirectory, NoOpUserDirectory>();
         services.TryAddScoped<IAuthorizationUserSource, EmptyAuthorizationUserSource>();

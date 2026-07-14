@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Mvc;
 namespace Lumen.Api.Controllers;
 
 [Route("api/users/{userId:guid}/profiles")]
-[PermissionGroup(PermissionGroups.UserProfiles)]
 public sealed class UserProfilesController : ApiBaseController
 {
     private readonly IMediator _mediator;

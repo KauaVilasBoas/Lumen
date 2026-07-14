@@ -8,8 +8,7 @@ public sealed record ListPermissionsQuery : IRequest<IReadOnlyList<ListPermissio
 public sealed record ListPermissionsPermissionResult(
     Guid Id,
     string Code,
-    string DisplayName,
-    bool IsOrphan);
+    string DisplayName);
 
 public sealed record ListPermissionsGroupResult(
     Guid? GroupId,
@@ -46,7 +45,7 @@ internal sealed class ListPermissionsQueryHandler
                     : "Ungrouped";
 
                 var items = g
-                    .Select(p => new ListPermissionsPermissionResult(p.Id, p.Code, p.DisplayName, p.IsOrphan))
+                    .Select(p => new ListPermissionsPermissionResult(p.Id, p.Code, p.DisplayName))
                     .OrderBy(p => p.Code)
                     .ToList();
 

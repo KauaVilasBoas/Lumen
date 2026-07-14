@@ -26,8 +26,8 @@ public sealed class PermissionsControllerTests
         {
             new(Guid.NewGuid(), "Users", new List<ListPermissionsPermissionResult>
             {
-                new(Guid.NewGuid(), "Users.List", "Users — List", IsOrphan: false),
-                new(Guid.NewGuid(), "Users.Get", "Users — Get", IsOrphan: false),
+                new(Guid.NewGuid(), "Users.List", "Users — List"),
+                new(Guid.NewGuid(), "Users.Get", "Users — Get"),
             }),
         };
         _sender.Send(Arg.Any<ListPermissionsQuery>(), Arg.Any<CancellationToken>())
