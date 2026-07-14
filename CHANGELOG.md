@@ -31,6 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`SeedLumenPermissionGroup` segundo parâmetro renomeado**: `displayName` → `description`. Atualize as chamadas existentes.
 - **`SeedLumenPermission*` tabelas corrigidas** (breaking para quem usava as versões bugadas): agora miram `Lumen.Permission` / `Lumen.PermissionGroup` (singular) e coluna `Description` no grupo.
 - **Migrations regeneradas do zero**: schema `Lumen` sem colunas mortas. Consumidores em dev devem fazer drop & re-create.
+- **`SystemProfiles` removido**: a classe com os GUIDs fixos `AdministratorId`/`UserId` foi eliminada. A lib não conhece nenhum perfil por nome ou GUID — a aplicação cria e nomeia todos os perfis via suas próprias migrations.
+- **`IUserProfileGuard.IsUserAdministratorAsync` removido** (e a interface `IUserProfileGuard` inteira): a lib não tem mais o conceito de "perfil administrador conhecido". Proteções do tipo "não deletar o último admin" são responsabilidade da aplicação. O flag `Profile.IsSystem` permanece como mecanismo genérico de bloqueio de deleção.
+- **`PermissionGroupAttribute` removido** (`[PermissionGroup("...")]` em `Lumen.Authorization.AspNetCore`): sem discovery, o atributo não tem efeito operacional. Remova-o de todos os controllers — nenhuma substituição necessária.
 
 ### Added
 
