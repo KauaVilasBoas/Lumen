@@ -7,8 +7,8 @@
     <Authors>$(LumenPackageAuthors)</Authors>
     <Company>$(LumenPackageCompany)</Company>
     <Product>$(LumenPackageProduct)</Product>
-    <Description>ASP.NET Core integration for Lumen.Authorization: [RequirePermission] attribute, IAuthorizationRequirementData-based policy enforcement, permission discovery hosted service, and the AddLumenAuthorization() umbrella that wires core, migrations, enforcement, and discovery in one call.</Description>
-    <PackageTags>authorization;permissions;aspnetcore;rbac;lumen;policy;middleware;discovery</PackageTags>
+    <Description>ASP.NET Core integration for Lumen.Authorization: [RequirePermission] attribute, IAuthorizationRequirementData-based policy enforcement, dynamic PermissionPolicyProvider, PermissionAuthorizationHandler, IUserIdAccessor/ClaimsUserIdAccessor, and the AddLumenAuthorization() umbrella that wires core, migrations, and enforcement in one call.</Description>
+    <PackageTags>authorization;permissions;aspnetcore;rbac;lumen;policy;middleware</PackageTags>
     <PackageLicenseExpression>$(LumenPackageLicenseExpression)</PackageLicenseExpression>
     <PackageProjectUrl>$(LumenPackageProjectUrl)</PackageProjectUrl>
     <RepositoryUrl>$(LumenRepositoryUrl)</RepositoryUrl>
