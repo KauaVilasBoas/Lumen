@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [Authorization 2.0.0] - Unreleased
+## [Authorization 2.0.0] - 2026-07-14
 
 > **Inversão de propriedade do catálogo**: a lib passa de _dona_ do catálogo de permissões para _validadora/enforçadora_. O consumidor semeia as permissões nas suas próprias migrations EF usando os novos extension methods `SeedLumenPermission` / `SeedLumenPermissionGroup`. O modo `Validate` (novo default) apenas verifica que todos os codes declarados via `[RequirePermission]` existem no banco — sem inserir nada. O modo `Sync` mantém o comportamento legado para retrocompatibilidade.
 
