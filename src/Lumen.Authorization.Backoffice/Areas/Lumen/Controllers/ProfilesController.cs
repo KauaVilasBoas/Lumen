@@ -12,8 +12,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Lumen.Authorization.Backoffice.Areas.Lumen.Controllers;
 
-[PermissionGroup(BackofficeRouteDefaults.ProfilesController)]
-[RequirePermission]
 public sealed class ProfilesController : LumenBackofficeBaseController
 {
     private readonly ISender _sender;
@@ -24,7 +22,7 @@ public sealed class ProfilesController : LumenBackofficeBaseController
     }
 
     [HttpGet]
-    [RequirePermission]
+    [RequirePermission(LumenBackofficePermissions.ProfilesView)]
     public async Task<IActionResult> Index(CancellationToken ct)
     {
         var profiles = await _sender.Send(new ListProfilesQuery(), ct);
@@ -32,7 +30,7 @@ public sealed class ProfilesController : LumenBackofficeBaseController
     }
 
     [HttpGet]
-    [RequirePermission]
+    [RequirePermission(LumenBackofficePermissions.ProfilesView)]
     public async Task<IActionResult> Details(Guid id, CancellationToken ct)
     {
         var profile = await _sender.Send(new GetProfileQuery(id), ct);
@@ -48,12 +46,12 @@ public sealed class ProfilesController : LumenBackofficeBaseController
     }
 
     [HttpGet]
-    [RequirePermission]
+    [RequirePermission(LumenBackofficePermissions.ProfilesManage)]
     public IActionResult Create() => View(new CreateProfileFormModel());
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    [RequirePermission]
+    [RequirePermission(LumenBackofficePermissions.ProfilesManage)]
     public async Task<IActionResult> Create(CreateProfileFormModel form, CancellationToken ct)
     {
         if (!ModelState.IsValid)
@@ -77,7 +75,7 @@ public sealed class ProfilesController : LumenBackofficeBaseController
     }
 
     [HttpGet]
-    [RequirePermission]
+    [RequirePermission(LumenBackofficePermissions.ProfilesManage)]
     public async Task<IActionResult> Edit(Guid id, CancellationToken ct)
     {
         var profile = await _sender.Send(new GetProfileQuery(id), ct);
@@ -93,7 +91,7 @@ public sealed class ProfilesController : LumenBackofficeBaseController
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    [RequirePermission]
+    [RequirePermission(LumenBackofficePermissions.ProfilesManage)]
     public async Task<IActionResult> Edit(EditProfileFormModel form, CancellationToken ct)
     {
         if (!ModelState.IsValid)
@@ -123,7 +121,7 @@ public sealed class ProfilesController : LumenBackofficeBaseController
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    [RequirePermission]
+    [RequirePermission(LumenBackofficePermissions.ProfilesManage)]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
         try
@@ -144,7 +142,7 @@ public sealed class ProfilesController : LumenBackofficeBaseController
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    [RequirePermission]
+    [RequirePermission(LumenBackofficePermissions.ProfilesManage)]
     public async Task<IActionResult> SetPermissions(
         Guid id,
         [FromForm] List<Guid> selectedPermissionIds,
