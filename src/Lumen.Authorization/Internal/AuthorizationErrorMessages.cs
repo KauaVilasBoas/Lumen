@@ -21,4 +21,10 @@ internal static class AuthorizationErrorMessages
 
     public const string UnknownProvider =
         "DatabaseProvider desconhecido. Use DatabaseProvider.SqlServer ou DatabaseProvider.PostgreSQL.";
+
+    public const string MissingPermissionsInCatalog =
+        "Lumen.Authorization: os seguintes permission codes são declarados via [RequirePermission] mas " +
+        "não estão semeados no banco de dados: {0}. " +
+        "Seed them via MigrationBuilder.SeedLumenPermission() in a consumer migration. " +
+        "Set FailFastOnMissingPermission = false to log a warning instead of aborting startup.";
 }
