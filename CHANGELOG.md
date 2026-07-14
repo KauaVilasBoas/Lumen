@@ -7,6 +7,107 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [Authorization 2.0.0] - Unreleased
+
+> **Inversão de propriedade do catálogo**: a lib passa de _dona_ do catálogo de permissões para _validadora/enforçadora_. O consumidor semeia as permissões nas suas próprias migrations EF usando os novos extension methods `SeedLumenPermission` / `SeedLumenPermissionGroup`. O modo `Validate` (novo default) apenas verifica que todos os codes declarados via `[RequirePermission]` existem no banco — sem inserir nada. O modo `Sync` mantém o comportamento legado para retrocompatibilidade.
+
+### Breaking Changes
+
+- **`PermissionCatalogMode` default mudou para `Validate`**: a lib não escreve mais no catálogo de permissões por padrão. Consumidores que dependiam do comportamento de sync automático devem passar `options.CatalogMode = PermissionCatalogMode.Sync` explicitamente.
+- **`DisplayName` nunca é sobrescrito pela lib**: o campo `DisplayName` de uma permissão existente nunca é atualizado pelo sync — o consumidor é dono e seta via migration. Permissões novas criadas pelo modo `Sync` recebem `DisplayName = Code` como fallback.
+- **`AutoGrantAllToAdministrator` default agora é `false`**: a reconciliação automática de permissões ao perfil Administrador está desligada por padrão. Ative com `options.AutoGrantAllToAdministrator = true` no modo `Sync`.
+- **`Permission.Create` assinatura alterada**: removido o parâmetro `displayName` (era `(controller, action, displayName, groupId?)`). Nova assinatura: `(controller, action, groupId?)`. O `DisplayName` é inicializado com o `Code` como fallback neutro.
+- **`Permission.Update` renomeado para `UpdateLocationAndGroup`**: o método não aceita mais `displayName`. Assinatura: `(controller, action, groupPermissionId)`.
+- **`DiscoveredPermissionEntry` removeu `DisplayName`**: o record de resultado do scanner não carrega mais `DisplayName` — a lib não gera mais display names automáticos.
+- **Hosted services unificados em `LumenAuthorizationStartupService`**: `LumenAuthorizationMigrationsHostedService` e `PermissionDiscoveryAndReconciliationHostedService` foram substituídos pelo orquestrador único `LumenAuthorizationStartupService`. `AddLumenAuthorizationMigrations()` e `AddLumenAuthorizationDiscovery()` são agora no-op marcados como `[Obsolete]` — use `AddLumenAuthorization()` ou `AddLumenAuthorizationStartup()`.
+
+### Added
+
+- **`PermissionCatalogMode`** (novo enum público em `Lumen.Authorization`): `Validate` (default), `Sync`, `Off` — controla o comportamento do catálogo de permissões na inicialização.
+- **`LumenAuthorizationOptions.CatalogMode`**: nova propriedade, default `PermissionCatalogMode.Validate`.
+- **`LumenAuthorizationOptions.FailFastOnMissingPermission`**: quando `true` e `CatalogMode = Validate`, aborta o startup com `InvalidOperationException` se houver codes sem permissão semeada. Default `false` (loga warning).
+- **`LumenAuthorizationOptions.AutoGrantAllToAdministrator`**: quando `true` e `CatalogMode = Sync`, executa `ReconcileAdministratorAsync` concedendo todas as permissões ao perfil Administrador. Default `false`.
+- **`MigrationBuilder.SeedLumenPermission(code, displayName, groupName?)`** (novo em `Lumen.Authorization.Migrations` e `Lumen.Authorization.Migrations.PostgreSQL`): extension method idempotente (INSERT ... IF NOT EXISTS) para semear uma permissão nas migrations do consumidor.
+- **`MigrationBuilder.SeedLumenPermissionGroup(name, displayName)`**: extension method idempotente para semear um grupo de permissões.
+- **`MigrationBuilder.DeleteLumenPermission(code)`** e **`DeleteLumenPermissionGroup(name)`**: reversos para o método `Down()`.
+- **`LumenAuthorizationStartupService`** (novo em `Lumen.Authorization.AspNetCore`): hosted service orquestrador único que executa migrations → catálogo (validate/sync/off) → reconciliação Administrator, nessa ordem, eliminando dependência de ordenação manual.
+- **`PermissionCatalogValidationService`** (interno em `Lumen.Authorization.AspNetCore`): serviço de validação do catálogo extraído para testabilidade.
+- **`AddLumenAuthorizationStartup()`**: método granular que registra `PermissionDiscoveryScanner` e `LumenAuthorizationStartupService`.
+
+### Migration Guide — Authorization 1.x → 2.0.0
+
+#### Manter comportamento legado (modo Sync)
+
+```csharp
+builder.Services.AddLumenAuthorization(connectionString, options =>
+{
+    options.CatalogMode = PermissionCatalogMode.Sync;
+    options.AutoGrantAllToAdministrator = true;
+});
+```
+
+#### Migrar para modo Validate (recomendado)
+
+1. **Configurar o modo** (já é o default; não precisa código se não tinha configuração anterior):
+
+```csharp
+builder.Services.AddLumenAuthorization(connectionString);
+// CatalogMode = Validate por padrão
+```
+
+2. **Criar uma migration no projeto consumidor** para semear as permissões:
+
+```csharp
+using Lumen.Authorization.Migrations; // ou .PostgreSQL
+
+public partial class SeedMyAppPermissions : Migration
+{
+    protected override void Up(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.SeedLumenPermissionGroup(
+            name: "Estoque",
+            displayName: "Gestão de estoque");
+
+        migrationBuilder.SeedLumenPermission(
+            code: "Estoque.Baixa",
+            displayName: "Registrar baixa de estoque",
+            groupName: "Estoque");
+    }
+
+    protected override void Down(MigrationBuilder migrationBuilder)
+    {
+        migrationBuilder.DeleteLumenPermission(code: "Estoque.Baixa");
+        migrationBuilder.DeleteLumenPermissionGroup(name: "Estoque");
+    }
+}
+```
+
+3. **Opcionalmente**, ative fail-fast em staging/produção:
+
+```csharp
+builder.Services.AddLumenAuthorization(connectionString, options =>
+{
+    options.FailFastOnMissingPermission = true;
+});
+```
+
+#### Program.cs — Antes (v1.x) / Depois (v2.0.0)
+
+**Antes:**
+```csharp
+builder.Services.AddLumenAuthorization(connectionString); // registrava Sync automático
+```
+
+**Depois (equivalente legado):**
+```csharp
+builder.Services.AddLumenAuthorization(connectionString, o => o.CatalogMode = PermissionCatalogMode.Sync);
+```
+
+**Depois (modo recomendado):**
+```csharp
+builder.Services.AddLumenAuthorization(connectionString); // Validate é o novo default
+```
+
 ## [Authorization.Migrations.PostgreSQL 1.1.1] - 2026-07-07
 
 ### Fixed

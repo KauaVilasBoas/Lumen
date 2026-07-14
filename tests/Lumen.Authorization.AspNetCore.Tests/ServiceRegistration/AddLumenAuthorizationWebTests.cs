@@ -2,7 +2,6 @@ using FluentAssertions;
 using Lumen.Authorization;
 using Lumen.Authorization.AspNetCore;
 using Lumen.Authorization.Contracts;
-using Lumen.Authorization.Migrations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
@@ -63,20 +62,7 @@ public sealed class AddLumenAuthorizationWebTests
     }
 
     [Fact]
-    public void StringOverload_RegistersMigrationsHostedService()
-    {
-        var services = BuildMinimalServices();
-
-        services.AddLumenAuthorization(FakeSqlConnectionString);
-
-        services.Should().Contain(d =>
-                d.ServiceType == typeof(IHostedService) &&
-                d.ImplementationType == typeof(LumenAuthorizationMigrationsHostedService),
-            because: "the umbrella must register the migrations hosted service");
-    }
-
-    [Fact]
-    public void StringOverload_RegistersDiscoveryHostedService()
+    public void StringOverload_RegistersStartupHostedService()
     {
         var services = BuildMinimalServices();
         services.AddSingleton<Microsoft.AspNetCore.Mvc.Infrastructure.IActionDescriptorCollectionProvider>(
@@ -86,8 +72,8 @@ public sealed class AddLumenAuthorizationWebTests
 
         services.Should().Contain(d =>
                 d.ServiceType == typeof(IHostedService) &&
-                d.ImplementationType == typeof(PermissionDiscoveryAndReconciliationHostedService),
-            because: "the umbrella must register the discovery hosted service");
+                d.ImplementationType == typeof(LumenAuthorizationStartupService),
+            because: "the umbrella must register the unified startup hosted service");
     }
 
     [Fact]
@@ -142,6 +128,72 @@ public sealed class AddLumenAuthorizationWebTests
     }
 
     [Fact]
+    public void StringOverload_DefaultCatalogMode_IsValidate()
+    {
+        var services = BuildMinimalServices();
+
+        services.AddLumenAuthorization(FakeSqlConnectionString);
+
+        var options = services.BuildServiceProvider()
+            .GetRequiredService<IOptions<LumenAuthorizationOptions>>()
+            .Value;
+
+        options.CatalogMode.Should().Be(PermissionCatalogMode.Validate,
+            because: "the default CatalogMode must be Validate to avoid writing to the consumer's catalog");
+    }
+
+    [Fact]
+    public void StringOverload_DefaultFailFast_IsFalse()
+    {
+        var services = BuildMinimalServices();
+
+        services.AddLumenAuthorization(FakeSqlConnectionString);
+
+        var options = services.BuildServiceProvider()
+            .GetRequiredService<IOptions<LumenAuthorizationOptions>>()
+            .Value;
+
+        options.FailFastOnMissingPermission.Should().BeFalse(
+            because: "the default must be to log a warning rather than abort startup");
+    }
+
+    [Fact]
+    public void StringOverload_DefaultAutoGrantAllToAdministrator_IsFalse()
+    {
+        var services = BuildMinimalServices();
+
+        services.AddLumenAuthorization(FakeSqlConnectionString);
+
+        var options = services.BuildServiceProvider()
+            .GetRequiredService<IOptions<LumenAuthorizationOptions>>()
+            .Value;
+
+        options.AutoGrantAllToAdministrator.Should().BeFalse(
+            because: "auto-granting all permissions to Administrator must be opt-in");
+    }
+
+    [Fact]
+    public void StringOverload_ConfigureDelegate_PropagatesCatalogOptions()
+    {
+        var services = BuildMinimalServices();
+
+        services.AddLumenAuthorization(FakeSqlConnectionString, o =>
+        {
+            o.CatalogMode = PermissionCatalogMode.Sync;
+            o.FailFastOnMissingPermission = true;
+            o.AutoGrantAllToAdministrator = true;
+        });
+
+        var options = services.BuildServiceProvider()
+            .GetRequiredService<IOptions<LumenAuthorizationOptions>>()
+            .Value;
+
+        options.CatalogMode.Should().Be(PermissionCatalogMode.Sync);
+        options.FailFastOnMissingPermission.Should().BeTrue();
+        options.AutoGrantAllToAdministrator.Should().BeTrue();
+    }
+
+    [Fact]
     public void IConfigurationOverload_RegistersCoreServices()
     {
         var services = BuildMinimalServices();
@@ -154,17 +206,19 @@ public sealed class AddLumenAuthorizationWebTests
     }
 
     [Fact]
-    public void IConfigurationOverload_RegistersMigrationsHostedService()
+    public void IConfigurationOverload_RegistersStartupHostedService()
     {
         var services = BuildMinimalServices();
+        services.AddSingleton<Microsoft.AspNetCore.Mvc.Infrastructure.IActionDescriptorCollectionProvider>(
+            _ => new FakeActionDescriptorCollectionProvider());
         var configuration = BuildConfiguration(FakeSqlConnectionString);
 
         services.AddLumenAuthorization(configuration);
 
         services.Should().Contain(d =>
                 d.ServiceType == typeof(IHostedService) &&
-                d.ImplementationType == typeof(LumenAuthorizationMigrationsHostedService),
-            because: "the IConfiguration umbrella overload must register the migrations hosted service");
+                d.ImplementationType == typeof(LumenAuthorizationStartupService),
+            because: "the IConfiguration umbrella overload must register the unified startup hosted service");
     }
 
     [Fact]

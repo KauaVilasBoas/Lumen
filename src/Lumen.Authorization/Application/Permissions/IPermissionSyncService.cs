@@ -10,6 +10,5 @@ public interface IPermissionSyncService
 public sealed record DiscoveredPermissionEntry(
     string Controller,
     string Action,
-    string DisplayName,
     string Code,
     string GroupName);

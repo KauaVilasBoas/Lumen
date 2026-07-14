@@ -32,27 +32,27 @@ public sealed class Permission : ISoftDeletable
         return $"{controller}.{action}";
     }
 
-    public static Permission Create(string controller, string action, string displayName, Guid? groupPermissionId = null)
+    public static Permission Create(string controller, string action, Guid? groupPermissionId = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(controller);
         ArgumentException.ThrowIfNullOrWhiteSpace(action);
-        ArgumentException.ThrowIfNullOrWhiteSpace(displayName);
+
+        var code = BuildCode(controller, action);
 
         return new Permission
         {
             Controller = controller,
             Action = action,
-            Code = BuildCode(controller, action),
-            DisplayName = displayName,
+            Code = code,
+            DisplayName = code,
             GroupPermissionId = groupPermissionId,
         };
     }
 
-    public void Update(string controller, string action, string displayName, Guid? groupPermissionId)
+    public void UpdateLocationAndGroup(string controller, string action, Guid? groupPermissionId)
     {
         Controller = controller;
         Action = action;
-        DisplayName = displayName;
         GroupPermissionId = groupPermissionId;
     }
 
