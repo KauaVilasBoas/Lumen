@@ -1,6 +1,4 @@
 using FluentAssertions;
-using Lumen.Authorization;
-using Lumen.Authorization.Contracts;
 using Lumen.Authorization.Contracts.Events;
 using Lumen.Modularity;
 using Lumen.Modules.Identity.Application.Users.Delete;
@@ -18,10 +16,9 @@ public sealed class DeleteUserCommandHandlerTests
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly IRefreshTokenRepository _refreshTokenRepository = Substitute.For<IRefreshTokenRepository>();
     private readonly IEventBus _eventBus = Substitute.For<IEventBus>();
-    private readonly IUserProfileGuard _userProfileGuard = Substitute.For<IUserProfileGuard>();
 
     private DeleteUserCommandHandler CreateHandler()
-        => new(_userRepository, _refreshTokenRepository, _eventBus, _userProfileGuard, NullLogger<DeleteUserCommandHandler>.Instance);
+        => new(_userRepository, _refreshTokenRepository, _eventBus, NullLogger<DeleteUserCommandHandler>.Instance);
 
     [Fact]
     public async Task Handle_ValidUser_SoftDeletesAndPublishesPermissionsChangedEvent()
@@ -31,7 +28,6 @@ public sealed class DeleteUserCommandHandlerTests
         var userId = user.Id;
 
         _userRepository.FindByIdAsync(userId, Arg.Any<CancellationToken>()).Returns(user);
-        _userProfileGuard.IsUserAdministratorAsync(userId, Arg.Any<CancellationToken>()).Returns(false);
         _refreshTokenRepository.FindByUserIdAsync(userId, Arg.Any<CancellationToken>()).Returns([]);
 
         var handler = CreateHandler();

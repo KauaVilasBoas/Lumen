@@ -1,5 +1,4 @@
 using FluentValidation;
-using Lumen.Authorization.Application;
 using Lumen.Authorization.Application.Behaviors;
 using Lumen.Authorization.Contracts;
 using Lumen.Authorization.Domain;
@@ -85,8 +84,6 @@ public static class LumenAuthorizationServiceCollectionExtensions
         services.AddScoped<UserPermissionService>();
         services.AddScoped<Domain.IUserPermissionService>(sp => sp.GetRequiredService<UserPermissionService>());
         services.AddScoped<Contracts.IUserPermissionService>(sp => sp.GetRequiredService<UserPermissionService>());
-
-        services.AddScoped<IUserProfileGuard, UserProfileGuard>();
 
         services.TryAddScoped<IUserDirectory, NoOpUserDirectory>();
         services.TryAddScoped<IAuthorizationUserSource, EmptyAuthorizationUserSource>();

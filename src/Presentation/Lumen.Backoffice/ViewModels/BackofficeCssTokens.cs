@@ -16,7 +16,6 @@ public static class BackofficeCssTokens
     public static readonly string[] ProfileAccentColors =
         ["#4c8dff", "#2bd4a0", "#f5a623", "#f25fa6", "#a78bfa"];
 
-    public const string ProfileAccentAdministrator = "#8b6dff";
     public const string ProfileAccentSystemDefault = "#5b6478";
 
     public const string LifecycleColorPresentation = "var(--pres)";

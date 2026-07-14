@@ -2,7 +2,6 @@ namespace Lumen.Authorization.Backoffice.Internal;
 
 internal static class BackofficeDisplayTokens
 {
-    internal const string ProfileAccentAdministrator = "#8b6dff";
     internal const string ProfileAccentSystemDefault = "#5b6478";
 
     internal static readonly string[] ProfileAccentPalette =
@@ -13,7 +12,7 @@ internal static class BackofficeDisplayTokens
         if (!isSystem)
             return ProfileAccentPalette[Math.Abs(name.GetHashCode()) % ProfileAccentPalette.Length];
 
-        return name == "Administrator" ? ProfileAccentAdministrator : ProfileAccentSystemDefault;
+        return ProfileAccentSystemDefault;
     }
 
     internal const string PageTitleProfiles = "Profiles";

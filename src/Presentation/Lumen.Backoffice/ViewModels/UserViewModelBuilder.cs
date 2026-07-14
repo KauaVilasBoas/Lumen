@@ -1,4 +1,3 @@
-using Lumen.Authorization;
 using Lumen.Backoffice.Services;
 using Lumen.SharedKernel.Constants;
 
@@ -30,9 +29,7 @@ public static class UserViewModelBuilder
     private static string ProfileAccentColor(AdminApiClient.ProfileMembership profile)
     {
         if (profile.IsSystem)
-            return profile.ProfileId == SystemProfiles.AdministratorId
-                ? BackofficeCssTokens.ProfileAccentAdministrator
-                : BackofficeCssTokens.ProfileAccentSystemDefault;
+            return BackofficeCssTokens.ProfileAccentSystemDefault;
 
         return BackofficeCssTokens.ProfileAccentColors[
             Math.Abs(profile.Name.GetHashCode()) % BackofficeCssTokens.ProfileAccentColors.Length];
