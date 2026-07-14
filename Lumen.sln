@@ -83,6 +83,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lumen.Identity.Migrations",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lumen.Identity.Migrations.PostgreSQL", "src\Lumen.Identity.Migrations.PostgreSQL\Lumen.Identity.Migrations.PostgreSQL.csproj", "{47F54E80-8EC1-457F-82FE-154B45CE5FF2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lumen.Authorization.Migrations.Tests", "tests\Lumen.Authorization.Migrations.Tests\Lumen.Authorization.Migrations.Tests.csproj", "{77FF1520-A65A-44C8-9226-990B693F6787}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -212,6 +214,10 @@ Global
 		{47F54E80-8EC1-457F-82FE-154B45CE5FF2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{47F54E80-8EC1-457F-82FE-154B45CE5FF2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{47F54E80-8EC1-457F-82FE-154B45CE5FF2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{77FF1520-A65A-44C8-9226-990B693F6787}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{77FF1520-A65A-44C8-9226-990B693F6787}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{77FF1520-A65A-44C8-9226-990B693F6787}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{77FF1520-A65A-44C8-9226-990B693F6787}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{E505FB60-593A-4BA5-8875-4BEB23837533} = {E4DA74F3-0A23-4E4C-B12E-7E8F963433BF}
@@ -246,5 +252,6 @@ Global
 		{6E47AEE1-6A9A-4BB2-992C-529784B2E2CC} = {2F80B4CB-63F5-4569-ACB2-238605685946}
 		{6A7A39A4-6090-4B81-95AC-56000274E3E9} = {2F80B4CB-63F5-4569-ACB2-238605685946}
 		{47F54E80-8EC1-457F-82FE-154B45CE5FF2} = {2F80B4CB-63F5-4569-ACB2-238605685946}
+		{77FF1520-A65A-44C8-9226-990B693F6787} = {A631778C-A0AF-4DCD-8807-0579B1515A3B}
 	EndGlobalSection
 EndGlobal

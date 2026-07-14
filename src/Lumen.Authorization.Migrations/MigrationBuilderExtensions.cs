@@ -4,22 +4,22 @@ namespace Lumen.Authorization.Migrations;
 
 public static class MigrationBuilderExtensions
 {
-    private const string PermissionsTable = "[Lumen].[Permissions]";
-    private const string GroupPermissionsTable = "[Lumen].[GroupPermissions]";
+    private const string PermissionTable = "[Lumen].[Permission]";
+    private const string PermissionGroupTable = "[Lumen].[PermissionGroup]";
 
     public static void SeedLumenPermissionGroup(
         this MigrationBuilder migrationBuilder,
         string name,
-        string displayName)
+        string description)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
-        ArgumentException.ThrowIfNullOrWhiteSpace(displayName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(description);
 
         migrationBuilder.Sql($"""
-            IF NOT EXISTS (SELECT 1 FROM {GroupPermissionsTable} WHERE [Name] = N'{Escape(name)}')
+            IF NOT EXISTS (SELECT 1 FROM {PermissionGroupTable} WHERE [Name] = N'{Escape(name)}')
             BEGIN
-                INSERT INTO {GroupPermissionsTable} ([Id], [Name], [DisplayName], [IsDeleted], [DeletedAt])
-                VALUES (NEWID(), N'{Escape(name)}', N'{Escape(displayName)}', 0, NULL)
+                INSERT INTO {PermissionGroupTable} ([Id], [Name], [Description], [IsDeleted], [DeletedAt])
+                VALUES (NEWID(), N'{Escape(name)}', N'{Escape(description)}', 0, NULL)
             END
             """);
     }
@@ -33,19 +33,15 @@ public static class MigrationBuilderExtensions
         ArgumentException.ThrowIfNullOrWhiteSpace(code);
         ArgumentException.ThrowIfNullOrWhiteSpace(displayName);
 
-        var parts = code.Split('.', 2);
-        var controller = parts.Length == 2 ? parts[0] : code;
-        var action = parts.Length == 2 ? parts[1] : code;
-
         var groupLookup = groupName is not null
-            ? $"(SELECT TOP 1 [Id] FROM {GroupPermissionsTable} WHERE [Name] = N'{Escape(groupName)}')"
+            ? $"(SELECT TOP 1 [Id] FROM {PermissionGroupTable} WHERE [Name] = N'{Escape(groupName)}')"
             : "NULL";
 
         migrationBuilder.Sql($"""
-            IF NOT EXISTS (SELECT 1 FROM {PermissionsTable} WHERE [Code] = N'{Escape(code)}')
+            IF NOT EXISTS (SELECT 1 FROM {PermissionTable} WHERE [Code] = N'{Escape(code)}')
             BEGIN
-                INSERT INTO {PermissionsTable} ([Id], [Code], [Controller], [Action], [DisplayName], [GroupPermissionId], [IsOrphan], [OrphanedAt], [IsDeleted], [DeletedAt])
-                VALUES (NEWID(), N'{Escape(code)}', N'{Escape(controller)}', N'{Escape(action)}', N'{Escape(displayName)}', {groupLookup}, 0, NULL, 0, NULL)
+                INSERT INTO {PermissionTable} ([Id], [Code], [DisplayName], [GroupPermissionId], [IsDeleted], [DeletedAt])
+                VALUES (NEWID(), N'{Escape(code)}', N'{Escape(displayName)}', {groupLookup}, 0, NULL)
             END
             """);
     }
@@ -57,7 +53,7 @@ public static class MigrationBuilderExtensions
         ArgumentException.ThrowIfNullOrWhiteSpace(code);
 
         migrationBuilder.Sql($"""
-            DELETE FROM {PermissionsTable} WHERE [Code] = N'{Escape(code)}'
+            DELETE FROM {PermissionTable} WHERE [Code] = N'{Escape(code)}'
             """);
     }
 
@@ -68,7 +64,7 @@ public static class MigrationBuilderExtensions
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
         migrationBuilder.Sql($"""
-            DELETE FROM {GroupPermissionsTable} WHERE [Name] = N'{Escape(name)}'
+            DELETE FROM {PermissionGroupTable} WHERE [Name] = N'{Escape(name)}'
             """);
     }
 
