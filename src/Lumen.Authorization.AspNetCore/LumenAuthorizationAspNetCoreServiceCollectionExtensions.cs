@@ -1,4 +1,5 @@
 using Lumen.Authorization.Contracts;
+using Lumen.Authorization.Migrations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,7 +17,7 @@ public static class LumenAuthorizationAspNetCoreServiceCollectionExtensions
     {
         CoreExtensions.AddLumenAuthorization(services, connectionString, configure);
         services.AddLumenAuthorizationEnforcement();
-        services.AddLumenAuthorizationStartup();
+        services.AddLumenAuthorizationMigrations();
 
         return services;
     }
@@ -28,7 +29,7 @@ public static class LumenAuthorizationAspNetCoreServiceCollectionExtensions
     {
         CoreExtensions.AddLumenAuthorization(services, configuration, configure);
         services.AddLumenAuthorizationEnforcement();
-        services.AddLumenAuthorizationStartup();
+        services.AddLumenAuthorizationMigrations();
 
         return services;
     }
@@ -41,20 +42,4 @@ public static class LumenAuthorizationAspNetCoreServiceCollectionExtensions
 
         return services;
     }
-
-    public static IServiceCollection AddLumenAuthorizationStartup(this IServiceCollection services)
-    {
-        services.AddSingleton<PermissionDiscoveryScanner>();
-        services.AddHostedService<LumenAuthorizationStartupService>();
-
-        return services;
-    }
-
-    [Obsolete("Use AddLumenAuthorizationStartup() instead. AddLumenAuthorizationDiscovery() registers only the Sync-mode hosted service without respecting CatalogMode. Will be removed in a future version.")]
-    public static IServiceCollection AddLumenAuthorizationDiscovery(this IServiceCollection services)
-        => services.AddLumenAuthorizationStartup();
-
-    [Obsolete("Use AddLumenAuthorization() which includes migrations via the unified startup service. AddLumenAuthorizationMigrations() is now a no-op; migrations are applied by LumenAuthorizationStartupService.")]
-    public static IServiceCollection AddLumenAuthorizationMigrations(this IServiceCollection services)
-        => services;
 }

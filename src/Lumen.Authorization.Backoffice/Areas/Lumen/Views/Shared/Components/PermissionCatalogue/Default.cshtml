@@ -1,25 +1,19 @@
 @model PermissionCatalogueViewModel
 @{
     var all = Model.Groups.SelectMany(g => g.Permissions).ToList();
-    var orphanCount = all.Count(p => p.IsOrphan);
 }
 
 <div class="lz-content-wrap">
     <div class="lz-stats-row">
         <div class="lz-stat lz-card">
             <div class="lz-stat-value lz-tnum">@all.Count</div>
-            <div class="lz-stat-label">Discovered</div>
+            <div class="lz-stat-label">Total</div>
             <div class="lz-stat-sub lz-mono">across @Model.Groups.Count groups</div>
         </div>
         <div class="lz-stat lz-card">
-            <div class="lz-stat-value lz-tnum">@(all.Count - orphanCount)</div>
-            <div class="lz-stat-label">Active</div>
-            <div class="lz-stat-sub lz-mono">reachable actions</div>
-        </div>
-        <div class="lz-stat lz-card">
-            <div class="lz-stat-value lz-tnum">@orphanCount</div>
-            <div class="lz-stat-label">Orphans</div>
-            <div class="lz-stat-sub lz-mono">endpoint removed</div>
+            <div class="lz-stat-value lz-tnum">@Model.Groups.Count</div>
+            <div class="lz-stat-label">Groups</div>
+            <div class="lz-stat-sub lz-mono">permission groups</div>
         </div>
     </div>
 
@@ -34,17 +28,13 @@
                 @foreach (var p in group.Permissions)
                 {
                     var method = PermissionDisplayHelper.HttpMethod(p.Code);
-                    <div class="lz-perm-item @(p.IsOrphan ? "orphan" : "")">
+                    <div class="lz-perm-item">
                         <span class="lz-method lz-mono"
                               style="color:@PermissionDisplayHelper.MethodCssColor(method);border-color:@PermissionDisplayHelper.MethodCssColor(method)">@method</span>
                         <div class="lz-perm-code-wrap">
                             <span class="lz-perm-code lz-mono">@p.Code</span>
                         </div>
                         <span class="lz-perm-name">@p.DisplayName</span>
-                        @if (p.IsOrphan)
-                        {
-                            <span class="lz-badge lz-badge-warn">orphan</span>
-                        }
                     </div>
                 }
             </div>

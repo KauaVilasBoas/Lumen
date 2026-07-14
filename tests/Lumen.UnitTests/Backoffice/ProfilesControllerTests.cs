@@ -62,8 +62,8 @@ public sealed class ProfilesControllerTests
         =>
         [
             new(Guid.NewGuid(), "Users", [
-                new(Guid.NewGuid(), "Users.List", "List Users", false),
-                new(Guid.NewGuid(), "Users.Get", "Get User", false)
+                new(Guid.NewGuid(), "Users.List", "List Users"),
+                new(Guid.NewGuid(), "Users.Get", "Get User")
             ])
         ];
 

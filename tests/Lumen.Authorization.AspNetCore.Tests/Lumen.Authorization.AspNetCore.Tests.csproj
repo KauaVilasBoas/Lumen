@@ -25,6 +25,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Lumen.Authorization.AspNetCore\Lumen.Authorization.AspNetCore.csproj" />
     <ProjectReference Include="..\..\src\Lumen.Authorization.Contracts\Lumen.Authorization.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\Lumen.Authorization.Migrations\Lumen.Authorization.Migrations.csproj" />
   </ItemGroup>
 
 </Project>

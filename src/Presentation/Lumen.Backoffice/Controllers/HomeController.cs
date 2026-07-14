@@ -44,19 +44,13 @@ public sealed class HomeController : BackofficeBaseController
         var jobStats         = await SafeResult(jobStatsTask);
 
         int? permissionCount = null;
-        int? orphanCount = null;
         if (permissionGroups is not null)
-        {
-            var all = permissionGroups.SelectMany(g => g.Permissions).ToList();
-            permissionCount = all.Count;
-            orphanCount     = all.Count(p => p.IsOrphan);
-        }
+            permissionCount = permissionGroups.SelectMany(g => g.Permissions).Count();
 
         return View(new HomeDashboardViewModel(
             UserCount:       userCount,
             ProfileCount:    profiles?.Count,
             PermissionCount: permissionCount,
-            OrphanCount:     orphanCount,
             CacheHitRate:    cacheStats?.HitRate,
             Activity:        activity,
             JobStats:        jobStats));

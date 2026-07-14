@@ -74,8 +74,8 @@ public sealed class HomeControllerTests
                 var perms = new List<AdminApiClient.PermissionGroup>
                 {
                     new(null, "Default", [
-                        new(Guid.NewGuid(), "Users.List", "List users", false),
-                        new(Guid.NewGuid(), "Orphan.Action", "Orphan", true)
+                        new(Guid.NewGuid(), "Users.List", "List users"),
+                        new(Guid.NewGuid(), "Users.Get", "Get user")
                     ])
                 };
                 return JsonOk(perms);
@@ -146,7 +146,6 @@ public sealed class HomeControllerTests
         vm.UserCount.Should().Be(7);
         vm.ProfileCount.Should().Be(3);
         vm.PermissionCount.Should().Be(2);
-        vm.OrphanCount.Should().Be(1);
         vm.Activity.Should().NotBeNull();
         vm.CacheHitRate.Should().NotBeNull();
         vm.JobStats.Should().NotBeNull();

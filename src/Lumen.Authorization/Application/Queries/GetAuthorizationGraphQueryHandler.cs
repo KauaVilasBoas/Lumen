@@ -21,8 +21,7 @@ public sealed record AuthorizationGraphProfileNode(
 public sealed record AuthorizationGraphPermissionNode(
     string Code,
     string Name,
-    string Group,
-    bool Orphan);
+    string Group);
 
 public sealed record AuthorizationGraphSnapshot(
     IReadOnlyList<AuthorizationGraphUserNode> Users,
@@ -83,10 +82,9 @@ internal sealed class GetAuthorizationGraphQueryHandler
                 : string.Empty;
 
             result[p.Id.ToString()] = new AuthorizationGraphPermissionNode(
-                Code:   p.Code,
-                Name:   p.DisplayName,
-                Group:  groupName,
-                Orphan: p.IsOrphan);
+                Code:  p.Code,
+                Name:  p.DisplayName,
+                Group: groupName);
         }
 
         return result;

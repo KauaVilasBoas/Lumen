@@ -93,7 +93,7 @@
                                     var isOn = assignedIds.Contains(perm.Id);
                                     var m = PermissionDisplayHelper.HttpMethod(perm.Code);
                                     <button type="button"
-                                            class="mperm @(isOn ? "on" : "") @(perm.IsOrphan ? "orphan" : "")"
+                                            class="mperm @(isOn ? "on" : "")"
                                             @(canEdit ? "" : "disabled")>
                                         <input type="checkbox" name="selectedPermissionIds" value="@perm.Id"
                                                @(isOn ? "checked" : "") hidden/>
@@ -103,16 +103,8 @@
                                             <span class="mperm-code mono">@perm.Code</span>
                                             <span class="mperm-name">@perm.DisplayName</span>
                                         </div>
-                                        @if (perm.IsOrphan)
-                                        {
-                                            <span
-                                                class="badge warn">@await Html.PartialAsync("_Icon", "ghost") orphan</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="knode-method mono"
-                                                  style="color:@PermissionDisplayHelper.MethodCssColor(m);border-color:@PermissionDisplayHelper.MethodCssColor(m)">@m</span>
-                                        }
+                                        <span class="knode-method mono"
+                                              style="color:@PermissionDisplayHelper.MethodCssColor(m);border-color:@PermissionDisplayHelper.MethodCssColor(m)">@m</span>
                                     </button>
                                 }
                             </div>

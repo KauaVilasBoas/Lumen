@@ -3,10 +3,10 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace Lumen.Authorization.Migrations.EfMigrations
+namespace Lumen.Authorization.Migrations.PostgreSQL.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialLumenAuthorizationSchema : Migration
+    public partial class InitialLumenAuthorizationSchemaPostgres : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -19,11 +19,11 @@ namespace Lumen.Authorization.Migrations.EfMigrations
                 schema: "Lumen",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(512)", maxLength: 512, nullable: false),
-                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    Description = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: false),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -35,12 +35,12 @@ namespace Lumen.Authorization.Migrations.EfMigrations
                 schema: "Lumen",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(512)", maxLength: 512, nullable: false),
-                    IsSystem = table.Column<bool>(type: "bit", nullable: false),
-                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    Description = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: false),
+                    IsSystem = table.Column<bool>(type: "boolean", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -52,16 +52,12 @@ namespace Lumen.Authorization.Migrations.EfMigrations
                 schema: "Lumen",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Code = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: false),
-                    Controller = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
-                    Action = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
-                    DisplayName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: false),
-                    GroupPermissionId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
-                    IsOrphan = table.Column<bool>(type: "bit", nullable: false),
-                    OrphanedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Code = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    DisplayName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    GroupPermissionId = table.Column<Guid>(type: "uuid", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -80,11 +76,12 @@ namespace Lumen.Authorization.Migrations.EfMigrations
                 schema: "Lumen",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ProfileId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProfileId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ScopeId = table.Column<Guid>(type: "uuid", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -103,11 +100,11 @@ namespace Lumen.Authorization.Migrations.EfMigrations
                 schema: "Lumen",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    PermissionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    ProfileId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    PermissionId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProfileId = table.Column<Guid>(type: "uuid", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -134,7 +131,7 @@ namespace Lumen.Authorization.Migrations.EfMigrations
                 table: "Permission",
                 column: "Code",
                 unique: true,
-                filter: "[IsDeleted] = 0");
+                filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Permission_GroupPermissionId",
@@ -148,7 +145,7 @@ namespace Lumen.Authorization.Migrations.EfMigrations
                 table: "PermissionGroup",
                 column: "Name",
                 unique: true,
-                filter: "[IsDeleted] = 0");
+                filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
                 name: "ix_lumen_permission_profile_active_unique",
@@ -156,7 +153,7 @@ namespace Lumen.Authorization.Migrations.EfMigrations
                 table: "PermissionProfile",
                 columns: new[] { "PermissionId", "ProfileId" },
                 unique: true,
-                filter: "[IsDeleted] = 0");
+                filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
                 name: "ix_lumen_permission_profile_permission_id",
@@ -176,15 +173,15 @@ namespace Lumen.Authorization.Migrations.EfMigrations
                 table: "Profile",
                 column: "Name",
                 unique: true,
-                filter: "[IsDeleted] = 0");
+                filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
                 name: "ix_lumen_user_profile_active_unique",
                 schema: "Lumen",
                 table: "UserProfile",
-                columns: new[] { "UserId", "ProfileId" },
+                columns: new[] { "UserId", "ProfileId", "ScopeId" },
                 unique: true,
-                filter: "[IsDeleted] = 0");
+                filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
                 name: "ix_lumen_user_profile_user_id",
