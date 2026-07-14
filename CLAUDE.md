@@ -60,17 +60,29 @@ tests/
 
 > `tests/Lumen.IntegrationTests` foi removida temporariamente da solução — exige reescrita para usar `IdentityDbContext` em vez do legado `LumenDbContext`.
 
-> **Em andamento — autorização como biblioteca plugável ([ADR-0004](docs/adr/0004-authorization-as-library.md)):** a capacidade de autorização (Permissions, Profiles, UserProfiles, `IUserPermissionService`, enforcement, discovery, backoffice) será extraída do módulo Identity para a família de pacotes `Lumen.Authorization*` — núcleo agnóstico de ASP.NET (`Lumen.Authorization`), migrations (`.Migrations`), cola web com `[RequirePermission]`/policy provider (`.AspNetCore`) e backoffice montável como Razor Class Library (`.Backoffice`). Alvo: qualquer app ASP.NET Core faz `AddLumenAuthorization(connectionString)` (auto-migração do schema `Lumen`, tabelas singulares) + `AddLumenAuthorizationEnforcement()` + `[RequirePermission]` (declara e enforça) + `MapLumenBackoffice("/lumen")`, trazendo o próprio login. Épico "Lumen Authz Lib" (cards LIB-00…LIB-14).
+> **Autorização como biblioteca genérica plugável ([ADR-0004](docs/adr/0004-authorization-as-library.md), [ADR-0007](docs/adr/0007-authz-3.0-generic-library.md)):** A família `Lumen.Authorization*` é uma biblioteca genérica de autorização para qualquer app ASP.NET Core. Versão atual: **3.0.0**. Ver SPEC-0001 para o contrato completo.
 >
-> **LIB-07 (concluído):** `Lumen.Authorization.AspNetCore` criado com `PermissionPolicyProvider`, `PermissionRequirement`, `PermissionAuthorizationHandler`, `RequirePermissionAttribute`, `PermissionGroupAttribute`, `ControllerNameNormalizer`. Máquina de enforcement movida do host; SharedKernel limpo dos atributos. Registro: `AddLumenAuthorizationEnforcement()`.
+> **Princípios invioláveis (3.0):** zero auto-população (lib não semeia permissões), zero enforcement global (só barra onde há `[RequirePermission]`), zero acoplamento de identidade (sem tabela Users — lê userId de claim), zero código específico de consumidor.
 >
-> **LIB-06 (concluído):** `RequirePermissionAttribute` implementa `IAuthorizationRequirementData` — atributo único declara E enforça. Code explícito ou convenção `controller.action` via `ControllerActionDescriptor` do endpoint. Controllers do host migrados para `[RequirePermission(PermissionCodes.X)]` sem `[Authorize]` redundante. Policy nomeada aceita formato `code.com.ponto` (compat) ou `Lumen:code`.
+> **Registro mínimo:**
+> ```csharp
+> builder.Services.AddLumenAuthorization(connectionString); // núcleo + enforcement + migrations
+> app.MapLumenBackoffice("/lumen");                          // backoffice opcional
+> ```
 >
-> **LIB-08 (concluído):** `LumenAuthorizationOptions.UserIdClaimType` (default `ClaimTypes.NameIdentifier`) torna o claim de userId configurável. `IUserIdAccessor` (em `Lumen.Authorization.Contracts`) abstrai a leitura do userId — implementação default `ClaimsUserIdAccessor` em `Lumen.Authorization.AspNetCore`, registrada via `TryAddSingleton` em `AddLumenAuthorizationEnforcement()`. `PermissionAuthorizationHandler` delega a extração ao `IUserIdAccessor`.
+> **Catálogo de permissões:** responsabilidade do consumidor, via migration própria com helpers `SeedLumenPermissionGroup(name, description)` / `SeedLumenPermission(code, displayName, groupName?)`.
 >
-> **LIB-09 (concluído):** `PermissionDiscoveryScanner` e `PermissionDiscoveryAndReconciliationHostedService` movidos para `Lumen.Authorization.AspNetCore`. Hosted service unificado executa `descobrir → SyncDiscoveredAsync → ReconcileAdministratorAsync` em sequência usando `IPermissionSyncService` diretamente. Registro: `AddLumenAuthorizationDiscovery()`. Todos os wrappers intermediários e o record `DiscoveredPermission` do host foram removidos; `Lumen.Api/Program.cs` usa `AddLumenAuthorizationDiscovery()` no lugar de `AddPermissionDiscovery()`.
+> **Backoffice `/lumen`:** gateado por `LumenBackofficePermissions.*` (constantes públicas). A app semeia esses codes e os atribui ao perfil administrador.
 >
-> **LIB-10 (concluído):** `Lumen.Authorization.Backoffice` (RCL `Microsoft.NET.Sdk.Razor`) criado com Area `Lumen`, controllers in-process (`ProfilesController`, `PermissionsController`) que usam `ISender` MediatR para despachar Queries/Commands da lib diretamente — sem HTTP. ViewComponents separados: `ProfileListViewComponent`, `ProfileDetailViewComponent`, `PermissionCatalogueViewComponent`. CSS próprio em `wwwroot/css/lumen-authz.css`, servido via `_content/Lumen.Authorization.Backoffice/`. Registro: `AddLumenBackoffice()` + `MapLumenBackoffice(prefix)`. Autenticação é responsabilidade do consumidor. `tests/Lumen.Authorization.Backoffice.Tests`: 15 testes de unidade. `ArchitectureTests`: regra `AuthorizationBackoffice_MustNotDependOnIdentityOrAuditModules` adicionada.
+> **Enforcement:** `[RequirePermission("Code.Explícito")]` ou `[RequirePermission]` (convenção `Controller.Action` PascalCase sem sufixo `Controller`).
+>
+> **Concluído (épico LIB):**
+> - LIB-06/07: `RequirePermissionAttribute` (IAuthorizationRequirementData), `PermissionPolicyProvider`, enforcement movido do host.
+> - LIB-08: `LumenAuthorizationOptions.UserIdClaimType`, `IUserIdAccessor`.
+> - LIB-09 → absorvido pelo 3.0: discovery removido; migrations hosted service é o único serviço de startup.
+> - LIB-10: `Lumen.Authorization.Backoffice` RCL com Area `Lumen`, controllers in-process, ViewComponents, CSS próprio.
+> - LIB-16 (3.0): umbrella `AddLumenAuthorization` colapsa tudo (núcleo + enforcement + migrations).
+> - **3.0.0**: remoção da máquina de catálogo (discovery/sync/reconcile/CatalogMode); schema limpo (sem Controller/Action/IsOrphan); `LumenBackofficePermissions`; migrations regeneradas; `SeedLumenPermission*` corrigidos.
 
 ## Arquitetura modular
 

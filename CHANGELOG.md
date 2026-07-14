@@ -7,6 +7,111 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [Authorization 3.0.0] - 2026-07-14
+
+> **Lumen.Authorization como biblioteca genérica de autorização.** Remove toda a máquina automática de catálogo (discovery, sync, reconciliação, validação). O consumidor é totalmente responsável pelo catálogo de permissões via suas próprias migrations. Ver ADR-0007 e SPEC-0001 para o contexto completo.
+
+### Breaking Changes
+
+- **`PermissionCatalogMode` removido**: o enum e a opção `CatalogMode` não existem mais. Remova do `AddLumenAuthorization`.
+- **`FailFastOnMissingPermission` removido**: remova da chamada de configuração.
+- **`AutoGrantAllToAdministrator` removido**: remova da chamada de configuração. O perfil Administrador não recebe permissões automaticamente.
+- **`IPermissionSyncService` / `PermissionSyncService` removidos**: discovery e sync eliminados da lib.
+- **`PermissionDiscoveryScanner` removido**.
+- **`PermissionDiscoveryAndReconciliationHostedService` removido**.
+- **`PermissionCatalogValidationService` removido**.
+- **`LumenAuthorizationStartupService` removido**: substituído pelo `LumenAuthorizationMigrationsHostedService` (apenas aplica migrations).
+- **`AddLumenAuthorizationDiscovery()` / `AddLumenAuthorizationStartup()` removidos**: use `AddLumenAuthorization()` (inclui migrations automaticamente).
+- **`Permission.Controller`, `.Action`, `.IsOrphan`, `.OrphanedAt` removidos**: colunas mortas sem discovery. Breaking no schema — requer drop & re-create do schema `Lumen` em dev.
+- **`Permission.Create` com assinatura nova**: `(string code, string displayName, Guid? groupPermissionId = null)` — sem Controller/Action.
+- **`Permission.BuildCode`, `.UpdateLocationAndGroup`, `.MarkAsOrphan`, `.ClearOrphan` removidos**.
+- **`IPermissionRepository.SaveAllAsync` removido**.
+- **`AuthorizationGraphPermissionNode.Orphan` removido** do resultado de `GetAuthorizationGraphQuery`.
+- **`ListPermissionsPermissionResult.IsOrphan` removido**.
+- **`SeedLumenPermissionGroup` segundo parâmetro renomeado**: `displayName` → `description`. Atualize as chamadas existentes.
+- **`SeedLumenPermission*` tabelas corrigidas** (breaking para quem usava as versões bugadas): agora miram `Lumen.Permission` / `Lumen.PermissionGroup` (singular) e coluna `Description` no grupo.
+- **Migrations regeneradas do zero**: schema `Lumen` sem colunas mortas. Consumidores em dev devem fazer drop & re-create.
+
+### Added
+
+- **`LumenBackofficePermissions`** (novo em `Lumen.Authorization.Backoffice`): constantes públicas dos codes de permissão que protegem o backoffice `/lumen`:
+  - `ProfilesView`, `ProfilesManage`
+  - `PermissionsView`, `PermissionsManage`
+  - `GroupsManage`
+  - `UserProfilesManage`
+- **`Lumen.Authorization.Migrations.Tests`**: projeto de testes com 10 casos validando tabelas, colunas e comportamento dos helpers de ambos os providers.
+
+### Changed
+
+- `AddLumenAuthorization` umbrella registra agora: núcleo + enforcement (`[RequirePermission]`) + `LumenAuthorizationMigrationsHostedService` (apenas aplica migrations quando `ApplyMigrationsOnStartup = true`).
+- Controllers da RCL `Lumen.Authorization.Backoffice` agora usam permissões explícitas (`LumenBackofficePermissions.*`) em vez de convenção `controller.action`.
+
+### Migration Guide — Authorization 2.x → 3.0.0
+
+#### 1. Atualizar pacotes
+
+```
+Lumen.Authorization*  →  3.0.0
+```
+
+#### 2. Limpar `AddLumenAuthorization`
+
+```csharp
+// ANTES (2.x)
+builder.Services.AddLumenAuthorization(connectionString, options =>
+{
+    options.CatalogMode = PermissionCatalogMode.Sync;
+    options.AutoGrantAllToAdministrator = true;
+    options.FailFastOnMissingPermission = false;
+});
+
+// DEPOIS (3.0)
+builder.Services.AddLumenAuthorization(connectionString);
+// Ou, se quiser desabilitar auto-migração:
+// builder.Services.AddLumenAuthorization(connectionString, o => o.ApplyMigrationsOnStartup = false);
+```
+
+#### 3. Recriar schema `Lumen` (ambiente de dev)
+
+```sql
+DROP SCHEMA [Lumen] CASCADE;  -- PostgreSQL
+-- ou
+DROP TABLE [Lumen].[PermissionProfile], [Lumen].[UserProfile],
+           [Lumen].[Permission], [Lumen].[Profile], [Lumen].[PermissionGroup];
+DROP SCHEMA [Lumen];          -- SQL Server
+```
+
+Depois suba o app — o `LumenAuthorizationMigrationsHostedService` recria o schema limpo.
+
+#### 4. Criar migration própria de seed
+
+```csharp
+// Na migration do SISLAB (após o schema Lumen existir):
+protected override void Up(MigrationBuilder mb)
+{
+    // Grupos
+    mb.SeedLumenPermissionGroup("Estoque", description: "Gestão de estoque");
+
+    // Permissões da app
+    mb.SeedLumenPermission("Estoque.Baixa", "Registrar baixa", "Estoque");
+
+    // Permissões do backoffice Lumen
+    mb.SeedLumenPermission(LumenBackofficePermissions.ProfilesView,    "Ver perfis");
+    mb.SeedLumenPermission(LumenBackofficePermissions.ProfilesManage,  "Gerenciar perfis");
+    mb.SeedLumenPermission(LumenBackofficePermissions.PermissionsView, "Ver permissões");
+    mb.SeedLumenPermission(LumenBackofficePermissions.UserProfilesManage, "Gerenciar atribuições");
+    // ... etc.
+
+    // Atribuir ao perfil administrador (via INSERT em PermissionProfile)
+}
+```
+
+#### 5. Aposentar LumenPermissionCatalogSeeder
+
+Se existir um hosted service de seed raw-SQL (`LumenPermissionCatalogSeeder`) ou um arquivo `PermissionDisplayNames`, remova-os — eram contrapeso ao overwrite que não existe mais.
+
+---
+
 ## [Authorization 2.0.0] - 2026-07-14
 
 > **Inversão de propriedade do catálogo**: a lib passa de _dona_ do catálogo de permissões para _validadora/enforçadora_. O consumidor semeia as permissões nas suas próprias migrations EF usando os novos extension methods `SeedLumenPermission` / `SeedLumenPermissionGroup`. O modo `Validate` (novo default) apenas verifica que todos os codes declarados via `[RequirePermission]` existem no banco — sem inserir nada. O modo `Sync` mantém o comportamento legado para retrocompatibilidade.
