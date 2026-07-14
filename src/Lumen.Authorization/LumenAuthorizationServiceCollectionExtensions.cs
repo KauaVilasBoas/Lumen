@@ -98,6 +98,9 @@ public static class LumenAuthorizationServiceCollectionExtensions
             o.RedisConnectionString = options.RedisConnectionString;
             o.ApplyMigrationsOnStartup = options.ApplyMigrationsOnStartup;
             o.UserIdClaimType = options.UserIdClaimType;
+            o.CatalogMode = options.CatalogMode;
+            o.FailFastOnMissingPermission = options.FailFastOnMissingPermission;
+            o.AutoGrantAllToAdministrator = options.AutoGrantAllToAdministrator;
         });
 
         RegisterDbContext(services, connectionString, options.Provider);
