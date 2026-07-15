@@ -4,7 +4,7 @@
     <RootNamespace>Lumen.Authorization.Migrations.PostgreSQL</RootNamespace>
     <AssemblyName>Lumen.Authorization.Migrations.PostgreSQL</AssemblyName>
     <IsPackable>true</IsPackable>
-    <Version>3.0.0</Version>
+    <Version>3.0.1</Version>
     <PackageId>Lumen.Authorization.Migrations.PostgreSQL</PackageId>
     <Authors>$(LumenPackageAuthors)</Authors>
     <Company>$(LumenPackageCompany)</Company>

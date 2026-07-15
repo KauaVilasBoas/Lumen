@@ -131,7 +131,7 @@ namespace Lumen.Authorization.Migrations.PostgreSQL.Migrations
                 table: "Permission",
                 column: "Code",
                 unique: true,
-                filter: "is_deleted = false");
+                filter: "\"IsDeleted\" = false");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Permission_GroupPermissionId",
@@ -145,7 +145,7 @@ namespace Lumen.Authorization.Migrations.PostgreSQL.Migrations
                 table: "PermissionGroup",
                 column: "Name",
                 unique: true,
-                filter: "is_deleted = false");
+                filter: "\"IsDeleted\" = false");
 
             migrationBuilder.CreateIndex(
                 name: "ix_lumen_permission_profile_active_unique",
@@ -153,7 +153,7 @@ namespace Lumen.Authorization.Migrations.PostgreSQL.Migrations
                 table: "PermissionProfile",
                 columns: new[] { "PermissionId", "ProfileId" },
                 unique: true,
-                filter: "is_deleted = false");
+                filter: "\"IsDeleted\" = false");
 
             migrationBuilder.CreateIndex(
                 name: "ix_lumen_permission_profile_permission_id",
@@ -173,7 +173,7 @@ namespace Lumen.Authorization.Migrations.PostgreSQL.Migrations
                 table: "Profile",
                 column: "Name",
                 unique: true,
-                filter: "is_deleted = false");
+                filter: "\"IsDeleted\" = false");
 
             migrationBuilder.CreateIndex(
                 name: "ix_lumen_user_profile_active_unique",
@@ -181,7 +181,7 @@ namespace Lumen.Authorization.Migrations.PostgreSQL.Migrations
                 table: "UserProfile",
                 columns: new[] { "UserId", "ProfileId", "ScopeId" },
                 unique: true,
-                filter: "is_deleted = false");
+                filter: "\"IsDeleted\" = false");
 
             migrationBuilder.CreateIndex(
                 name: "ix_lumen_user_profile_user_id",
