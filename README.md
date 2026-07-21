@@ -118,9 +118,9 @@ The optional `Lumen.Authorization.Backoffice` package is a Razor Class Library t
 full admin console inside **your** app at any prefix — profiles, permission catalog, groups
 and user↔profile assignments — gated by its own `LumenBackofficePermissions.*` codes.
 
-<!-- Capture from any host with the backoffice mounted at /lumen and drop into docs/screenshots/ -->
+![Permission assignment matrix](docs/screenshots/backoffice-profile-permissions.png)
 
-| Profiles & permission assignment | Permission catalog & groups |
+| Profiles | Permission catalog & groups |
 |---|---|
 | ![Profiles](docs/screenshots/backoffice-profiles.png) | ![Permissions](docs/screenshots/backoffice-permissions.png) |
 
