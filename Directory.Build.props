@@ -16,7 +16,7 @@
   -->
   <PropertyGroup>
     <LumenAuthorizationVersion>3.0.0</LumenAuthorizationVersion>
-    <LumenIdentityVersion>1.0.1</LumenIdentityVersion>
+    <LumenIdentityVersion>1.0.2</LumenIdentityVersion>
     <LumenPackageAuthors>Kauã Vilas Boas</LumenPackageAuthors>
     <LumenPackageCompany>Kauã Vilas Boas</LumenPackageCompany>
     <LumenPackageProduct>Lumen</LumenPackageProduct>
