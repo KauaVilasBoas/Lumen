@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [Identity 1.0.2] - 2026-10-10
+
+### Fixed
+
+- **`Lumen.Identity.Migrations.PostgreSQL` passa a depender de um `Lumen.Identity` restaurável.** O `.csproj` fixava `<Version>1.0.1</Version>` desde o patch de migrations de julho, então o workflow da família empacotava 1.0.1 de novo a cada release e o `--skip-duplicate` descartava o pacote em silêncio. O 1.0.1 que está no nuget.org foi gerado quando `LumenIdentityVersion` ainda era 1.0.0 e por isso declara `Lumen.Identity >= 1.0.0` — justamente a versão cujo restore falha com `NU1101` (ver `[Identity 1.0.1]`). Um projeto que referenciasse só o pacote PostgreSQL resolvia para o 1.0.0 e não restaurava.
+
+  O pacote volta a seguir `LumenIdentityVersion`: sai em 1.0.2 junto com a família e declara `Lumen.Identity >= 1.0.2`.
+
+### Changed
+
+- **`Lumen.SharedKernel.dll` embutido no `Lumen.Identity` ganha constantes novas** (`TokenLifetimes.PasswordReset`, `UserStates.AllFilter`/`AllCanonical`, `AuthErrorMessages.IdentifierRequired`/`RefreshTokenRequired`/`ExpiresAtMustBeInFuture`, `AuditMessageTemplates.UsernameChangedEntry`/`EmailChangedEntry`). São apenas adições, consumidas pelo módulo interno `Lumen.Modules.Identity`; nenhum tipo dos pacotes `Lumen.Identity*` mudou de API ou de comportamento.
+
 ## [Identity 1.0.1] - 2026-07-26
 
 ### Fixed
