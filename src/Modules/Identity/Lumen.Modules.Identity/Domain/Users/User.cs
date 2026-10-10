@@ -1,3 +1,4 @@
+using Lumen.SharedKernel.Constants;
 using Lumen.SharedKernel.Persistence;
 
 namespace Lumen.Modules.Identity.Domain.Users;
@@ -93,7 +94,23 @@ internal sealed class User : ISoftDeletable
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public bool IsLockedOut() => LockedUntil.HasValue && LockedUntil.Value > DateTime.UtcNow;
+    public bool IsLockedOut(DateTime asOfUtc) => LockedUntil.HasValue && LockedUntil.Value > asOfUtc;
+
+    public bool IsLockedOut() => IsLockedOut(DateTime.UtcNow);
+
+    public string ResolveState(DateTime asOfUtc)
+    {
+        if (IsDeleted)
+            return UserStates.Deleted;
+
+        if (IsLockedOut(asOfUtc))
+            return UserStates.Locked;
+
+        if (EmailConfirmedAt is null)
+            return UserStates.Pending;
+
+        return UserStates.Active;
+    }
 
     public void ChangeEmail(string newEmail)
     {

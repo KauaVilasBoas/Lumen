@@ -97,6 +97,7 @@ public sealed class IdentityModule : IModule
         services.AddScoped<ISmtpTransport, MailKitSmtpTransport>();
         services.AddScoped<IEmailService, MailKitEmailService>();
         services.AddScoped<IEmailConfirmationService, EmailConfirmationService>();
+        services.AddScoped<IPasswordChangedNotificationService, PasswordChangedNotificationService>();
 
         services.AddMemoryCache();
         services

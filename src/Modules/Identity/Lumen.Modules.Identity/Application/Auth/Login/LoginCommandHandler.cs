@@ -25,10 +25,10 @@ internal sealed class LoginCommandHandler
         public Validator()
         {
             RuleFor(x => x.Identifier)
-                .NotEmpty().WithMessage("O campo identificador é obrigatório.");
+                .NotEmpty().WithMessage(AuthErrorMessages.IdentifierRequired);
 
             RuleFor(x => x.Password)
-                .NotEmpty().WithMessage("O campo senha é obrigatório.");
+                .NotEmpty().WithMessage(AuthErrorMessages.PasswordRequired);
         }
     }
 

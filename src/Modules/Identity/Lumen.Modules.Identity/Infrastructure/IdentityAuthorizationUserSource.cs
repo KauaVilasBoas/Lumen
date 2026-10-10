@@ -1,5 +1,4 @@
 using Lumen.Authorization.Contracts;
-using Lumen.Modules.Identity.Application.Queries;
 using Lumen.Modules.Identity.Domain.Users;
 
 namespace Lumen.Modules.Identity.Infrastructure;
@@ -29,7 +28,7 @@ internal sealed class IdentityAuthorizationUserSource : IAuthorizationUserSource
                 Id: u.Id,
                 Username: u.Username,
                 Email: u.Email,
-                State: UserStateResolver.Resolve(u, now)))
+                State: u.ResolveState(now)))
             .ToList();
     }
 }

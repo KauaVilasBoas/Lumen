@@ -37,7 +37,10 @@ internal sealed class ListUsersQueryHandler
     public sealed class Validator : AbstractValidator<ListUsersQuery>
     {
         private static readonly HashSet<string> ValidStateValues =
-            ["active", "locked", "pending", "deleted", "all", ""];
+            [.. UserStates.AllCanonical, UserStates.AllFilter];
+
+        private static readonly string AllowedValuesDisplay =
+            string.Join(", ", [.. UserStates.AllCanonical, UserStates.AllFilter]);
 
         public Validator()
         {
@@ -50,9 +53,9 @@ internal sealed class ListUsersQueryHandler
                 .OverridePropertyName("pageSize");
 
             RuleFor(q => q.State)
-                .Must(s => s is null || ValidStateValues.Contains(s.ToLowerInvariant()))
+                .Must(s => string.IsNullOrEmpty(s) || ValidStateValues.Contains(s.ToLowerInvariant()))
                 .OverridePropertyName("state")
-                .WithMessage(q => $"Invalid state value '{q.State}'. Allowed values: active, locked, pending, deleted, all.");
+                .WithMessage(q => $"Invalid state value '{q.State}'. Allowed values: {AllowedValuesDisplay}.");
         }
     }
 
@@ -85,10 +88,10 @@ internal sealed class ListUsersQueryHandler
         var now = DateTime.UtcNow;
         var filtered = stateFilter switch
         {
-            UserStateFilter.Active  => users.Where(u => UserStateResolver.Resolve(u, now) == UserStates.Active).ToList(),
-            UserStateFilter.Locked  => users.Where(u => UserStateResolver.Resolve(u, now) == UserStates.Locked).ToList(),
-            UserStateFilter.Pending => users.Where(u => UserStateResolver.Resolve(u, now) == UserStates.Pending).ToList(),
-            UserStateFilter.Deleted => users.Where(u => UserStateResolver.Resolve(u, now) == UserStates.Deleted).ToList(),
+            UserStateFilter.Active  => users.Where(u => u.ResolveState(now) == UserStates.Active).ToList(),
+            UserStateFilter.Locked  => users.Where(u => u.ResolveState(now) == UserStates.Locked).ToList(),
+            UserStateFilter.Pending => users.Where(u => u.ResolveState(now) == UserStates.Pending).ToList(),
+            UserStateFilter.Deleted => users.Where(u => u.ResolveState(now) == UserStates.Deleted).ToList(),
             _                       => (IReadOnlyList<User>)users,
         };
 
@@ -104,7 +107,7 @@ internal sealed class ListUsersQueryHandler
                 Id: u.Id,
                 Username: u.Username,
                 Email: u.Email,
-                State: UserStateResolver.Resolve(u, now),
+                State: u.ResolveState(now),
                 IsBootstrap: u.IsBootstrap,
                 CreatedAt: u.CreatedAt,
                 LastLoginAt: u.LastLoginAt,
@@ -120,11 +123,11 @@ internal sealed class ListUsersQueryHandler
     private static UserStateFilter ParseStateFilter(string? state)
         => state?.ToLowerInvariant() switch
         {
-            null or "" or "all" => UserStateFilter.All,
-            "active"            => UserStateFilter.Active,
-            "locked"            => UserStateFilter.Locked,
-            "pending"           => UserStateFilter.Pending,
-            "deleted"           => UserStateFilter.Deleted,
-            _                   => throw new ArgumentOutOfRangeException(nameof(state), state, "Unsupported user state filter."),
+            null or "" or UserStates.AllFilter => UserStateFilter.All,
+            UserStates.Active                  => UserStateFilter.Active,
+            UserStates.Locked                  => UserStateFilter.Locked,
+            UserStates.Pending                 => UserStateFilter.Pending,
+            UserStates.Deleted                 => UserStateFilter.Deleted,
+            _                                  => throw new ArgumentOutOfRangeException(nameof(state), state, "Unsupported user state filter."),
         };
 }

@@ -31,8 +31,7 @@ internal sealed class ChangePasswordCommandHandler
     private readonly IPasswordHasher _passwordHasher;
     private readonly IPasswordValidator _passwordValidator;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
-    private readonly IEmailService _emailService;
-    private readonly IEmailTemplateRenderer _templateRenderer;
+    private readonly IPasswordChangedNotificationService _passwordChangedNotificationService;
     private readonly ILogger<ChangePasswordCommandHandler> _logger;
 
     public ChangePasswordCommandHandler(
@@ -40,16 +39,14 @@ internal sealed class ChangePasswordCommandHandler
         IPasswordHasher passwordHasher,
         IPasswordValidator passwordValidator,
         IRefreshTokenRepository refreshTokenRepository,
-        IEmailService emailService,
-        IEmailTemplateRenderer templateRenderer,
+        IPasswordChangedNotificationService passwordChangedNotificationService,
         ILogger<ChangePasswordCommandHandler> logger)
     {
         _userRepository = userRepository;
         _passwordHasher = passwordHasher;
         _passwordValidator = passwordValidator;
         _refreshTokenRepository = refreshTokenRepository;
-        _emailService = emailService;
-        _templateRenderer = templateRenderer;
+        _passwordChangedNotificationService = passwordChangedNotificationService;
         _logger = logger;
     }
 
@@ -77,41 +74,12 @@ internal sealed class ChangePasswordCommandHandler
         user.ChangePassword(_passwordHasher.Hash(cmd.NewPassword));
         await _userRepository.UpdateAsync(user, ct);
 
-        await RevokeAllRefreshTokensAsync(user.Id, ct);
+        await _refreshTokenRepository.RevokeAllActiveByUserIdAsync(user.Id, ct);
 
         _logger.LogInformation("Password changed for UserId {UserId}", user.Id);
 
-        await SendPasswordChangedEmailAsync(user, ct);
+        await _passwordChangedNotificationService.SendPasswordChangedEmailAsync(user, ct);
 
         return Unit.Value;
-    }
-
-    private async Task RevokeAllRefreshTokensAsync(Guid userId, CancellationToken ct)
-    {
-        var tokens = await _refreshTokenRepository.FindByUserIdAsync(userId, ct);
-
-        foreach (var token in tokens.Where(t => t.IsActive()))
-        {
-            token.Revoke();
-            await _refreshTokenRepository.UpdateAsync(token, ct);
-        }
-    }
-
-    private async Task SendPasswordChangedEmailAsync(User user, CancellationToken ct)
-    {
-        var placeholders = new Dictionary<string, string>
-        {
-            [EmailPlaceholderKeys.UserName] = user.Username,
-        };
-
-        var (htmlBody, textBody) = _templateRenderer.Render(EmailTemplateNames.PasswordChanged, placeholders);
-
-        var message = new EmailMessage(
-            To: user.Email,
-            Subject: EmailSubjects.PasswordChanged,
-            HtmlBody: htmlBody,
-            TextBody: textBody);
-
-        await _emailService.SendAsync(message, ct);
     }
 }

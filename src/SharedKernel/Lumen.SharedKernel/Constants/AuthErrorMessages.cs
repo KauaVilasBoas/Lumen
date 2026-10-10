@@ -14,7 +14,11 @@ public static class AuthErrorMessages
     public const string UsernameTooLong = "O username deve ter no máximo {0} caracteres.";
     public const string UsernameInvalidChars = "O username deve conter apenas letras, números, underscores ou hífens.";
 
+    public const string IdentifierRequired = "O campo identificador é obrigatório.";
+
     public const string PasswordRequired = "O campo senha é obrigatório.";
+
+    public const string RefreshTokenRequired = "O campo refresh token é obrigatório.";
 
     public const string PasswordTooShort = "A senha deve ter no mínimo 12 caracteres.";
     public const string PasswordMissingUppercase = "A senha deve conter pelo menos uma letra maiúscula.";
@@ -47,4 +51,6 @@ public static class AuthErrorMessages
     public const string UserRestoreWindowExpired      = "O prazo de {0} dias para restauração expirou.";
     public const string UserNotDeleted                = "Usuário não encontrado no histórico de exclusão.";
     public const string UserAlreadyDeleted            = "Usuário não encontrado.";
+
+    public const string ExpiresAtMustBeInFuture = "ExpiresAt must be in the future.";
 }

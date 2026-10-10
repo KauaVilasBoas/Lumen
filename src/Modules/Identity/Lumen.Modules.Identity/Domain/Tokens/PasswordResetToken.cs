@@ -2,7 +2,7 @@ using Lumen.SharedKernel.Persistence;
 
 namespace Lumen.Modules.Identity.Domain.Tokens;
 
-internal sealed class PasswordResetToken : ISoftDeletable
+internal sealed class PasswordResetToken : IOneTimeToken
 {
     public Guid Id { get; init; } = Guid.NewGuid();
 
@@ -25,10 +25,7 @@ internal sealed class PasswordResetToken : ISoftDeletable
         string tokenHash,
         DateTime expiresAt)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(tokenHash);
-
-        if (expiresAt <= DateTime.UtcNow)
-            throw new ArgumentException("ExpiresAt must be in the future.", nameof(expiresAt));
+        OneTimeTokenPolicy.ValidateCreation(tokenHash, expiresAt);
 
         return new PasswordResetToken
         {
@@ -38,11 +35,11 @@ internal sealed class PasswordResetToken : ISoftDeletable
         };
     }
 
-    public bool IsExpired() => DateTime.UtcNow >= ExpiresAt;
+    public bool IsExpired() => OneTimeTokenPolicy.IsExpired(ExpiresAt);
 
-    public bool IsUsed() => UsedAt.HasValue;
+    public bool IsUsed() => OneTimeTokenPolicy.IsUsed(UsedAt);
 
-    public bool IsValid() => !IsExpired() && !IsUsed();
+    public bool IsValid() => OneTimeTokenPolicy.IsValid(ExpiresAt, UsedAt);
 
     public void MarkAsUsed()
     {

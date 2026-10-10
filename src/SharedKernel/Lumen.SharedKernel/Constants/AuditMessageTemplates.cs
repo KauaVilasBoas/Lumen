@@ -11,4 +11,6 @@ public static class AuditMessageTemplates
     public const string CleanupJobExecuted          = "Job '{0}' executed — {1} record(s) deleted.";
     public const string UserSoftDeleted             = "User '{0}' ({1}) soft-deleted.";
     public const string UserRestored                = "User '{0}' ({1}) restored from soft delete.";
+    public const string UsernameChangedEntry        = "username: '{0}' → '{1}'";
+    public const string EmailChangedEntry           = "email: '{0}' → '{1}'";
 }

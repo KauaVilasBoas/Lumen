@@ -10,5 +10,7 @@ internal interface IRefreshTokenRepository
 
     Task UpdateAsync(RefreshToken token, CancellationToken ct = default);
 
+    Task RevokeAllActiveByUserIdAsync(Guid userId, CancellationToken ct = default);
+
     Task<int> DeleteExpiredAsync(DateTime cutoff, CancellationToken ct = default);
 }

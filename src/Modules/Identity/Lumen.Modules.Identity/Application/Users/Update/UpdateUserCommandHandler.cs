@@ -62,34 +62,16 @@ internal sealed class UpdateUserCommandHandler
         var user = await _userRepository.FindByIdAsync(cmd.UserId, ct)
             ?? throw new NotFoundException(AuthErrorMessages.UserNotFound);
 
-        var emailChanged = false;
         var changedFields = new List<string>();
 
-        if (!string.IsNullOrWhiteSpace(cmd.NewUsername) &&
-            !string.Equals(cmd.NewUsername, user.Username, StringComparison.Ordinal))
-        {
-            var existing = await _userRepository.FindByUsernameAsync(cmd.NewUsername, ct);
-            if (existing is not null && existing.Id != user.Id)
-                throw new ConflictException(AuthErrorMessages.UsernameAlreadyInUse);
+        var usernameEntry = await ApplyUsernameChangeIfRequested(cmd, user, ct);
+        if (usernameEntry is not null)
+            changedFields.Add(usernameEntry);
 
-            changedFields.Add($"username: '{user.Username}' → '{cmd.NewUsername}'");
-            user.ChangeUsername(cmd.NewUsername);
-        }
-
-        if (!string.IsNullOrWhiteSpace(cmd.NewEmail))
-        {
-            var normalizedNewEmail = User.NormalizeEmail(cmd.NewEmail);
-            if (!string.Equals(normalizedNewEmail, user.Email, StringComparison.Ordinal))
-            {
-                var existing = await _userRepository.FindByEmailAsync(normalizedNewEmail, ct);
-                if (existing is not null && existing.Id != user.Id)
-                    throw new ConflictException(AuthErrorMessages.EmailAlreadyInUse);
-
-                changedFields.Add($"email: '{user.Email}' → '{normalizedNewEmail}'");
-                user.ChangeEmail(cmd.NewEmail);
-                emailChanged = true;
-            }
-        }
+        var emailEntry = await ApplyEmailChangeIfRequested(cmd, user, ct);
+        var emailChanged = emailEntry is not null;
+        if (emailChanged)
+            changedFields.Add(emailEntry!);
 
         if (changedFields.Count == 0)
             return new UpdateUserResult(user.Id, EmailChanged: false);
@@ -118,5 +100,40 @@ internal sealed class UpdateUserCommandHandler
         }
 
         return new UpdateUserResult(user.Id, emailChanged);
+    }
+
+    private async Task<string?> ApplyUsernameChangeIfRequested(UpdateUserCommand cmd, User user, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(cmd.NewUsername))
+            return null;
+
+        if (string.Equals(cmd.NewUsername, user.Username, StringComparison.Ordinal))
+            return null;
+
+        var existing = await _userRepository.FindByUsernameAsync(cmd.NewUsername, ct);
+        if (existing is not null && existing.Id != user.Id)
+            throw new ConflictException(AuthErrorMessages.UsernameAlreadyInUse);
+
+        var logEntry = string.Format(AuditMessageTemplates.UsernameChangedEntry, user.Username, cmd.NewUsername);
+        user.ChangeUsername(cmd.NewUsername);
+        return logEntry;
+    }
+
+    private async Task<string?> ApplyEmailChangeIfRequested(UpdateUserCommand cmd, User user, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(cmd.NewEmail))
+            return null;
+
+        var normalizedNewEmail = User.NormalizeEmail(cmd.NewEmail);
+        if (string.Equals(normalizedNewEmail, user.Email, StringComparison.Ordinal))
+            return null;
+
+        var existing = await _userRepository.FindByEmailAsync(normalizedNewEmail, ct);
+        if (existing is not null && existing.Id != user.Id)
+            throw new ConflictException(AuthErrorMessages.EmailAlreadyInUse);
+
+        var logEntry = string.Format(AuditMessageTemplates.EmailChangedEntry, user.Email, normalizedNewEmail);
+        user.ChangeEmail(cmd.NewEmail);
+        return logEntry;
     }
 }
