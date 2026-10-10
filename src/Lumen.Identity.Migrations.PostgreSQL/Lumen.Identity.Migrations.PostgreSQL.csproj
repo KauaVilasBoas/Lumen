@@ -4,8 +4,7 @@
     <RootNamespace>Lumen.Identity.Migrations.PostgreSQL</RootNamespace>
     <AssemblyName>Lumen.Identity.Migrations.PostgreSQL</AssemblyName>
     <IsPackable>true</IsPackable>
-    <!-- Patch bump: fix [Migration] attribute missing in PostgreSQL migrations (was ignored by EF Core) -->
-    <Version>1.0.1</Version>
+    <Version>$(LumenIdentityVersion)</Version>
     <PackageId>Lumen.Identity.Migrations.PostgreSQL</PackageId>
     <Authors>$(LumenPackageAuthors)</Authors>
     <Company>$(LumenPackageCompany)</Company>
